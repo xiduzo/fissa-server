@@ -16,12 +16,12 @@ app.use(actuator());
 const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
-app.get('/api/token', (req, res) => {
+app.post('/api/token', (req, res) => {
   console.log(req, req.headers, req.query);
   res.send(req.body);
 });
 
-app.get('/api/refresh', (req, res) => {});
+app.post('/api/refresh', (req, res) => {});
 
 const port = process.env.NODE_PORT ?? process.env.PORT ?? 8080;
 const portHttps = process.env.HTTPS_PORT ?? 8443;
