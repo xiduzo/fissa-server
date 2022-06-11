@@ -19,12 +19,16 @@ const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
 app.post('/api/token', async (req, res) => {
-  console.log(req.body, credentials);
-  const spotifyApi = new SpotifyWebApi({
+  const config = {
     ...credentials,
     redirectUri: req.body.redirectUri,
+    clientId: req.body.clientId,
     codeVerifier: req.body.code_verifier,
-  });
+  };
+
+  console.log(req.body, credentials, config);
+
+  const spotifyApi = new SpotifyWebApi(config);
   const response = await spotifyApi.authorizationCodeGrant(req.body.code);
 
   console.log('response', response);
