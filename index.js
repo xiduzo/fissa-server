@@ -19,17 +19,14 @@ app.use(actuator());
 const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
-app.post('/api/token', (req, res) => {
-  console.log(req.body);
-  res.send(
-    JSON.stringify({
-      scopes: ['test'],
-      accessTokenExpirationDate: 'test',
-      refreshToken: 'test',
-      tokenType: 'test',
-      accessToken: 'test',
-    }),
-  );
+app.post('/api/token', async (req, res) => {
+  const response = await spotifyApi.authorizationCodeGrantAsync({
+    ...baseSpotifyAuth,
+    ...req.body,
+  });
+
+  console.log(req.body, response);
+  res.send(JSON.stringify(response));
 });
 
 app.post('/api/refresh', (req, res) => {});
