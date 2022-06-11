@@ -20,12 +20,17 @@ const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
 app.post('/api/token', async (req, res) => {
-  const response = await spotifyApi.authorizationCodeGrant({
-    ...baseSpotifyAuth,
+  console.log({
     ...req.body,
+    ...baseSpotifyAuth,
+  });
+  const response = await spotifyApi.authorizationCodeGrant({
+    ...req.body,
+    ...baseSpotifyAuth,
   });
 
-  console.log(req.body, response);
+  console.log('response', response);
+
   res.send(JSON.stringify(response));
 });
 
