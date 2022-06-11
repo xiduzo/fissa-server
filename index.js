@@ -1,5 +1,6 @@
 const express = require('express');
 const actuator = require('express-actuator');
+const SpotifyWebApi = require('spotify-web-api-node');
 const http = require('http');
 const https = require('https');
 
@@ -7,6 +8,8 @@ const baseSpotifyAuth = {
   clientId: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_ID,
 };
+
+const spotifyApi = new SpotifyWebApi(baseSpotifyAuth);
 
 const app = express();
 app.use(express.json());
@@ -17,8 +20,16 @@ const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
 app.post('/api/token', (req, res) => {
-  console.log(req, req.headers, req.query);
-  res.send(req.body);
+  console.log(req.body);
+  res.send(
+    JSON.stringify({
+      scopes: ['test'],
+      accessTokenExpirationDate: 'test',
+      refreshToken: 'test',
+      tokenType: 'test',
+      accessToken: 'test',
+    }),
+  );
 });
 
 app.post('/api/refresh', (req, res) => {});
