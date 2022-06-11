@@ -5,8 +5,8 @@ const http = require('http');
 const https = require('https');
 
 const baseSpotifyAuth = {
-  clientId: process.env.CLIENT_ID,
-  clientSecret: process.env.CLIENT_ID,
+  clientId: process.env.CLIENT_ID ?? 'a2a88c4618324942859ce3e1f888b938',
+  clientSecret: process.env.CLIENT_ID ?? 'bfce3e5d96074c21ac4db8b4991c2f37',
 };
 
 const spotifyApi = new SpotifyWebApi(baseSpotifyAuth);
@@ -20,7 +20,7 @@ const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
 app.post('/api/token', async (req, res) => {
-  console.log(req.body);
+  console.log(req.body, baseSpotifyAuth);
   const response = await spotifyApi.authorizationCodeGrant(req.body.code);
 
   console.log('response', response);
