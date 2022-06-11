@@ -19,14 +19,12 @@ const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
 app.post('/api/token', async (req, res) => {
-  console.log(req.body, credentials);
-
   const spotifyApi = new SpotifyWebApi(credentials);
   const response = await spotifyApi.authorizationCodeGrant(req.body.code);
 
   console.log('response', response);
 
-  res.send(JSON.stringify(response));
+  res.send(JSON.stringify(response.body));
 });
 
 app.post('/api/refresh', (req, res) => {});
