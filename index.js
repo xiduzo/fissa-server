@@ -21,7 +21,7 @@ app.post('/api/token', async (req, res) => {
   });
   const response = await spotifyApi.authorizationCodeGrant({
     ...req.body,
-    ...baseSpotifyAuth,
+    client_secret: 'bfce3e5d96074c21ac4db8b4991c2f37',
   });
 
   console.log('response', response);
