@@ -9,8 +9,6 @@ const baseSpotifyAuth = {
   clientSecret: process.env.CLIENT_ID ?? 'bfce3e5d96074c21ac4db8b4991c2f37',
 };
 
-const spotifyApi = new SpotifyWebApi(baseSpotifyAuth);
-
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
@@ -21,9 +19,8 @@ const serverHttps = https.createServer(app);
 
 app.post('/api/token', async (req, res) => {
   console.log(req.body, baseSpotifyAuth);
-  const response = await spotifyApi.authorizationCodeGrant(
-    JSON.parse(req.body),
-  );
+  const spotifyApi = new SpotifyWebApi(...baseSpotifyAuth, ...req.body);
+  const response = await spotifyApi.authorizationCodeGrant(req.body.code);
 
   console.log('response', response);
 
