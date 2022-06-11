@@ -7,6 +7,7 @@ const https = require('https');
 const baseSpotifyAuth = {
   clientId: process.env.CLIENT_ID ?? 'a2a88c4618324942859ce3e1f888b938',
   clientSecret: process.env.CLIENT_ID ?? 'bfce3e5d96074c21ac4db8b4991c2f37',
+  redirectUri: 'com.fissa:/oauth',
 };
 
 const app = express();
