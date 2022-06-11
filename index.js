@@ -22,7 +22,7 @@ app.post('/api/token', async (req, res) => {
   const config = {
     ...credentials,
     redirectUri: req.body.redirect_uri,
-    clientId: req.body.clientId,
+    clientId: req.body.client_id,
     codeVerifier: req.body.code_verifier,
   };
 
