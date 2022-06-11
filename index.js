@@ -5,8 +5,7 @@ const http = require('http');
 const https = require('https');
 
 const baseSpotifyAuth = {
-  clientId: process.env.CLIENT_ID,
-  clientSecret: process.env.CLIENT_ID,
+  client_secret: process.env.CLIENT_ID,
 };
 
 const spotifyApi = new SpotifyWebApi(baseSpotifyAuth);
