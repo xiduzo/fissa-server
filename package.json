@@ -1,0 +1,18 @@
+{
+  "name": "nodejs-spotify-token-swap",
+  "version": "1.0.0",
+  "description": "A token swap service for nodejs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon --trace-warnings"
+  },
+  "author": "xiduzo",
+  "license": "ISC",
+  "dependencies": {
+    "express": "4.18.1",
+    "express-actuator": "1.8.2",
+    "spotify-web-api-node": "5.0.2"
+  },
+  "devDependencies": {}
+}
