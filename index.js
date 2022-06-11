@@ -22,7 +22,7 @@ app.post('/api/token', async (req, res) => {
   console.log(req.body, credentials);
 
   const spotifyApi = new SpotifyWebApi(credentials);
-  const response = await spotifyApi.authorizationCodeGrant(req.body);
+  const response = await spotifyApi.authorizationCodeGrant(req.body.code);
 
   console.log('response', response);
 
