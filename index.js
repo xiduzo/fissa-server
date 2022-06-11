@@ -4,10 +4,6 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const http = require('http');
 const https = require('https');
 
-const baseSpotifyAuth = {
-  client_secret: process.env.CLIENT_ID,
-};
-
 const spotifyApi = new SpotifyWebApi(baseSpotifyAuth);
 
 const app = express();
@@ -21,7 +17,7 @@ const serverHttps = https.createServer(app);
 app.post('/api/token', async (req, res) => {
   console.log({
     ...req.body,
-    ...baseSpotifyAuth,
+    client_secret: 'bfce3e5d96074c21ac4db8b4991c2f37',
   });
   const response = await spotifyApi.authorizationCodeGrant({
     ...req.body,
