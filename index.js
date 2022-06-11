@@ -21,7 +21,7 @@ const serverHttps = https.createServer(app);
 app.post('/api/token', async (req, res) => {
   const config = {
     ...credentials,
-    redirectUri: req.body.redirectUri,
+    redirectUri: req.body.redirect_uri,
     clientId: req.body.clientId,
     codeVerifier: req.body.code_verifier,
   };
