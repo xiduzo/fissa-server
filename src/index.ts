@@ -48,5 +48,3 @@ server.listen(port, async () => {
 serverHttps.listen(portHttps, async () => {
   console.log('Https server running', serverHttps.address());
 });
-
-export default app;
