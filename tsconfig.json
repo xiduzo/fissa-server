@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "rootDir": "src",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "target": "es5",
@@ -7,6 +8,6 @@
     "sourceMap": true,
     "outDir": "build"
   },
-  "include": ["src/*.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
 }
