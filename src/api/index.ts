@@ -10,7 +10,7 @@ app.use(logErrors);
 app.use(clientErrorHandler);
 app.use(errorHandler);
 
-app.get('/api', async (req, res) => {
+app.get('/api', (req, res) => {
   res.send(
     JSON.stringify({
       hi: 'there',
