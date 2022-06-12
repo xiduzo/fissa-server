@@ -40,30 +40,20 @@ const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
 app.post('/api/token', async (req, res) => {
-  try {
-    const spotifyApi = new SpotifyWebApi(credentials);
-    const response = await spotifyApi.authorizationCodeGrant(req.body.code);
+  const spotifyApi = new SpotifyWebApi(credentials);
+  const response = await spotifyApi.authorizationCodeGrant(req.body.code);
 
-    res.send(JSON.stringify(response.body));
-  } catch (error) {
-    res.status(500);
-    res.send('can not authorize');
-  }
+  res.send(JSON.stringify(response.body));
 });
 
 app.post('/api/refresh', async (req, res) => {
-  try {
-    const spotifyApi = new SpotifyWebApi(credentials);
-    console.log(req.query, req.body);
-    spotifyApi.setAccessToken(req.body.accessToken);
-    spotifyApi.setRefreshToken(req.body.refreshToken);
+  const spotifyApi = new SpotifyWebApi(credentials);
+  console.log(req.query, req.body);
+  spotifyApi.setAccessToken(req.body.accessToken);
+  spotifyApi.setRefreshToken(req.body.refreshToken);
 
-    const response = await spotifyApi.refreshAccessToken();
-    res.send(JSON.stringify(response.body));
-  } catch (error) {
-    res.status(500);
-    res.send('can not refresh');
-  }
+  const response = await spotifyApi.refreshAccessToken();
+  res.send(JSON.stringify(response.body));
 });
 
 const port = process.env.NODE_PORT ?? process.env.PORT ?? 8080;
