@@ -25,14 +25,14 @@ app.post('/api/token', async (req, res) => {
   res.send(JSON.stringify(response.body));
 });
 
-app.post('/api/refresh', (req, res) => {
+app.post('/api/refresh', async (req, res) => {
   const spotifyApi = new SpotifyWebApi(credentials);
-  console.log(req.body)
+  console.log(req.body);
   spotifyApi.setAccessToken(req.body.accessToken);
   spotifyApi.setRefreshToken(req.body.refreshToken);
 
-  const response  = await spotifyApi.refreshAccessToken();
-  res.send(JSON.stringify(response.body))
+  const response = await spotifyApi.refreshAccessToken();
+  res.send(JSON.stringify(response.body));
 });
 
 const port = process.env.NODE_PORT ?? process.env.PORT ?? 8080;
