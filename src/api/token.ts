@@ -60,8 +60,8 @@ const handler: VercelApiHandler = (req, res) => {
       );
       break;
     case 'POST':
-      if (req.url?.endsWith('/token')) handleAccessToken(req, res);
-      if (req.url?.endsWith('/token/refresh')) handleRefreshToken(req, res);
+      if (req.url?.endsWith('/request')) handleAccessToken(req, res);
+      if (req.url?.endsWith('/refresh')) handleRefreshToken(req, res);
       break;
   }
 };
