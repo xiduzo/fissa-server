@@ -1,7 +1,7 @@
-import express, {NextFunction, Request, Response} from 'express';
-import actuator from 'express-actuator';
+import {NextFunction, Request, Response} from 'express';
 import http from 'http';
 import https from 'https';
+import app from './api/index';
 
 export const credentials = {
   clientId: process.env.CLIENT_ID ?? 'a2a88c4618324942859ce3e1f888b938',
@@ -34,14 +34,7 @@ export const logErrors: Middleware = (err, req, res, next) => {
   next(err);
 };
 
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
-app.use(actuator());
-app.use(logErrors);
-app.use(clientErrorHandler);
-app.use(errorHandler);
-
+/* Local server */
 const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
