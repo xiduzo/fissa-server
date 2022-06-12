@@ -31,13 +31,19 @@ const credentials = {
 };
 
 const handleAccessToken: VercelApiHandler = async (req, res) => {
-  const spotifyApi = new SpotifyWebApi(credentials);
+  const spotifyApi = new SpotifyWebApi({
+    ...credentials,
+    redirectUri: req.body.redirect_uri,
+  });
   const response = await spotifyApi.authorizationCodeGrant(req.body.code);
   res.status(200).send(JSON.stringify(response.body));
 };
 
 const handleRefreshToken: VercelApiHandler = async (req, res) => {
-  const spotifyApi = new SpotifyWebApi(credentials);
+  const spotifyApi = new SpotifyWebApi({
+    ...credentials,
+    redirectUri: req.body.redirect_uri,
+  });
   spotifyApi.setAccessToken(req.body.access_token);
   spotifyApi.setRefreshToken(req.body.refresh_token);
   const response = await spotifyApi.refreshAccessToken();
