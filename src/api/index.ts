@@ -18,7 +18,7 @@ app.get('/api', async (req, res) => {
   );
 });
 
-app.post('/api', async (req, res) => {
+app.post('/api/token', async (req, res) => {
   const spotifyApi = new SpotifyWebApi(credentials);
   const response = await spotifyApi.authorizationCodeGrant(req.body.code);
 
