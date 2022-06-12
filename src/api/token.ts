@@ -33,7 +33,7 @@ const credentials = {
 const handleAccessToken: VercelApiHandler = async (req, res) => {
   const spotifyApi = new SpotifyWebApi(credentials);
   const response = await spotifyApi.authorizationCodeGrant(req.body.code);
-  res.send(JSON.stringify(response.body));
+  res.status(200).send(JSON.stringify(response.body));
 };
 
 const handleRefreshToken: VercelApiHandler = async (req, res) => {
@@ -41,7 +41,7 @@ const handleRefreshToken: VercelApiHandler = async (req, res) => {
   spotifyApi.setAccessToken(req.body.access_token);
   spotifyApi.setRefreshToken(req.body.refresh_token);
   const response = await spotifyApi.refreshAccessToken();
-  res.send(JSON.stringify(response.body));
+  res.status(200).send(JSON.stringify(response.body));
 };
 
 const handler: VercelApiHandler = (req, res) => {
