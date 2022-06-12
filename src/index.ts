@@ -1,16 +1,23 @@
-const express = require('express');
-const actuator = require('express-actuator');
-const SpotifyWebApi = require('spotify-web-api-node');
-const http = require('http');
-const https = require('https');
+import express, {Request, Response, NextFunction} from 'express';
+import actuator from 'express-actuator';
+import SpotifyWebApi from 'spotify-web-api-node';
+import http from 'http';
+import https from 'https';
 
 const credentials = {
   clientId: process.env.CLIENT_ID ?? 'a2a88c4618324942859ce3e1f888b938',
-  clientSecret: process.env.CLIENT_ID ?? 'bfce3e5d96074c21ac4db8b4991c2f37',
+  clientSecret: process.env.CLIENT_SECRET ?? 'bfce3e5d96074c21ac4db8b4991c2f37',
   redirectUri: 'com.fissa:/oauth',
 };
 
-const clientErrorHandler = (err, req, res, next) => {
+type Middleware = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => void;
+
+const clientErrorHandler: Middleware = (err, req, res, next) => {
   if (req.xhr) {
     res.status(500).send({error: 'Something failed!'});
   } else {
@@ -18,12 +25,12 @@ const clientErrorHandler = (err, req, res, next) => {
   }
 };
 
-const errorHandler = (err, req, res, next) => {
+const errorHandler: Middleware = (err, req, res, next) => {
   res.status(500);
   res.render('error', {error: err});
 };
 
-const logErrors = (err, req, res, next) => {
+const logErrors: Middleware = (err, req, res, next) => {
   console.error(err.stack);
   next(err);
 };
@@ -48,8 +55,8 @@ app.post('/api/token', async (req, res) => {
 
 app.post('/api/refresh', async (req, res) => {
   const spotifyApi = new SpotifyWebApi(credentials);
-  await spotifyApi.setAccessToken(req.body.access_token);
-  await spotifyApi.setRefreshToken(req.body.refresh_token);
+  spotifyApi.setAccessToken(req.body.access_token);
+  spotifyApi.setRefreshToken(req.body.refresh_token);
 
   const response = await spotifyApi.refreshAccessToken();
   res.send(JSON.stringify(response.body));
