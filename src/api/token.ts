@@ -4,6 +4,14 @@ import {credentials} from '..';
 
 const tokenRouter = express.Router();
 
+tokenRouter.get('/', async (req, res) => {
+  res.send(
+    JSON.stringify({
+      hi: 'there',
+    }),
+  );
+});
+
 tokenRouter.post('/', async (req, res) => {
   const spotifyApi = new SpotifyWebApi(credentials);
   const response = await spotifyApi.authorizationCodeGrant(req.body.code);
