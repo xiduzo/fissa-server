@@ -16,7 +16,7 @@ type Middleware = (
   next: NextFunction,
 ) => void;
 
-const clientErrorHandler: Middleware = (err, req, res, next) => {
+export const clientErrorHandler: Middleware = (err, req, res, next) => {
   if (req.xhr) {
     res.status(500).send({error: 'Something failed!'});
   } else {
@@ -24,12 +24,12 @@ const clientErrorHandler: Middleware = (err, req, res, next) => {
   }
 };
 
-const errorHandler: Middleware = (err, req, res, next) => {
+export const errorHandler: Middleware = (err, req, res, next) => {
   res.status(500);
   res.render('error', {error: err});
 };
 
-const logErrors: Middleware = (err, req, res, next) => {
+export const logErrors: Middleware = (err, req, res, next) => {
   console.error(err.stack);
   next(err);
 };

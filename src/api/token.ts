@@ -1,5 +1,13 @@
 import SpotifyWebApi from 'spotify-web-api-node';
-import app, {credentials} from '..';
+import express from 'express';
+import {clientErrorHandler, credentials, errorHandler, logErrors} from '..';
+
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+app.use(logErrors);
+app.use(clientErrorHandler);
+app.use(errorHandler);
 
 app.get('/', async (req, res) => {
   res.send(
@@ -24,3 +32,5 @@ app.post('/refresh', async (req, res) => {
   const response = await spotifyApi.refreshAccessToken();
   res.send(JSON.stringify(response.body));
 });
+
+module.exports = app;
