@@ -10,29 +10,60 @@ const credentials = {
   redirectUri: 'com.fissa:/oauth',
 };
 
+const clientErrorHandler = (err, req, res, next) => {
+  if (req.xhr) {
+    res.status(500).send({error: 'Something failed!'});
+  } else {
+    next(err);
+  }
+};
+
+const errorHandler = (err, req, res, next) => {
+  res.status(500);
+  res.render('error', {error: err});
+};
+
+const logErrors = (err, req, res, next) => {
+  console.error(err.stack);
+  next(err);
+};
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(actuator());
+app.use(logErrors);
+app.use(clientErrorHandler);
+app.use(errorHandler);
 
 const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
 app.post('/api/token', async (req, res) => {
-  const spotifyApi = new SpotifyWebApi(credentials);
-  const response = await spotifyApi.authorizationCodeGrant(req.body.code);
+  try {
+    const spotifyApi = new SpotifyWebApi(credentials);
+    const response = await spotifyApi.authorizationCodeGrant(req.body.code);
 
-  res.send(JSON.stringify(response.body));
+    res.send(JSON.stringify(response.body));
+  } catch (error) {
+    res.status(500);
+    res.send('can not authorize');
+  }
 });
 
 app.post('/api/refresh', async (req, res) => {
-  const spotifyApi = new SpotifyWebApi(credentials);
-  console.log(req.query, req.body);
-  spotifyApi.setAccessToken(req.body.accessToken);
-  spotifyApi.setRefreshToken(req.body.refreshToken);
+  try {
+    const spotifyApi = new SpotifyWebApi(credentials);
+    console.log(req.query, req.body);
+    spotifyApi.setAccessToken(req.body.accessToken);
+    spotifyApi.setRefreshToken(req.body.refreshToken);
 
-  const response = await spotifyApi.refreshAccessToken();
-  res.send(JSON.stringify(response.body));
+    const response = await spotifyApi.refreshAccessToken();
+    res.send(JSON.stringify(response.body));
+  } catch (error) {
+    res.status(500);
+    res.send('can not refresh');
+  }
 });
 
 const port = process.env.NODE_PORT ?? process.env.PORT ?? 8080;
