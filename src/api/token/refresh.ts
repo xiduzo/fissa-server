@@ -7,7 +7,7 @@ const handler: VercelApiHandler = async (request, response) => {
     case 'GET':
       response.send(
         JSON.stringify({
-          app: 'token::refresh',
+          app: 'there',
         }),
       );
       break;
