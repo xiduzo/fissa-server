@@ -2,7 +2,6 @@ import express, {NextFunction, Request, Response} from 'express';
 import actuator from 'express-actuator';
 import http from 'http';
 import https from 'https';
-import tokenRouter from './token';
 
 export const credentials = {
   clientId: process.env.CLIENT_ID ?? 'a2a88c4618324942859ce3e1f888b938',
@@ -43,8 +42,6 @@ app.use(logErrors);
 app.use(clientErrorHandler);
 app.use(errorHandler);
 
-app.use('/api/token', tokenRouter);
-
 const server = http.createServer(app);
 const serverHttps = https.createServer(app);
 
@@ -58,3 +55,5 @@ server.listen(port, async () => {
 serverHttps.listen(portHttps, async () => {
   console.log('Https server running', serverHttps.address());
 });
+
+export default app;
