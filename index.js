@@ -48,8 +48,9 @@ app.post('/api/token', async (req, res) => {
 
 app.post('/api/refresh', async (req, res) => {
   const spotifyApi = new SpotifyWebApi(credentials);
-  spotifyApi.setAccessToken(req.body.access_token);
-  spotifyApi.setRefreshToken(req.body.refresh_token);
+  console.log(req.body);
+  await spotifyApi.setAccessToken(req.body.access_token);
+  await spotifyApi.setRefreshToken(req.body.refresh_token);
 
   const response = await spotifyApi.refreshAccessToken();
   res.send(JSON.stringify(response.body));
