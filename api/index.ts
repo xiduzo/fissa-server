@@ -2,7 +2,7 @@ import express, {NextFunction, Request, Response} from 'express';
 import actuator from 'express-actuator';
 import http from 'http';
 import https from 'https';
-import tokenRouter from './api/token';
+import tokenRouter from './token';
 
 export const credentials = {
   clientId: process.env.CLIENT_ID ?? 'a2a88c4618324942859ce3e1f888b938',

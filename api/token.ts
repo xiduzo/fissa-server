@@ -1,6 +1,6 @@
 import express from 'express';
 import SpotifyWebApi from 'spotify-web-api-node';
-import {credentials} from '..';
+import {credentials} from '.';
 
 const tokenRouter = express.Router();
 
