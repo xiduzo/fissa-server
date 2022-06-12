@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon --trace-warnings",
-    "build": "npx tsc"
+    "build": "tsc"
   },
   "author": "xiduzo",
   "license": "ISC",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@types/express-actuator": "^1.8.0",
-    "@types/spotify-web-api-node": "^5.0.7"
+    "@types/spotify-web-api-node": "^5.0.7",
+    "typescript": "^4.7.3"
   }
 }
