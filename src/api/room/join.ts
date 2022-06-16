@@ -12,9 +12,10 @@ const handler: VercelApiHandler = async (request, response) => {
       break;
     case 'POST':
       try {
-        // const database = await useDatabase('fissa');
         const {pin} = request.body;
         console.log(pin);
+        const database = await useDatabase('fissa');
+        console.log(database.databaseName);
         // const room = await database.collection('rooms').findOne({pin});
 
         // console.log(room);
