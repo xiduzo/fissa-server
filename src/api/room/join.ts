@@ -21,11 +21,15 @@ const handler: VercelApiHandler = async (request, response) => {
     case 'POST':
       const {pin} = request.body;
 
-      const room = await database.collection('rooms').findOne({pin: pin});
+      try {
+        const room = await database.collection('rooms').findOne({pin});
 
-      console.log(room);
+        console.log(room);
 
-      response.status(200).send(JSON.stringify(room));
+        response.status(200).send(JSON.stringify(room));
+      } catch (e) {
+        console.error(e);
+      }
       // find room by pin
       // if room exists, return false
       // if room does not exist, create room and return true
