@@ -22,6 +22,7 @@ const handler: VercelApiHandler = async (request, response) => {
       console.log(request.body);
       try {
         const {pin} = request.body;
+        console.log(pin);
         const room = await database.collection('rooms').findOne({pin});
 
         console.log(room);
