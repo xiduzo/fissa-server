@@ -16,11 +16,12 @@ const handler: VercelApiHandler = async (request, response) => {
       );
       break;
     case 'POST':
+      const {code, redirect_uri} = request.body;
       const spotifyApi = new SpotifyWebApi({
         ...credentials,
-        redirectUri: request.body.redirect_uri,
+        redirectUri: redirect_uri,
       });
-      const tokens = await spotifyApi.authorizationCodeGrant(request.body.code);
+      const tokens = await spotifyApi.authorizationCodeGrant(code);
       response.status(200).send(JSON.stringify(tokens.body));
       break;
   }
