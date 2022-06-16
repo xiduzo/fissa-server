@@ -19,9 +19,9 @@ const handler: VercelApiHandler = async (request, response) => {
       );
       break;
     case 'POST':
-      const {pin} = request.body;
-
+      console.log(request.body);
       try {
+        const {pin} = request.body;
         const room = await database.collection('rooms').findOne({pin});
 
         console.log(room);
