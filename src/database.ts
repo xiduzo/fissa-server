@@ -7,10 +7,13 @@ export const mongoClient = new MongoClient(
   },
 );
 
-export const useDatabase = async (db: string): Promise<Db> => {
+export const useDatabase = async (
+  db: string,
+  callback: Function,
+): Promise<Db> => {
   console.log('connecting to database ' + db);
   try {
-    await mongoClient.connect();
+    await mongoClient.connect(err => {});
     Promise.resolve(mongoClient.db(db));
   } catch (e) {
     console.error(e);

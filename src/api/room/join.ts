@@ -1,5 +1,12 @@
 import {VercelApiHandler} from '@vercel/node';
-import {useDatabase} from '../../database';
+import {MongoClient, ServerApiVersion, Db} from 'mongodb';
+
+export const mongoClient = new MongoClient(
+  'mongodb+srv://xiduzo:enm8mr7lX5qjTqV1@fissa.yp209.mongodb.net/?retryWrites=true&w=majority',
+  {
+    serverApi: ServerApiVersion.v1,
+  },
+);
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -14,13 +21,17 @@ const handler: VercelApiHandler = async (request, response) => {
       try {
         const {pin} = request.body;
         console.log(pin);
-        const database = await useDatabase('fissa');
-        console.log(database.databaseName);
-        // const room = await database.collection('rooms').findOne({pin});
+        mongoClient.connect(async err => {
+          if (err) response.status(500).send(JSON.stringify(err));
 
-        // console.log(room);
+          const database = mongoClient.db('fissa');
+          console.log(database.databaseName);
+          const collection = await database.collection('rooms').findOne({pin});
 
-        response.status(200).send(JSON.stringify(pin));
+          console.log(collection);
+
+          response.status(200).send(JSON.stringify(collection));
+        });
       } catch (e) {
         console.error(e);
         response.status(500).send(JSON.stringify(e));
