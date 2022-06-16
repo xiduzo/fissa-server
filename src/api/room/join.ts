@@ -1,8 +1,9 @@
 import {VercelApiHandler} from '@vercel/node';
 import {MongoClient, ServerApiVersion, Db} from 'mongodb';
+import {mongo} from '../../database';
 
 export const mongoClient = new MongoClient(
-  'mongodb+srv://xiduzo:enm8mr7lX5qjTqV1@fissa.yp209.mongodb.net/?retryWrites=true&w=majority',
+  'mongodb+srv://xiduzo:<password>@fissa.yp209.mongodb.net/?retryWrites=true&w=majority',
   {
     serverApi: ServerApiVersion.v1,
   },
@@ -21,6 +22,19 @@ const handler: VercelApiHandler = async (request, response) => {
       try {
         const {pin} = request.body;
         console.log(pin);
+        mongo('fissa', async (err, database) => {
+          if (err) response.status(500).send(JSON.stringify(err));
+
+          const room = await database.collection('rooms').findOne({pin});
+
+          console.log(room);
+          if (!room) {
+            response.status(404).send('');
+            return;
+          }
+
+          response.status(200).send(JSON.stringify(room));
+        });
         mongoClient.connect(async err => {
           if (err) response.status(500).send(JSON.stringify(err));
 
