@@ -22,6 +22,7 @@ const handler: VercelApiHandler = async (request, response) => {
         response.status(200).send(JSON.stringify(room));
       } catch (e) {
         console.error(e);
+        response.status(500).send(JSON.stringify(e));
       }
       // find room by pin
       // if room exists, return false
