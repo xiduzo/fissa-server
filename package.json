@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@vercel/node": "^2.1.0",
+    "http-status-codes": "^2.2.0",
     "mongodb": "^4.7.0",
     "mqtt": "^4.3.7",
     "spotify-web-api-node": "5.0.2"

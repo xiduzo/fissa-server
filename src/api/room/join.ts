@@ -1,6 +1,7 @@
 import {VercelApiHandler} from '@vercel/node';
 import {MongoClient, ServerApiVersion} from 'mongodb';
 import {mongo} from '../../database';
+import {ReasonPhrases, StatusCodes} from 'http-status-codes';
 
 const user = process.env.MONGO_DB_USER;
 const password = process.env.MONGO_DB_PASSWORD;
@@ -23,25 +24,29 @@ const handler: VercelApiHandler = async (request, response) => {
     case 'POST':
       try {
         const {pin} = request.body;
-        console.log(request.body, request.body, pin);
+        if (!pin)
+          response
+            .status(StatusCodes.BAD_REQUEST)
+            .json(ReasonPhrases.BAD_REQUEST);
         mongo(async (err, database) => {
-          if (err) response.status(500).json(err);
+          if (err) response.status(StatusCodes.INTERNAL_SERVER_ERROR).json(err);
 
           const rooms = database.collection('room');
           const query = {pin};
           const room = await rooms.findOne(query);
 
-          console.log(room);
           if (!room) {
-            response.status(404).json({});
+            response
+              .status(StatusCodes.NOT_FOUND)
+              .json(ReasonPhrases.NOT_FOUND);
             return;
           }
 
-          response.status(200).json(room);
+          response.status(StatusCodes.OK).json(room);
         });
       } catch (e) {
         console.error(e);
-        response.status(500).json(e);
+        response.status(StatusCodes.INTERNAL_SERVER_ERROR).json(e);
       }
       // find room by pin
       // if room not exists, return 500
