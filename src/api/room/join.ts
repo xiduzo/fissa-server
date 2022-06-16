@@ -7,7 +7,6 @@ const mongo = new MongoClient(
     serverApi: ServerApiVersion.v1,
   },
 );
-const database = mongo.db('fissa');
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -19,6 +18,9 @@ const handler: VercelApiHandler = async (request, response) => {
       );
       break;
     case 'POST':
+      await mongo.connect();
+      const database = mongo.db('fissa');
+
       console.log(request.body);
       try {
         const {pin} = request.body;
