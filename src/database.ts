@@ -8,6 +8,13 @@ export const mongoClient = new MongoClient(
 );
 
 export const useDatabase = async (db: string): Promise<Db> => {
-  await mongoClient.connect();
-  return mongoClient.db(db);
+  console.log('connecting to database ' + db);
+  try {
+    await mongoClient.connect();
+    Promise.resolve(mongoClient.db(db));
+  } catch (e) {
+    console.error(e);
+    Promise.reject(e);
+    return;
+  }
 };
