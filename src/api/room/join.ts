@@ -2,8 +2,10 @@ import {VercelApiHandler} from '@vercel/node';
 import {MongoClient, ServerApiVersion, Db} from 'mongodb';
 import {mongo} from '../../database';
 
+const user = process.env.MONGO_DB_USER;
+const password = process.env.MONGO_DB_PASSWORD;
 export const mongoClient = new MongoClient(
-  'mongodb+srv://xiduzo:<password>@fissa.yp209.mongodb.net/?retryWrites=true&w=majority',
+  `mongodb+srv://${user}:${password}@fissa.yp209.mongodb.net/?retryWrites=true&w=majority`,
   {
     serverApi: ServerApiVersion.v1,
   },
