@@ -21,7 +21,7 @@ const handler: VercelApiHandler = async (request, response) => {
     case 'POST':
       try {
         const {pin} = request.body;
-        console.log(request.body, pin);
+        console.log(JSON.parse(request.body), request.body, pin);
         mongo(async (err, database) => {
           if (err) response.status(500).send(JSON.stringify(err));
 
