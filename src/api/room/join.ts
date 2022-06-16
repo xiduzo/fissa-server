@@ -1,6 +1,6 @@
 import {VercelApiHandler} from '@vercel/node';
-import {MongoClient, ServerApiVersion, Db} from 'mongodb';
-import {mongo} from '../../database';
+import {MongoClient, ServerApiVersion} from 'mongodb';
+import {mongo} from '../_database';
 
 const user = process.env.MONGO_DB_USER;
 const password = process.env.MONGO_DB_PASSWORD;
