@@ -27,9 +27,8 @@ const handler: VercelApiHandler = async (request, response) => {
         mongo(async (err, database) => {
           if (err) response.status(500).send(JSON.stringify(err));
 
-          const rooms = database.collection('rooms');
+          const rooms = database.collection('room');
           const query = {pin};
-          console.log(query);
           const room = await rooms.findOne(query);
 
           console.log(room);
@@ -45,8 +44,8 @@ const handler: VercelApiHandler = async (request, response) => {
         response.status(500).send(JSON.stringify(e));
       }
       // find room by pin
-      // if room exists, return false
-      // if room does not exist, create room and return true
+      // if room not exists, return 500
+      // if room does exist, return room
       break;
   }
 };
