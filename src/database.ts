@@ -7,15 +7,18 @@ export const mongoClient = new MongoClient(
   },
 );
 
+type CloseConnection = () => void;
+
 export const mongo = async (
-  callback: (err: AnyError, database: Db) => void,
+  callback: (err: AnyError, database: Db) => Promise<any>,
 ) => {
+  const close = () => mongoClient.close();
   try {
     mongoClient.connect((err, client) => {
       if (err) {
-        callback(err, null);
+        callback(err, null).finally(close);
       } else {
-        callback(err, client.db('fissa'));
+        callback(err, client.db('fissa')).finally(close);
       }
     });
   } catch (e) {
