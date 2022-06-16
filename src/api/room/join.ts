@@ -1,12 +1,5 @@
 import {VercelApiHandler} from '@vercel/node';
-import {MongoClient, ServerApiVersion} from 'mongodb';
-
-const mongo = new MongoClient(
-  'mongodb+srv://xiduzo:enm8mr7lX5qjTqV1@fissa.yp209.mongodb.net/?retryWrites=true&w=majority',
-  {
-    serverApi: ServerApiVersion.v1,
-  },
-);
+import {useDatabase} from '../../database';
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -18,10 +11,8 @@ const handler: VercelApiHandler = async (request, response) => {
       );
       break;
     case 'POST':
-      await mongo.connect();
-      const database = mongo.db('fissa');
+      const database = await useDatabase('fissa');
 
-      console.log(request.body);
       try {
         const {pin} = request.body;
         console.log(pin);
