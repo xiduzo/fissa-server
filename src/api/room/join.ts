@@ -21,11 +21,12 @@ const handler: VercelApiHandler = async (request, response) => {
     case 'POST':
       try {
         const {pin} = request.body;
-        console.log(pin);
-        mongo('fissa', async (err, database) => {
+        console.log(request.body, pin);
+        mongo(async (err, database) => {
           if (err) response.status(500).send(JSON.stringify(err));
 
-          const room = await database.collection('rooms').findOne({pin});
+          const collection = database.collection('rooms');
+          const room = await collection.findOne({pin});
 
           console.log(room);
           if (!room) {

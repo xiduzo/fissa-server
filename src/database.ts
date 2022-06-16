@@ -8,7 +8,6 @@ export const mongoClient = new MongoClient(
 );
 
 export const mongo = async (
-  db: string,
   callback: (err: AnyError, database: Db) => void,
 ) => {
   try {
@@ -16,7 +15,7 @@ export const mongo = async (
       if (err) {
         callback(err, null);
       } else {
-        callback(err, client.db(db));
+        callback(err, client.db('fissa'));
       }
     });
   } catch (e) {
