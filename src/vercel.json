@@ -1,4 +1,3 @@
 {
-  "//": "//https://github.com/vercel/vercel/discussions/4030",
   "rewrites": [{"source": "/api/(.*)", "destination": "/api"}]
 }
