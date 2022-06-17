@@ -48,14 +48,14 @@ const handler: VercelApiHandler = async (request, response) => {
           }
 
           const rooms = database.collection<Partial<Room>>('room');
-          //   const createdPlaylistId = await createPlaylistAsync(
-          //     accessToken,
-          //     playlistId,
-          //   );
+          const createdPlaylistId = await createPlaylistAsync(
+            accessToken,
+            playlistId,
+          );
 
           const room = {
             pin,
-            playlistId: playlistId,
+            playlistId: createdPlaylistId,
             currentIndex: 0,
           };
 
