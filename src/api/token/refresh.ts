@@ -16,6 +16,7 @@ const handler: VercelApiHandler = async (request, response) => {
         ...SPOTIFY_CREDENTIALS,
         redirectUri: request.body.redirect_uri,
       });
+      console.log(SPOTIFY_CREDENTIALS);
       spotifyApi.setAccessToken(request.body.access_token);
       spotifyApi.setRefreshToken(request.body.refresh_token);
       const tokens = await spotifyApi.refreshAccessToken();

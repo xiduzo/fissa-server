@@ -37,27 +37,18 @@ const generatePin = (): string => randomize('A', 4);
 
 export const createPin = (blockedPins: string[] = []): string => {
   let pin: string;
-  let generateNewPin = false;
 
   do {
-    try {
-      pin = generatePin();
+    const _pin = generatePin();
 
-      if (noNoWords.includes(pin)) {
-        generateNewPin = true;
-        return;
-      }
+    if (noNoWords.includes(_pin)) return;
 
-      const isBlocked = blockedPins.includes(pin);
+    const isBlocked = blockedPins.includes(_pin);
 
-      if (isBlocked) {
-        generateNewPin = true;
-        return;
-      }
-    } catch (error) {
-      generateNewPin = false;
-    }
-  } while (generateNewPin);
+    if (isBlocked) return;
+
+    pin = _pin;
+  } while (pin === undefined);
 
   return pin;
 };

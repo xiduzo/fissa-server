@@ -35,29 +35,34 @@ export const createPlaylistAsync = async (
 
   playlistId?: string,
 ): Promise<string> => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  try {
+    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+    spotifyApi.setAccessToken(token);
 
-  spotifyApi.setAccessToken(token);
+    let trackUris: string[] = [];
 
-  let tracks: string[] = [];
+    if (playlistId) {
+      const trackObjects = await getPlaylistTracksAsync(token, playlistId);
 
-  if (playlistId) {
-    const trackObjects = await getPlaylistTracksAsync(token, playlistId);
+      trackUris = trackObjects.map(track => track.uri);
+    }
 
-    tracks = trackObjects.map(track => track.uri);
+    console.log('creating playlist', spotifyApi.getAccessToken());
+    const playlist = await spotifyApi.createPlaylist('🟣🔴🟢🔵🟠🟡', {
+      public: true,
+
+      description: 'Playlist created with https://spotify-x.herokuapp.com/',
+    });
+
+    console.log('adding tracks', trackUris.join(', '));
+    if (trackUris.length > 0) {
+      await addTracksToPlaylistAsync(token, playlist.body.id, trackUris);
+    }
+
+    return playlist.body.id;
+  } catch (e) {
+    console.error(e);
   }
-
-  const playlist = await spotifyApi.createPlaylist('🟣🔴🟢🔵🟠🟡', {
-    public: true,
-
-    description: 'Playlist created with https://spotify-x.herokuapp.com/',
-  });
-
-  if (tracks.length > 0) {
-    await addTracksToPlaylistAsync(token, playlist.body.id, tracks);
-  }
-
-  return playlist.body.id;
 };
 
 const getPlaylistTracksAsync = async (
