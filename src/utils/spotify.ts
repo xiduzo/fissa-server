@@ -51,7 +51,7 @@ export const createPlaylistAsync = async (
     const playlist = await spotifyApi.createPlaylist('🟣🔴🟢🔵🟠🟡', {
       public: true,
 
-      description: 'Playlist created with https://spotify-x.herokuapp.com/',
+      description: 'Playlist created with FISSA',
     });
 
     console.log('adding tracks', trackUris.join(', '));

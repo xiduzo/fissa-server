@@ -20,7 +20,6 @@ const handler: VercelApiHandler = async (request, response) => {
       const {playlistId, accessToken} = request.body;
       const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
       spotifyApi.setAccessToken(accessToken);
-      console.log('accessToken', accessToken);
 
       try {
         let pin: string;
@@ -39,6 +38,11 @@ const handler: VercelApiHandler = async (request, response) => {
 
         console.log('use available pin', pin);
 
+        const createdPlaylistId = await createPlaylistAsync(
+          accessToken,
+          playlistId,
+        );
+
         mongo(async (err, database) => {
           if (err) {
             response
@@ -47,12 +51,6 @@ const handler: VercelApiHandler = async (request, response) => {
             return;
           }
 
-          const rooms = database.collection<Partial<Room>>('room');
-          const createdPlaylistId = await createPlaylistAsync(
-            accessToken,
-            playlistId,
-          );
-
           const room = {
             pin,
             playlistId: createdPlaylistId,
@@ -60,6 +58,7 @@ const handler: VercelApiHandler = async (request, response) => {
           };
 
           console.log('creating room', room);
+          const rooms = database.collection<Partial<Room>>('room');
           await rooms.insertOne(room);
 
           response.status(StatusCodes.OK).json(room);
