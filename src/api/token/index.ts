@@ -1,10 +1,6 @@
 import {VercelApiHandler} from '@vercel/node';
 import SpotifyWebApi from 'spotify-web-api-node';
-
-export const credentials = {
-  clientId: process.env.SPOTIFY_CLIENT_ID,
-  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-};
+import {SPOTIFY_CREDENTIALS} from '../../lib/constants/spotify';
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -18,7 +14,7 @@ const handler: VercelApiHandler = async (request, response) => {
     case 'POST':
       const {code, redirect_uri} = request.body;
       const spotifyApi = new SpotifyWebApi({
-        ...credentials,
+        ...SPOTIFY_CREDENTIALS,
         redirectUri: redirect_uri,
       });
       const tokens = await spotifyApi.authorizationCodeGrant(code);

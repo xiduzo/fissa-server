@@ -17,11 +17,27 @@ export const mongo = async (
     mongoClient.connect((err, client) => {
       if (err) {
         callback(err, null).finally(close);
-      } else {
-        callback(err, client.db('fissa')).finally(close);
+        return;
       }
+
+      callback(err, client.db('fissa')).finally(close);
     });
   } catch (e) {
     console.error(e);
   }
+};
+
+export const getRoomByPin = async (pin: string): Promise<any | void> => {
+  mongo(async (err, database) => {
+    if (err) Promise.reject();
+
+    const rooms = database.collection('room');
+    const query = {pin};
+    const room = await rooms.findOne(query);
+
+    if (!room) Promise.reject();
+
+    Promise.resolve(room);
+  });
+  Promise.reject();
 };

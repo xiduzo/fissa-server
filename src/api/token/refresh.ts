@@ -1,6 +1,6 @@
 import {VercelApiHandler} from '@vercel/node';
 import SpotifyWebApi from 'spotify-web-api-node';
-import {credentials} from '.';
+import {SPOTIFY_CREDENTIALS} from '../../lib/constants/spotify';
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -13,7 +13,7 @@ const handler: VercelApiHandler = async (request, response) => {
       break;
     case 'POST':
       const spotifyApi = new SpotifyWebApi({
-        ...credentials,
+        ...SPOTIFY_CREDENTIALS,
         redirectUri: request.body.redirect_uri,
       });
       spotifyApi.setAccessToken(request.body.access_token);
