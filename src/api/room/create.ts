@@ -1,10 +1,10 @@
 import {VercelApiHandler} from '@vercel/node';
-import {getRoomByPin, mongo} from '../../utils/database';
-import {ReasonPhrases, StatusCodes} from 'http-status-codes';
-import {createPin} from '../../utils/pin';
-import {Room} from '../../lib/interfaces/Room';
+import {StatusCodes} from 'http-status-codes';
 import SpotifyWebApi from 'spotify-web-api-node';
 import {SPOTIFY_CREDENTIALS} from '../../lib/constants/credentials';
+import {Room} from '../../lib/interfaces/Room';
+import {mongo} from '../../utils/database';
+import {createPin} from '../../utils/pin';
 import {createPlaylistAsync} from '../../utils/spotify';
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -24,32 +24,31 @@ const handler: VercelApiHandler = async (request, response) => {
       try {
         let pin: string;
         let blockedPins: string[] = [];
-        do {
-          const _pin = createPin(blockedPins);
-          const room = await getRoomByPin(_pin);
-
-          if (room) {
-            blockedPins.push(_pin);
-            return;
-          }
-
-          pin = _pin;
-        } while (pin === undefined);
-
-        console.log('use available pin', pin);
-
-        const createdPlaylistId = await createPlaylistAsync(
-          accessToken,
-          playlistId,
-        );
-
         mongo(async (err, database) => {
           if (err) {
-            response
-              .status(StatusCodes.INTERNAL_SERVER_ERROR)
-              .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+            response.status(StatusCodes.INTERNAL_SERVER_ERROR).send(err);
             return;
           }
+
+          do {
+            const collection = database.collection('room');
+            const _pin = createPin(blockedPins);
+            const room = await collection.findOne({pin: _pin});
+
+            if (room) {
+              blockedPins.push(_pin);
+              return;
+            }
+
+            pin = _pin;
+          } while (pin === undefined);
+
+          console.log('use available pin', pin);
+
+          const createdPlaylistId = await createPlaylistAsync(
+            accessToken,
+            playlistId,
+          );
 
           const room = {
             pin,

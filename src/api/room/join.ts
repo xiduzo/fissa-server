@@ -1,6 +1,6 @@
 import {VercelApiHandler} from '@vercel/node';
 import {MongoClient, ServerApiVersion} from 'mongodb';
-import {getRoomByPin, mongo} from '../../utils/database';
+import {mongo} from '../../utils/database';
 import {ReasonPhrases, StatusCodes} from 'http-status-codes';
 import {Room} from '../../lib/interfaces/Room';
 

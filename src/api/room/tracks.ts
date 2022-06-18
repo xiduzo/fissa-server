@@ -2,9 +2,10 @@ import {VercelApiHandler} from '@vercel/node';
 import {ReasonPhrases, StatusCodes} from 'http-status-codes';
 import SpotifyWebApi from 'spotify-web-api-node';
 import {SPOTIFY_CREDENTIALS} from '../../lib/constants/credentials';
-import {getRoomByPin} from '../../utils/database';
-import {addTracksToPlaylistAsync} from '../../utils/spotify';
+import {Room} from '../../lib/interfaces/Room';
+import {mongo} from '../../utils/database';
 import {publish} from '../../utils/mqtt';
+import {addTracksToPlaylistAsync} from '../../utils/spotify';
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -20,26 +21,44 @@ const handler: VercelApiHandler = async (request, response) => {
       const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
       spotifyApi.setAccessToken(accessToken);
 
+      console.log(pin, accessToken, trackUris);
       try {
-        const room = await getRoomByPin(pin);
+        mongo(async (err, database) => {
+          if (err) {
+            response.status(StatusCodes.INTERNAL_SERVER_ERROR).send(err);
+            return;
+          }
 
-        if (!room)
-          return response
-            .status(StatusCodes.NOT_FOUND)
-            .json(ReasonPhrases.NOT_FOUND);
+          const collection = database.collection('room');
 
-        const numberOfAddedTracks = await addTracksToPlaylistAsync(
-          accessToken,
-          room.playlistId,
-          trackUris,
-        );
+          const room = await collection.findOne<Room>({pin});
 
-        await publish(
-          `fissa/room/${pin}/tracksAdded`,
-          JSON.stringify(numberOfAddedTracks),
-        );
+          if (!room) {
+            response
+              .status(StatusCodes.NOT_FOUND)
+              .json(ReasonPhrases.NOT_FOUND);
+            return;
+          }
 
-        response.status(StatusCodes.OK).json(numberOfAddedTracks);
+          const numberOfAddedTracks = await addTracksToPlaylistAsync(
+            accessToken,
+            room.playlistId,
+            trackUris,
+          );
+
+          publish(
+            `fissa/room/${pin}/tracks/added`,
+            JSON.stringify(trackUris.length),
+            err => {
+              if (err) {
+                response.status(StatusCodes.INTERNAL_SERVER_ERROR).send(err);
+                return;
+              }
+
+              response.status(StatusCodes.OK).json(trackUris.length);
+            },
+          );
+        });
       } catch (e) {
         console.warn(e);
         response.status(StatusCodes.INTERNAL_SERVER_ERROR).json(e);

@@ -4,15 +4,16 @@ import {MQTT_CREDENTIALS} from '../lib/constants/credentials';
 export const publish = async (
   topic: string,
   message: string | Buffer,
-  callback?: mqtt.PacketCallback,
+  callback?: mqtt.CloseCallback,
 ) => {
-  const mqttClient = mqtt.connect('mqtt.mdd-tardis.net', MQTT_CREDENTIALS);
+  const mqttClient = mqtt.connect(
+    'mqtt://mqtt.mdd-tardis.net',
+    MQTT_CREDENTIALS,
+  );
 
   mqttClient.on('connect', () =>
     mqttClient.publish(topic, message, err => {
-      if (err) return Promise.reject(err);
-
-      Promise.resolve();
+      callback(err);
     }),
   );
 };

@@ -30,16 +30,3 @@ export const mongo = async (
     console.error(e);
   }
 };
-
-export const getRoomByPin = async (pin: string): Promise<Room | void> => {
-  mongo(async (err, database) => {
-    if (err) Promise.reject(err);
-
-    const rooms = database.collection('room');
-    const query = {pin};
-    const room = await rooms.findOne<Room>(query);
-
-    console.log('room for pin', pin, room);
-    Promise.resolve(room);
-  });
-};
