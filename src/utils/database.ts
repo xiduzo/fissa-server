@@ -1,5 +1,6 @@
 import {MongoClient, ServerApiVersion, Db, AnyError} from 'mongodb';
 import {MONGO_CREDENTIALS} from '../lib/constants/credentials';
+import {Room} from '../lib/interfaces/Room';
 
 const {user, password} = MONGO_CREDENTIALS;
 
@@ -30,13 +31,13 @@ export const mongo = async (
   }
 };
 
-export const getRoomByPin = async (pin: string): Promise<any | void> => {
+export const getRoomByPin = async (pin: string): Promise<Room | void> => {
   mongo(async (err, database) => {
     if (err) Promise.reject(err);
 
     const rooms = database.collection('room');
     const query = {pin};
-    const room = await rooms.findOne(query);
+    const room = await rooms.findOne<Room>(query);
 
     console.log('room for pin', pin, room);
     Promise.resolve(room);

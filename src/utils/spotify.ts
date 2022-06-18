@@ -2,7 +2,7 @@ import SpotifyWebApi from 'spotify-web-api-node';
 import {SPOTIFY_CREDENTIALS} from '../lib/constants/credentials';
 
 export const addTracksToPlaylistAsync = async (
-  token: string,
+  accessToken: string,
 
   playlistId: string,
 
@@ -10,7 +10,7 @@ export const addTracksToPlaylistAsync = async (
 ): Promise<number> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
 
-  spotifyApi.setAccessToken(token);
+  spotifyApi.setAccessToken(accessToken);
 
   // We can only add 100 tracks at a time due to spotify constraints
   const spotifyMaxTracksPerRequest = 100;
@@ -31,18 +31,21 @@ export const addTracksToPlaylistAsync = async (
 };
 
 export const createPlaylistAsync = async (
-  token: string,
+  accessToken: string,
 
   playlistId?: string,
 ): Promise<string> => {
   try {
     const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-    spotifyApi.setAccessToken(token);
+    spotifyApi.setAccessToken(accessToken);
 
     let trackUris: string[] = [];
 
     if (playlistId) {
-      const trackObjects = await getPlaylistTracksAsync(token, playlistId);
+      const trackObjects = await getPlaylistTracksAsync(
+        accessToken,
+        playlistId,
+      );
 
       trackUris = trackObjects.map(track => track.uri);
     }
@@ -50,13 +53,14 @@ export const createPlaylistAsync = async (
     console.log('creating playlist', spotifyApi.getAccessToken());
     const playlist = await spotifyApi.createPlaylist('🟣🔴🟢🔵🟠🟡', {
       public: true,
+      collaborative: true,
 
       description: 'Playlist created with FISSA',
     });
 
     console.log('adding tracks', trackUris.join(', '));
     if (trackUris.length > 0) {
-      await addTracksToPlaylistAsync(token, playlist.body.id, trackUris);
+      await addTracksToPlaylistAsync(accessToken, playlist.body.id, trackUris);
     }
 
     return playlist.body.id;
@@ -66,12 +70,12 @@ export const createPlaylistAsync = async (
 };
 
 const getPlaylistTracksAsync = async (
-  token: string,
+  accessToken: string,
 
   playlistId: string,
 ): Promise<SpotifyApi.TrackObjectFull[]> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(token);
+  spotifyApi.setAccessToken(accessToken);
 
   try {
     let total = 0;
