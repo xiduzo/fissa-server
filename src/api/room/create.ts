@@ -4,7 +4,7 @@ import {ReasonPhrases, StatusCodes} from 'http-status-codes';
 import {createPin} from '../../utils/pin';
 import {Room} from '../../lib/interfaces/Room';
 import SpotifyWebApi from 'spotify-web-api-node';
-import {SPOTIFY_CREDENTIALS} from '../../lib/constants/spotify';
+import {SPOTIFY_CREDENTIALS} from '../../lib/constants/credentials';
 import {createPlaylistAsync} from '../../utils/spotify';
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -12,7 +12,7 @@ const handler: VercelApiHandler = async (request, response) => {
     case 'GET':
       response.send(
         JSON.stringify({
-          app: 'room::join',
+          app: 'room::create',
         }),
       );
       break;

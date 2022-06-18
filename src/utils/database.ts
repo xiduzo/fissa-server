@@ -1,7 +1,8 @@
 import {MongoClient, ServerApiVersion, Db, AnyError} from 'mongodb';
+import {MONGO_CREDENTIALS} from '../lib/constants/credentials';
 
-const user = process.env.MONGO_DB_USER;
-const password = process.env.MONGO_DB_PASSWORD;
+const {user, password} = MONGO_CREDENTIALS;
+
 export const mongoClient = new MongoClient(
   `mongodb+srv://${user}:${password}@fissa.yp209.mongodb.net/?retryWrites=true&w=majority`,
   {

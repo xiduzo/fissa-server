@@ -1,5 +1,5 @@
 import SpotifyWebApi from 'spotify-web-api-node';
-import {SPOTIFY_CREDENTIALS} from '../lib/constants/spotify';
+import {SPOTIFY_CREDENTIALS} from '../lib/constants/credentials';
 
 export const addTracksToPlaylistAsync = async (
   token: string,
