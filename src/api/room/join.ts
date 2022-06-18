@@ -2,6 +2,7 @@ import {VercelApiHandler} from '@vercel/node';
 import {MongoClient, ServerApiVersion} from 'mongodb';
 import {getRoomByPin, mongo} from '../../utils/database';
 import {ReasonPhrases, StatusCodes} from 'http-status-codes';
+import {Room} from '../../lib/interfaces/Room';
 
 const user = process.env.MONGO_DB_USER;
 const password = process.env.MONGO_DB_PASSWORD;
@@ -34,7 +35,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
           const rooms = database.collection('room');
           const query = {pin};
-          const room = await rooms.findOne(query);
+          const room = await rooms.findOne<Room>(query);
 
           if (!room) {
             response

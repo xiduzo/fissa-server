@@ -58,7 +58,7 @@ const handler: VercelApiHandler = async (request, response) => {
           };
 
           console.log('creating room', room);
-          const rooms = database.collection<Partial<Room>>('room');
+          const rooms = database.collection<Room>('room');
           await rooms.insertOne(room);
 
           response.status(StatusCodes.OK).json(room);
