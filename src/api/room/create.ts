@@ -1,9 +1,8 @@
 import {VercelApiHandler} from '@vercel/node';
-import {StatusCodes} from 'http-status-codes';
+import {ReasonPhrases, StatusCodes} from 'http-status-codes';
 import SpotifyWebApi from 'spotify-web-api-node';
 import {SPOTIFY_CREDENTIALS} from '../../lib/constants/credentials';
-import {Room} from '../../lib/interfaces/Room';
-import {mongo} from '../../utils/database';
+import {mongoCollectionAsync} from '../../utils/database';
 import {createPin} from '../../utils/pin';
 import {createPlaylistAsync} from '../../utils/spotify';
 
@@ -18,53 +17,49 @@ const handler: VercelApiHandler = async (request, response) => {
       break;
     case 'POST':
       const {playlistId, accessToken} = request.body;
+
+      let pin: string;
+      let blockedPins: string[] = [];
+
       const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
       spotifyApi.setAccessToken(accessToken);
 
       try {
-        let pin: string;
-        let blockedPins: string[] = [];
-        mongo(async (err, database) => {
-          if (err) {
-            response.status(StatusCodes.INTERNAL_SERVER_ERROR).send(err);
+        const collection = await mongoCollectionAsync('room');
+        do {
+          const _pin = createPin(blockedPins);
+          const room = await collection.findOne({pin: _pin});
+
+          if (room) {
+            blockedPins.push(_pin);
             return;
           }
 
-          do {
-            const collection = database.collection('room');
-            const _pin = createPin(blockedPins);
-            const room = await collection.findOne({pin: _pin});
+          pin = _pin;
+        } while (pin === undefined);
 
-            if (room) {
-              blockedPins.push(_pin);
-              return;
-            }
+        console.log('use available pin', pin);
 
-            pin = _pin;
-          } while (pin === undefined);
+        const createdPlaylistId = await createPlaylistAsync(
+          accessToken,
+          playlistId,
+        );
 
-          console.log('use available pin', pin);
+        const room = {
+          pin,
+          playlistId: createdPlaylistId,
+          currentIndex: 0,
+        };
 
-          const createdPlaylistId = await createPlaylistAsync(
-            accessToken,
-            playlistId,
-          );
+        console.log('creating room', room);
+        await collection.insertOne(room);
 
-          const room = {
-            pin,
-            playlistId: createdPlaylistId,
-            currentIndex: 0,
-          };
-
-          console.log('creating room', room);
-          const rooms = database.collection<Room>('room');
-          await rooms.insertOne(room);
-
-          response.status(StatusCodes.OK).json(room);
-        });
-      } catch (e) {
-        console.warn(e);
-        response.status(StatusCodes.INTERNAL_SERVER_ERROR).json(e);
+        response.status(StatusCodes.OK).json(room);
+      } catch (error) {
+        console.error(error);
+        response
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
       }
       break;
   }

@@ -3,7 +3,7 @@ import {ReasonPhrases, StatusCodes} from 'http-status-codes';
 import SpotifyWebApi from 'spotify-web-api-node';
 import {SPOTIFY_CREDENTIALS} from '../../lib/constants/credentials';
 import {Room} from '../../lib/interfaces/Room';
-import {mongo} from '../../utils/database';
+import {mongoCollectionAsync} from '../../utils/database';
 import {publish} from '../../utils/mqtt';
 import {addTracksToPlaylistAsync} from '../../utils/spotify';
 
@@ -21,47 +21,34 @@ const handler: VercelApiHandler = async (request, response) => {
       const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
       spotifyApi.setAccessToken(accessToken);
 
-      console.log(pin, accessToken, trackUris);
       try {
-        mongo(async (err, database) => {
-          if (err) {
-            response.status(StatusCodes.INTERNAL_SERVER_ERROR).send(err);
-            return;
-          }
+        const collection = await mongoCollectionAsync('room');
+        const room = await collection.findOne<Room>({pin});
 
-          const collection = database.collection('room');
+        if (!room) {
+          response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
+          return;
+        }
 
-          const room = await collection.findOne<Room>({pin});
+        await addTracksToPlaylistAsync(accessToken, room.playlistId, trackUris);
 
-          if (!room) {
-            response
-              .status(StatusCodes.NOT_FOUND)
-              .json(ReasonPhrases.NOT_FOUND);
-            return;
-          }
+        publish(
+          `fissa/room/${pin}/tracks/added`,
+          JSON.stringify(trackUris.length),
+          err => {
+            if (err) {
+              response.status(StatusCodes.INTERNAL_SERVER_ERROR).send(err);
+              return;
+            }
 
-          const numberOfAddedTracks = await addTracksToPlaylistAsync(
-            accessToken,
-            room.playlistId,
-            trackUris,
-          );
-
-          publish(
-            `fissa/room/${pin}/tracks/added`,
-            JSON.stringify(trackUris.length),
-            err => {
-              if (err) {
-                response.status(StatusCodes.INTERNAL_SERVER_ERROR).send(err);
-                return;
-              }
-
-              response.status(StatusCodes.OK).json(trackUris.length);
-            },
-          );
-        });
-      } catch (e) {
-        console.warn(e);
-        response.status(StatusCodes.INTERNAL_SERVER_ERROR).json(e);
+            response.status(StatusCodes.OK).json(trackUris.length);
+          },
+        );
+      } catch (error) {
+        console.error(error);
+        response
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
       }
       break;
   }

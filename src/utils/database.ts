@@ -1,6 +1,12 @@
-import {MongoClient, ServerApiVersion, Db, AnyError} from 'mongodb';
+import {
+  Collection,
+  CollectionOptions,
+  Db,
+  Document,
+  MongoClient,
+  ServerApiVersion,
+} from 'mongodb';
 import {MONGO_CREDENTIALS} from '../lib/constants/credentials';
-import {Room} from '../lib/interfaces/Room';
 
 const {user, password} = MONGO_CREDENTIALS;
 
@@ -11,22 +17,34 @@ export const mongoClient = new MongoClient(
   },
 );
 
-export const mongo = async (
-  callback: (err: AnyError, database: Db) => Promise<any>,
-) => {
-  const close = () => mongoClient.close();
-  try {
-    console.log('connecting to db', user, password);
-    mongoClient.connect((error, client) => {
-      if (error) {
-        console.log('can not connect to mongo', error);
-        callback(error, null).finally(close);
-        return;
-      }
+export const mongoDbAsync = async (): Promise<Db> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      mongoClient.connect(async (error, client) => {
+        if (error) {
+          await mongoClient.close();
+          reject(error);
+        }
 
-      callback(error, client.db('fissa')).finally(close);
-    });
-  } catch (e) {
-    console.error(e);
-  }
+        resolve(client.db('fissa'));
+      });
+    } catch (error) {
+      await mongoClient.close();
+      reject(error);
+    }
+  });
+};
+
+export const mongoCollectionAsync = async (
+  name: string,
+  options?: CollectionOptions,
+): Promise<Collection<Document>> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const database = await mongoDbAsync();
+      resolve(database.collection(name, options));
+    } catch (error) {
+      reject(error);
+    }
+  });
 };
