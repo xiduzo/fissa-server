@@ -9,7 +9,9 @@ export const publishAsync = async (
     try {
       mqtt
         .connect('mqtt://mqtt.mdd-tardis.net', MQTT_CREDENTIALS)
-        .publish(topic, message, error => (error ? reject(error) : resolve()));
+        .publish(topic, JSON.stringify(message), error =>
+          error ? reject(error) : resolve(),
+        );
     } catch (error) {
       reject(error);
     }
