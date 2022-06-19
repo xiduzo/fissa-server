@@ -16,11 +16,9 @@ export const mongoClient = new MongoClient(
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case 'GET':
-      response.send(
-        JSON.stringify({
-          app: 'room::join',
-        }),
-      );
+      response.json({
+        app: 'room::join',
+      });
       break;
     case 'POST':
       const {pin} = request.body;

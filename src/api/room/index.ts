@@ -3,11 +3,9 @@ import {VercelApiHandler} from '@vercel/node';
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case 'GET':
-      response.send(
-        JSON.stringify({
-          app: 'room',
-        }),
-      );
+      response.send({
+        app: 'room',
+      });
       break;
   }
 };

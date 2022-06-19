@@ -9,7 +9,6 @@ export const addTracksToPlaylistAsync = async (
   trackUris: string[],
 ): Promise<number> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-
   spotifyApi.setAccessToken(accessToken);
 
   // We can only add 100 tracks at a time due to spotify constraints
@@ -50,7 +49,6 @@ export const createPlaylistAsync = async (
       trackUris = trackObjects.map(track => track.uri);
     }
 
-    console.log('creating playlist', spotifyApi.getAccessToken());
     const playlist = await spotifyApi.createPlaylist('🟣🔴🟢🔵🟠🟡', {
       public: true,
       collaborative: true,
@@ -58,7 +56,6 @@ export const createPlaylistAsync = async (
       description: 'Playlist created with FISSA',
     });
 
-    console.log('adding tracks', trackUris.join(', '));
     if (trackUris.length > 0) {
       await addTracksToPlaylistAsync(accessToken, playlist.body.id, trackUris);
     }

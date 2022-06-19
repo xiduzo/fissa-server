@@ -1,7 +1,5 @@
 import {VercelApiHandler} from '@vercel/node';
 import {ReasonPhrases, StatusCodes} from 'http-status-codes';
-import SpotifyWebApi from 'spotify-web-api-node';
-import {SPOTIFY_CREDENTIALS} from '../../lib/constants/credentials';
 import {Room} from '../../lib/interfaces/Room';
 import {mongoCollectionAsync} from '../../utils/database';
 import {publishAsync} from '../../utils/mqtt';
@@ -10,16 +8,12 @@ import {addTracksToPlaylistAsync} from '../../utils/spotify';
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case 'GET':
-      response.send(
-        JSON.stringify({
-          app: 'room::tracks',
-        }),
-      );
+      response.json({
+        app: 'room::tracks',
+      });
       break;
     case 'POST':
       const {pin, accessToken, trackUris} = request.body;
-      const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-      spotifyApi.setAccessToken(accessToken);
 
       try {
         const collection = await mongoCollectionAsync('room');
