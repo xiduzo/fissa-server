@@ -4,7 +4,7 @@ import SpotifyWebApi from 'spotify-web-api-node';
 import {SPOTIFY_CREDENTIALS} from '../../lib/constants/credentials';
 import {Room} from '../../lib/interfaces/Room';
 import {mongoCollectionAsync} from '../../utils/database';
-import {publish} from '../../utils/mqtt';
+import {publishAsync} from '../../utils/mqtt';
 import {addTracksToPlaylistAsync} from '../../utils/spotify';
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -32,18 +32,12 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await addTracksToPlaylistAsync(accessToken, room.playlistId, trackUris);
 
-        publish(
+        await publishAsync(
           `fissa/room/${pin}/tracks/added`,
           JSON.stringify(trackUris.length),
-          err => {
-            if (err) {
-              response.status(StatusCodes.INTERNAL_SERVER_ERROR).send(err);
-              return;
-            }
-
-            response.status(StatusCodes.OK).json(trackUris.length);
-          },
         );
+
+        response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
         console.error(error);
         response

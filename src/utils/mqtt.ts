@@ -1,19 +1,17 @@
 import mqtt from 'mqtt';
 import {MQTT_CREDENTIALS} from '../lib/constants/credentials';
 
-export const publish = async (
+export const publishAsync = async (
   topic: string,
   message: string | Buffer,
-  callback?: mqtt.CloseCallback,
-) => {
-  const mqttClient = mqtt.connect(
-    'mqtt://mqtt.mdd-tardis.net',
-    MQTT_CREDENTIALS,
-  );
-
-  mqttClient.on('connect', () =>
-    mqttClient.publish(topic, message, err => {
-      callback(err);
-    }),
-  );
+): Promise<void> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      mqtt
+        .connect('mqtt://mqtt.mdd-tardis.net', MQTT_CREDENTIALS)
+        .publish(topic, message, error => (error ? reject(error) : resolve()));
+    } catch (error) {
+      reject(error);
+    }
+  });
 };
