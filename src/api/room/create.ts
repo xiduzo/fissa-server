@@ -3,6 +3,7 @@ import {ReasonPhrases, StatusCodes} from 'http-status-codes';
 import {mongoCollectionAsync} from '../../utils/database';
 import {createPin} from '../../utils/pin';
 import {createPlaylistAsync} from '../../utils/spotify';
+import fetch from 'node-fetch';
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {

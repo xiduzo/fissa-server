@@ -1,6 +1,7 @@
 import {VercelApiHandler} from '@vercel/node';
 import {StatusCodes} from 'http-status-codes';
 import SpotifyWebApi from 'spotify-web-api-node';
+import fetch from 'node-fetch';
 import {SPOTIFY_CREDENTIALS} from '../../lib/constants/credentials';
 
 const handler: VercelApiHandler = async (request, response) => {
