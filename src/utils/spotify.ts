@@ -50,9 +50,7 @@ export const createPlaylistAsync = async (
     }
 
     const playlist = await spotifyApi.createPlaylist('🟣🔴🟢🔵🟠🟡', {
-      public: true,
       collaborative: true,
-
       description: 'Playlist created with FISSA',
     });
 
