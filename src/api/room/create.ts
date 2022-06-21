@@ -47,10 +47,14 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await fetch('http://xiduzo.synology.me:8000/api/token', {
           method: 'POST',
-          body: {
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             accessToken,
             pin,
-          },
+          }),
         });
 
         response.status(StatusCodes.OK).json(room);
