@@ -3,7 +3,7 @@ import {MQTT_CREDENTIALS} from '../lib/constants/credentials';
 
 export const publishAsync = async (
   topic: string,
-  message: string | Buffer,
+  message: any,
 ): Promise<void> => {
   return new Promise(async (resolve, reject) => {
     try {

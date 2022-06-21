@@ -44,6 +44,14 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await collection.insertOne(room);
 
+        await fetch('http://xiduzo.synology.me:8000/api/token', {
+          method: 'POST',
+          body: JSON.stringify({
+            accessToken,
+            pin,
+          }),
+        });
+
         response.status(StatusCodes.OK).json(room);
       } catch (error) {
         console.error(error);

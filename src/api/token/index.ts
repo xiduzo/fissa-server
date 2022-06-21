@@ -17,6 +17,7 @@ const handler: VercelApiHandler = async (request, response) => {
         redirectUri: redirect_uri,
       });
       const tokens = await spotifyApi.authorizationCodeGrant(code);
+
       response.status(StatusCodes.OK).json(tokens.body);
       break;
   }
