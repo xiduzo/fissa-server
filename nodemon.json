@@ -2,5 +2,9 @@
   "watch": ["src"],
   "ext": "ts,json",
   "ignore": ["src/**/*.spec.ts"],
-  "exec": "ts-node ./src/index.ts"
+  "exec": "ts-node ./src/client-sync/index.ts",
+  "env": {
+    "MQTT_USER": "mdduser",
+    "MQTT_PASSWORD": "IoTMDD"
+  }
 }
