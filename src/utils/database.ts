@@ -5,16 +5,16 @@ import {
   Document,
   MongoClient,
   ServerApiVersion,
-} from 'mongodb';
-import {MONGO_CREDENTIALS} from '../lib/constants/credentials';
+} from "mongodb";
+import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
 
-const {user, password} = MONGO_CREDENTIALS;
+const { user, password } = MONGO_CREDENTIALS;
 
 export const mongoClient = new MongoClient(
   `mongodb+srv://${user}:${password}@fissa.yp209.mongodb.net/?retryWrites=true&w=majority`,
   {
     serverApi: ServerApiVersion.v1,
-  },
+  }
 );
 
 export const mongoDbAsync = async (): Promise<Db> => {
@@ -22,11 +22,10 @@ export const mongoDbAsync = async (): Promise<Db> => {
     try {
       mongoClient.connect(async (error, client) => {
         if (error) {
-          await mongoClient.close();
-          reject(error);
+          throw new Error(error.message);
         }
 
-        resolve(client.db('fissa'));
+        resolve(client.db("fissa"));
       });
     } catch (error) {
       await mongoClient.close();
@@ -37,7 +36,7 @@ export const mongoDbAsync = async (): Promise<Db> => {
 
 export const mongoCollectionAsync = async (
   name: string,
-  options?: CollectionOptions,
+  options?: CollectionOptions
 ): Promise<Collection<Document>> => {
   return new Promise(async (resolve, reject) => {
     try {

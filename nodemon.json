@@ -5,6 +5,10 @@
   "exec": "ts-node ./src/client-sync/index.ts",
   "env": {
     "MQTT_USER": "mdduser",
-    "MQTT_PASSWORD": "IoTMDD"
+    "MQTT_PASSWORD": "IoTMDD",
+    "MONGO_DB_PASSWORD": "enm8mr7lX5qjTqV1",
+    "MONGO_DB_USER": "xiduzo",
+    "SPOTIFY_CLIENT_SECRET": "bfce3e5d96074c21ac4db8b4991c2f37",
+    "SPOTIFY_CLIENT_ID": "a2a88c4618324942859ce3e1f888b938"
   }
 }
