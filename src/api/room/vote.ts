@@ -7,8 +7,8 @@ import { addTracksToPlaylistAsync, getMeAsync } from "../../utils/spotify";
 
 enum VoteState {
   None = "none",
-  Upvote = "upvote",
-  Downvote = "downvote",
+  Upvote = "up",
+  Downvote = "down",
 }
 
 type Vote = {
@@ -47,7 +47,9 @@ const handler: VercelApiHandler = async (request, response) => {
           collection.updateOne(
             { id: vote.id },
             {
-              state,
+              $set: {
+                state,
+              },
             }
           );
         } else {
