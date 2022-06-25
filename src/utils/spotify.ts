@@ -135,6 +135,19 @@ export const getMyCurrentPlaybackStateAsync = async (
   }
 };
 
+export const getMeAsync = async (accessToken: string) => {
+  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  spotifyApi.setAccessToken(accessToken);
+
+  try {
+    const response = await spotifyApi.getMe();
+
+    return response.body;
+  } catch (error: any) {
+    console.error("failed to get me", error);
+  }
+};
+
 export const setShuffleAsync = async (
   accessToken: string,
   shuffle = false
