@@ -63,7 +63,7 @@ const handler: VercelApiHandler = async (request, response) => {
         }
 
         const allVotes = await collection.find<Vote>({ pin }).toArray();
-        await publishAsync(`fissa/room/${pin}/votes`, allVotes.length);
+        await publishAsync(`fissa/room/${pin}/votes`, allVotes);
 
         // If the track has already been played -> add it to the bottom of the playlist
         // Rearrange tracks in playlist based on vote
