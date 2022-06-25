@@ -1,6 +1,9 @@
-import { Console } from "console";
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
+
+enum SpotifyLimits {
+  MaxTracksToAddPerRequest = 100,
+}
 
 export const addTracksToPlaylistAsync = async (
   accessToken: string,
@@ -9,25 +12,30 @@ export const addTracksToPlaylistAsync = async (
 
   trackUris: string[]
 ): Promise<number> => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
+  try {
+    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+    spotifyApi.setAccessToken(accessToken);
 
-  // We can only add 100 tracks at a time due to spotify constraints
-  const spotifyMaxTracksPerRequest = 100;
+    let tracksAdded = 0;
 
-  let tracksAdded = 0;
+    while (tracksAdded < trackUris.length) {
+      const nextTacksIndex =
+        tracksAdded + SpotifyLimits.MaxTracksToAddPerRequest;
 
-  while (tracksAdded < trackUris.length) {
-    await spotifyApi.addTracksToPlaylist(
-      playlistId,
+      await spotifyApi.addTracksToPlaylist(
+        playlistId,
 
-      trackUris.slice(tracksAdded, tracksAdded + spotifyMaxTracksPerRequest)
-    );
+        trackUris.slice(tracksAdded, nextTacksIndex)
+      );
 
-    tracksAdded += spotifyMaxTracksPerRequest;
+      tracksAdded = nextTacksIndex;
+    }
+
+    return tracksAdded;
+  } catch (e) {
+    console.error(e);
+    return 0;
   }
-
-  return tracksAdded;
 };
 
 type CreatePlaylistAsync = {
@@ -37,7 +45,6 @@ type CreatePlaylistAsync = {
 
 export const createPlaylistAsync = async (
   accessToken: string,
-
   playlistId?: string
 ): Promise<CreatePlaylistAsync> => {
   try {
@@ -78,7 +85,6 @@ export const createPlaylistAsync = async (
 
 const getPlaylistTracksAsync = async (
   accessToken: string,
-
   playlistId: string
 ): Promise<SpotifyApi.TrackObjectFull[]> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
@@ -133,11 +139,14 @@ export const setShuffleAsync = async (
   accessToken: string,
   shuffle = false
 ): Promise<void> => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  try {
+    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+    spotifyApi.setAccessToken(accessToken);
 
-  spotifyApi.setAccessToken(accessToken);
-
-  await spotifyApi.setShuffle(shuffle);
+    await spotifyApi.setShuffle(shuffle);
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const poorMansCurrentIndexAsync = async (
@@ -145,16 +154,23 @@ export const poorMansCurrentIndexAsync = async (
   playlistId: string,
   currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
 ): Promise<number> => {
-  const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-  const trackIds = tracks.map((track) => track.id);
+  try {
+    const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+    const trackIds = tracks.map((track) => track.id);
 
-  const index = trackIds.reverse().indexOf(currentlyPlaying.item.id);
+    // We reverse because we want to look from the bottom up
+    const index = trackIds.reverse().indexOf(currentlyPlaying.item.id);
+    const lastIndex = tracks.length - 1;
 
-  console.log(tracks.length - 1, index, tracks.length - 1 - index);
-  if (index === -1) {
-    // We are not in the playlist anymore
+    console.log(lastIndex, index, lastIndex - index);
+    if (index === -1) {
+      // We are not in the playlist anymore
+      return -1;
+    }
+
+    return lastIndex - index;
+  } catch (e) {
+    console.error(e);
     return -1;
   }
-
-  return tracks.length - 1 - index;
 };

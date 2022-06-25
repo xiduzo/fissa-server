@@ -74,9 +74,9 @@ const updateRoom = async (
 
   const diff = Math.abs(currentlyPlaying.progress_ms - state.progress_ms);
 
-  // Just sync the room once every 3 spotify pings
+  // Just sync the room once every X spotify pings
   // The rest of the progress should be handled by the client
-  if (diff > SPOTIFY_PING_TIME * 3) {
+  if (diff > SPOTIFY_PING_TIME * 10) {
     await publish(state, room, currentlyPlaying);
     return;
   }
