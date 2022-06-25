@@ -13,7 +13,7 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { pin, accessToken, trackUris } = request.body;
+      const { pin, trackUris } = request.body;
 
       try {
         const collection = await mongoCollectionAsync("room");
@@ -29,7 +29,12 @@ const handler: VercelApiHandler = async (request, response) => {
         //
         // if track already has been played -> add it to the bottom of the list
         // else vote for the track
-        await addTracksToPlaylistAsync(accessToken, room.playlistId, trackUris);
+        // TODO: give specific error if the room owner access token doesn't work anymore
+        await addTracksToPlaylistAsync(
+          room.accessToken,
+          room.playlistId,
+          trackUris
+        );
 
         await publishAsync(`fissa/room/${pin}/tracks/added`, trackUris.length);
 
