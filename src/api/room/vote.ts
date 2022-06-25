@@ -18,6 +18,18 @@ type Vote = {
   state: VoteState;
 };
 
+const countVotes = (votes: Vote[]) => {
+  const tracks = votes.reduce((acc, vote) => {
+    const currentVote = acc[vote.id] ?? { total: 0 };
+
+    currentVote.total += vote.state === VoteState.Upvote ? 1 : -1;
+    return {
+      ...acc,
+      [vote.id]: currentVote,
+    };
+  }, {});
+};
+
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case "GET":
@@ -63,7 +75,7 @@ const handler: VercelApiHandler = async (request, response) => {
         }
 
         const allVotes = await collection.find<Vote>({ pin }).toArray();
-        await publishAsync(`fissa/room/${pin}/votes`, allVotes);
+        await publishAsync(`fissa/room/${pin}/votes`, countVotes(allVotes));
 
         // If the track has already been played -> add it to the bottom of the playlist
         // Rearrange tracks in playlist based on vote
