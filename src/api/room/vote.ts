@@ -56,7 +56,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         // See if user voted before -> update vote
         if (vote) {
-          collection.updateOne(
+          await collection.updateOne(
             { id: vote.id },
             {
               $set: {
@@ -66,7 +66,7 @@ const handler: VercelApiHandler = async (request, response) => {
           );
         } else {
           // If user has not voted before -> add vote
-          collection.insertOne({
+          await collection.insertOne({
             pin,
             createdBy: me.id,
             trackUri,
@@ -76,6 +76,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         const allVotes = await collection.find<Vote>({ pin }).toArray();
         const counted = countVotes(allVotes);
+        console.log(counted);
         await publishAsync(`fissa/room/${pin}/votes`, counted);
 
         // If the track has already been played -> add it to the bottom of the playlist
