@@ -143,12 +143,12 @@ export const setShuffleAsync = async (
 export const poorMansCurrentIndexAsync = async (
   accessToken: string,
   playlistId: string,
-  current: SpotifyApi.CurrentlyPlayingResponse
+  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
 ): Promise<number> => {
   const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
   const trackIds = tracks.map((track) => track.id);
 
-  const index = trackIds.reverse().indexOf(current.item.id);
+  const index = trackIds.reverse().indexOf(currentlyPlaying.item.id);
 
   console.log(tracks.length - 1, index, tracks.length - 1 - index);
   if (index === -1) {

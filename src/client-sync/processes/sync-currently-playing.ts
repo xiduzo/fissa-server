@@ -1,5 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import cache from "node-cache";
+import { Room } from "../../lib/interfaces/Room";
 import { publishAsync } from "../../utils/mqtt";
 import {
   getMyCurrentPlaybackStateAsync,
@@ -13,94 +14,108 @@ type State = {
   currentIndex: number;
 };
 
-type PinWithToken = {
-  pin: string;
-  accessToken: string;
-  playlistId: string;
-};
-
-// TODO: move this to cache
+// TODO: move this to a share cache?
 const states = new Map<string, State>();
 
 export const syncCurrentlyPlaying = (appCache: cache) => {
-  setInterval(async () => {
-    const pins = appCache.get<PinWithToken[]>("pins");
-    pins?.forEach(async (item) => {
-      const { pin, accessToken, playlistId } = item;
-      try {
-        if (!accessToken) {
-          // Somehow we have an active room without an access token
-          return;
-        }
+  const rooms = appCache.get<Room[]>("rooms");
+  rooms?.forEach(async (room) => {
+    const { accessToken } = room;
+    if (!accessToken) {
+      // Somehow we have an active room without an access token
+      return;
+    }
 
-        const myCurrentPlayingTrack = await getMyCurrentPlaybackStateAsync(
-          accessToken
-        );
+    try {
+      const myCurrentPlayingTrack = await getMyCurrentPlaybackStateAsync(
+        accessToken
+      );
 
-        if (!myCurrentPlayingTrack) return;
+      if (!myCurrentPlayingTrack) return;
 
-        // TODO: check if current playlist is room playlist?
-
-        const {
-          is_playing,
-          progress_ms,
-          item: { id },
-        } = myCurrentPlayingTrack;
-
-        const previousState = states.get(pin);
-
-        const state = {
-          id,
-          progress_ms: previousState?.progress_ms ?? progress_ms,
-          is_playing,
-          currentIndex: 0,
-        };
-        states.set(pin, state);
-
-        const publish = async (pin: string) => {
-          state.progress_ms = progress_ms;
-          const currentIndex = await poorMansCurrentIndexAsync(
-            accessToken,
-            playlistId,
-            myCurrentPlayingTrack
-          );
-          // TODO: if current index = -1, we are not in the playlist anymore
-          // Start the playlist from the start?
-          // Creator of the playlist should stop party from room?
-          // TODO: update current index in DB?
-          state.currentIndex = currentIndex;
-          await publishAsync(`fissa/room/${pin}/tracks/active`, state);
-        };
-
-        if (!previousState) {
-          return await publish(pin);
-        }
-
-        if (state.id !== previousState.id) {
-          return await publish(pin);
-        }
-        if (state.is_playing !== previousState.is_playing) {
-          return await publish(pin);
-        }
-
-        const diff = Math.abs(progress_ms - previousState.progress_ms);
-
-        if (diff > 30_000) {
-          return publish(pin);
-        }
-      } catch (error) {
-        const { statusCode, message } = error;
-        switch (statusCode) {
-          case StatusCodes.UNAUTHORIZED:
-            console.warn(message);
-            break;
-          default:
-            console.warn(message);
-            break;
-        }
+      await updateRoom(myCurrentPlayingTrack, room);
+    } catch (error) {
+      const { statusCode, message } = error;
+      switch (statusCode) {
+        case StatusCodes.UNAUTHORIZED:
+          console.warn(message);
+          break;
+        default:
+          console.warn(message);
+          break;
       }
-    });
+    }
+  });
 
-    // Try and not overload the spotify requests limit
-  }, 2_000);
+  setTimeout(() => syncCurrentlyPlaying(appCache), 2_000);
+};
+
+const updateRoom = async (
+  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse,
+  room: Room
+) => {
+  const { state, previousState } = getState(room.pin, currentlyPlaying);
+
+  if (!previousState) {
+    await publish(state, room, currentlyPlaying);
+    return;
+  }
+
+  if (state.id !== previousState.id) {
+    await publish(state, room, currentlyPlaying);
+    return;
+  }
+  if (state.is_playing !== previousState.is_playing) {
+    await publish(state, room, currentlyPlaying);
+    return;
+  }
+
+  const diff = Math.abs(currentlyPlaying.progress_ms - state.progress_ms);
+
+  if (diff > 30_000) {
+    await publish(state, room, currentlyPlaying);
+    return;
+  }
+};
+
+const publish = async (
+  state: State,
+  room: Room,
+  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
+) => {
+  state.progress_ms = currentlyPlaying.progress_ms; // Update state
+  const currentIndex = await poorMansCurrentIndexAsync(
+    room.accessToken,
+    room.playlistId,
+    currentlyPlaying
+  );
+  // TODO: if current index = -1, we are not in the playlist anymore
+  // Start the playlist from the start?
+  // Creator of the playlist should stop party from room?
+  state.currentIndex = currentIndex;
+  await publishAsync(`fissa/room/${room.pin}/tracks/active`, state);
+};
+
+const getState = (
+  pin: string,
+  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
+) => {
+  const {
+    is_playing,
+    progress_ms,
+    item: { id },
+  } = currentlyPlaying;
+
+  const previousState = states.get(pin);
+
+  const state: State = {
+    id,
+    progress_ms: previousState?.progress_ms ?? progress_ms,
+    is_playing,
+    currentIndex: 0,
+  };
+
+  states.set(pin, state);
+
+  return { state, previousState };
 };
