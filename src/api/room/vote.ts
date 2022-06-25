@@ -16,16 +16,17 @@ type Vote = {
   pin: string;
   createdBy: string;
   state: VoteState;
+  trackUri: string;
 };
 
 const countVotes = (votes: Vote[]) => {
   return votes.reduce((acc, vote) => {
-    const currentVote = acc[vote.id] ?? { total: 0 };
+    const currentVote = acc[vote.trackUri] ?? { total: 0 };
 
     currentVote.total += vote.state === VoteState.Upvote ? 1 : -1;
     return {
       ...acc,
-      [vote.id]: currentVote,
+      [vote.trackUri]: currentVote,
     };
   }, {});
 };
@@ -54,6 +55,7 @@ const handler: VercelApiHandler = async (request, response) => {
           trackUri,
         });
 
+        console.log(vote);
         // See if user voted before -> update vote
         if (vote) {
           await collection.updateOne(
