@@ -12,7 +12,7 @@ enum VoteState {
 }
 
 type Vote = {
-  id?: string;
+  _id?: string;
   pin: string;
   createdBy: string;
   state: VoteState;
@@ -59,7 +59,7 @@ const handler: VercelApiHandler = async (request, response) => {
         // See if user voted before -> update vote
         if (vote) {
           await collection.updateOne(
-            { id: vote.id },
+            { _id: vote._id },
             {
               $set: {
                 state,
