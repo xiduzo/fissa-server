@@ -29,8 +29,9 @@ const handler: VercelApiHandler = async (request, response) => {
         //
         // if track already has been played -> add it to the bottom of the list
         // else vote for the track
-        // TODO: give specific error if the room owner access token doesn't work anymore
+
         await addTracksToPlaylistAsync(
+          // TODO: give specific error if the room owner access token doesn't work anymore
           room.accessToken,
           room.playlistId,
           trackUris

@@ -20,15 +20,14 @@ const handler: VercelApiHandler = async (request, response) => {
       try {
         const collection = await mongoCollectionAsync("room");
         do {
-          const _pin = createPin(blockedPins);
-          const room = await collection.findOne({ pin: _pin });
+          pin = createPin(blockedPins);
+          const room = await collection.findOne({ pin });
 
           if (room) {
-            blockedPins.push(_pin);
+            blockedPins.push(pin);
+            pin = undefined;
             return;
           }
-
-          pin = _pin;
         } while (pin === undefined);
 
         const { playlistId: createdPlaylistId, createdBy } =
