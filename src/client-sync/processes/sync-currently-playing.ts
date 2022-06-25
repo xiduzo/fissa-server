@@ -17,6 +17,8 @@ type State = {
 // TODO: move this to a share cache?
 const states = new Map<string, State>();
 
+const SPOTIFY_PING_TIME = 2_000;
+
 export const syncCurrentlyPlaying = (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
   rooms?.forEach(async (room) => {
@@ -47,7 +49,7 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
     }
   });
 
-  setTimeout(() => syncCurrentlyPlaying(appCache), 2_000);
+  setTimeout(() => syncCurrentlyPlaying(appCache), SPOTIFY_PING_TIME);
 };
 
 const updateRoom = async (
@@ -72,7 +74,9 @@ const updateRoom = async (
 
   const diff = Math.abs(currentlyPlaying.progress_ms - state.progress_ms);
 
-  if (diff > 30_000) {
+  // Just sync the room once every 3 spotify pings
+  // The rest of the progress should be handled by the client
+  if (diff > SPOTIFY_PING_TIME * 3) {
     await publish(state, room, currentlyPlaying);
     return;
   }
