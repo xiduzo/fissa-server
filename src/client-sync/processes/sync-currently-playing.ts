@@ -101,7 +101,7 @@ const publish = async (
   // Creator of the playlist should stop party from room?
 
   const collection = await mongoCollectionAsync("room");
-  collection.updateOne({ pin: room.pin }, { $set: { currentIndex } });
+  await collection.updateOne({ pin: room.pin }, { $set: { currentIndex } });
   await publishAsync(`fissa/room/${room.pin}/tracks/active`, state);
 };
 
