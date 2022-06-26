@@ -3,7 +3,12 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
-import { addTracksToPlaylistAsync } from "../../utils/spotify";
+import {
+  addTracksToPlaylistAsync,
+  getPlaylistTracksAsync,
+  trackIndex,
+  updatePlaylistTrackIndexAsync,
+} from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -24,18 +29,42 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        // TODO: filter out tracks that are already in the playlist
-        // Either give them an upvote or place them at the bottom of the playlist
-        //
-        // if track already has been played -> add it to the bottom of the list
-        // else vote for the track
+        const tracks = await getPlaylistTracksAsync(
+          room.accessToken,
+          room.playlistId
+        );
+
+        // filter out tracks that are already in the playlist
+        const tracksAlreadyInPlaylist = tracks
+          .filter((track) => trackUris.includes(track.uri))
+          .map((track) => track.uri);
 
         await addTracksToPlaylistAsync(
           // TODO: give specific error if the room owner access token doesn't work anymore
           room.accessToken,
           room.playlistId,
-          trackUris
+          (trackUris as string[]).filter(
+            (trackUri) => !tracksAlreadyInPlaylist.includes(trackUri)
+          )
         );
+
+        // TODO: Either give them an upvote or place them at the bottom of the playlist
+        tracksAlreadyInPlaylist.forEach(async (uri) => {
+          const index = trackIndex(tracks, uri);
+          if (index < room.currentIndex) {
+            // TODO: if track already has been played -> add it to the bottom of the list
+            await updatePlaylistTrackIndexAsync(
+              room.playlistId,
+              room.accessToken,
+              [uri],
+              index,
+              tracks.length
+            );
+          } else {
+            // TODO: else vote for the track
+            // Vote on track
+          }
+        });
 
         await publishAsync(`fissa/room/${pin}/tracks/added`, trackUris.length);
 

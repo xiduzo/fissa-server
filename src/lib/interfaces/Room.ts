@@ -3,4 +3,5 @@ export interface Room {
   playlistId: string;
   pin: string;
   accessToken: string;
+  currentIndex: number;
 }

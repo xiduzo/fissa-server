@@ -1,6 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
+import { mongoCollectionAsync } from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
 import {
   getMyCurrentPlaybackStateAsync,
@@ -93,10 +94,14 @@ const publish = async (
     room.playlistId,
     currentlyPlaying
   );
+  state.currentIndex = currentIndex;
+
   // TODO: if current index = -1, we are not in the playlist anymore
   // Start the playlist from the start?
   // Creator of the playlist should stop party from room?
-  state.currentIndex = currentIndex;
+
+  const collection = await mongoCollectionAsync("room");
+  collection.updateOne({ pin: room.pin }, { $set: { currentIndex } });
   await publishAsync(`fissa/room/${room.pin}/tracks/active`, state);
 };
 

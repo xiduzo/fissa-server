@@ -1,9 +1,8 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
-import { addTracksToPlaylistAsync, getMeAsync } from "../../utils/spotify";
+import { getMeAsync } from "../../utils/spotify";
 
 enum VoteState {
   None = "none",

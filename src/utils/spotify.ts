@@ -83,7 +83,7 @@ export const createPlaylistAsync = async (
   }
 };
 
-const getPlaylistTracksAsync = async (
+export const getPlaylistTracksAsync = async (
   accessToken: string,
   playlistId: string
 ): Promise<SpotifyApi.TrackObjectFull[]> => {
@@ -169,21 +169,53 @@ export const poorMansCurrentIndexAsync = async (
 ): Promise<number> => {
   try {
     const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-    const trackIds = tracks.map((track) => track.id);
-
-    // We reverse because we want to look from the bottom up
-    const index = trackIds.reverse().indexOf(currentlyPlaying.item.id);
-    const lastIndex = tracks.length - 1;
-
-    console.log(lastIndex, index, lastIndex - index);
-    if (index === -1) {
-      // We are not in the playlist anymore
-      return -1;
-    }
-
-    return lastIndex - index;
+    const index = trackIndex(tracks, currentlyPlaying.item.uri);
+    return index;
   } catch (e) {
     console.error(e);
     return -1;
+  }
+};
+
+export const trackIndex = (
+  tracks: SpotifyApi.TrackObjectFull[],
+  trackUri: string
+): number => {
+  const trackUris = tracks.map((track) => track.uri);
+
+  // We reverse because we want to look from the bottom up
+  const index = trackUris.reverse().indexOf(trackUri);
+  const lastIndex = tracks.length - 1;
+
+  console.log(lastIndex, index, lastIndex - index);
+  if (index === -1) {
+    // We are not in the playlist anymore
+    return -1;
+  }
+
+  return lastIndex - index;
+};
+
+export const updatePlaylistTrackIndexAsync = async (
+  playlistId: string,
+  accessToken: string,
+  uris: string[],
+  rangeStart: number,
+  insertBefore: number
+) => {
+  try {
+    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+    spotifyApi.setAccessToken(accessToken);
+
+    await spotifyApi.reorderTracksInPlaylist(
+      playlistId,
+      rangeStart,
+      insertBefore,
+      {
+        range_length: uris.length,
+      }
+    );
+  } catch (e) {
+    console.error(e);
   }
 };
