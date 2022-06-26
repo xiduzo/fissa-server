@@ -1,10 +1,12 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
-import { mongoCollectionAsync } from "../../utils/database";
+import { VoteState } from "../../lib/interfaces/Vote";
+import { mongoCollectionAsync, voteAsync } from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
 import {
   addTracksToPlaylistAsync,
+  getMeAsync,
   getPlaylistTracksAsync,
   trackIndex,
   updatePlaylistTrackIndexAsync,
@@ -18,7 +20,7 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { pin, trackUris } = request.body;
+      const { pin, trackUris, accessToken } = request.body;
 
       try {
         const collection = await mongoCollectionAsync("room");
@@ -66,6 +68,15 @@ const handler: VercelApiHandler = async (request, response) => {
               tracks.length
             );
           } else {
+            const me = await getMeAsync(accessToken);
+            console.log(
+              `up vote for tracks as ${me.display_name}`,
+              tracksAlreadyInPlaylist
+            );
+            tracksAlreadyInPlaylist.forEach(async (uri) => {
+              console.log("up vote for track", uri);
+              await voteAsync(room.pin, me.id, uri, VoteState.Upvote);
+            });
             // TODO: else vote for the track
             // Vote on track
           }

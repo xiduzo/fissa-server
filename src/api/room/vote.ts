@@ -1,22 +1,9 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { mongoCollectionAsync } from "../../utils/database";
+import { Vote, VoteState } from "../../lib/interfaces/Vote";
+import { mongoCollectionAsync, voteAsync } from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
 import { getMeAsync } from "../../utils/spotify";
-
-enum VoteState {
-  None = "none",
-  Upvote = "up",
-  Downvote = "down",
-}
-
-type Vote = {
-  _id?: string;
-  pin: string;
-  createdBy: string;
-  state: VoteState;
-  trackUri: string;
-};
 
 const countVotes = (votes: Vote[]) => {
   return votes.reduce((acc, vote) => {
@@ -47,34 +34,9 @@ const handler: VercelApiHandler = async (request, response) => {
 
       try {
         const me = await getMeAsync(accessToken);
+        const vote = await voteAsync(pin, me.id, trackUri, state);
+
         const collection = await mongoCollectionAsync("votes");
-        const vote = await collection.findOne<Vote>({
-          pin,
-          createdBy: me.id,
-          trackUri,
-        });
-
-        console.log(vote);
-        // See if user voted before -> update vote
-        if (vote) {
-          await collection.updateOne(
-            { _id: vote._id },
-            {
-              $set: {
-                state,
-              },
-            }
-          );
-        } else {
-          // If user has not voted before -> add vote
-          await collection.insertOne({
-            pin,
-            createdBy: me.id,
-            trackUri,
-            state,
-          });
-        }
-
         const allVotes = await collection.find<Vote>({ pin }).toArray();
         const counted = countVotes(allVotes);
         console.log(counted);

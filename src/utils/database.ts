@@ -7,6 +7,7 @@ import {
   ServerApiVersion,
 } from "mongodb";
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
+import { Vote, VoteState } from "../lib/interfaces/Vote";
 
 const { user, password } = MONGO_CREDENTIALS;
 
@@ -42,6 +43,52 @@ export const mongoCollectionAsync = async (
     try {
       const database = await mongoDbAsync();
       resolve(database.collection(name, options));
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+export const voteAsync = async (
+  pin: string,
+  createdBy: string,
+  trackUri: string,
+  state: VoteState
+): Promise<Partial<Vote>> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const collection = await mongoCollectionAsync("votes");
+      const _vote: Partial<Vote> = {
+        pin,
+        createdBy,
+        trackUri,
+      };
+      const vote = await collection.findOne<Vote>(_vote);
+
+      console.log(vote);
+      // See if user voted before -> update vote
+      if (vote) {
+        await collection.updateOne(
+          { _id: vote._id },
+          {
+            $set: {
+              state,
+            },
+          }
+        );
+        resolve(vote);
+      } else {
+        // TODO: do we need this else before after we resolve?
+        // If user has not voted before -> add vote
+        await collection.insertOne({
+          pin,
+          createdBy,
+          trackUri,
+          state,
+        });
+
+        resolve(_vote);
+      }
     } catch (error) {
       reject(error);
     }
