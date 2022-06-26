@@ -45,7 +45,7 @@ const handler: VercelApiHandler = async (request, response) => {
           (trackUri) => !tracksAlreadyInPlaylist.includes(trackUri)
         );
 
-        console.log("allready in playlist", tracksAlreadyInPlaylist);
+        console.log("already in playlist", tracksAlreadyInPlaylist);
         console.log("tracksToAdd", tracksToAdd);
 
         await addTracksToPlaylistAsync(
@@ -59,7 +59,9 @@ const handler: VercelApiHandler = async (request, response) => {
         tracksAlreadyInPlaylist.forEach(async (uri) => {
           const index = trackIndex(tracks, uri);
           if (index < room.currentIndex) {
+            console.log("update index", uri, index, room.currentIndex);
             // TODO: if track already has been played -> add it to the bottom of the list
+            // TODO: also upvote?
             await updatePlaylistTrackIndexAsync(
               room.playlistId,
               room.accessToken,

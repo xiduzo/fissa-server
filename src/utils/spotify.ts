@@ -24,7 +24,6 @@ export const addTracksToPlaylistAsync = async (
 
       await spotifyApi.addTracksToPlaylist(
         playlistId,
-
         trackUris.slice(tracksAdded, nextTacksIndex)
       );
 

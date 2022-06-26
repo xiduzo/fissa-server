@@ -3,7 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
 import { mongoCollectionAsync } from "../../utils/database";
-import { setShuffleAsync } from "../../utils/spotify";
+import { getMeAsync, setShuffleAsync } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -20,13 +20,13 @@ const handler: VercelApiHandler = async (request, response) => {
       spotifyApi.setAccessToken(request.body.access_token);
       spotifyApi.setRefreshToken(request.body.refresh_token);
 
-      const me = await spotifyApi.getMe();
       const tokens = await spotifyApi.refreshAccessToken();
 
       const collection = await mongoCollectionAsync("room");
       const accessToken = tokens.body.access_token;
+      const me = await getMeAsync(accessToken);
       const result = await collection.updateMany(
-        { createdBy: me.body.id.toString() },
+        { createdBy: me?.id },
         { $set: { accessToken } }
       );
 
