@@ -39,13 +39,18 @@ const handler: VercelApiHandler = async (request, response) => {
           .filter((track) => trackUris.includes(track.uri))
           .map((track) => track.uri);
 
+        const tracksToAdd = (trackUris as string[]).filter(
+          (trackUri) => !tracksAlreadyInPlaylist.includes(trackUri)
+        );
+
+        console.log("allready in playlist", tracksAlreadyInPlaylist);
+        console.log("tracksToAdd", tracksToAdd);
+
         await addTracksToPlaylistAsync(
           // TODO: give specific error if the room owner access token doesn't work anymore
           room.accessToken,
           room.playlistId,
-          (trackUris as string[]).filter(
-            (trackUri) => !tracksAlreadyInPlaylist.includes(trackUri)
-          )
+          tracksToAdd
         );
 
         // TODO: Either give them an upvote or place them at the bottom of the playlist
