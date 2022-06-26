@@ -182,17 +182,11 @@ export const trackIndex = (
 ): number => {
   const trackUris = tracks.map((track) => track.uri);
 
-  // We reverse because we want to look from the bottom up
-  const index = trackUris.reverse().indexOf(trackUri);
-  const lastIndex = tracks.length - 1;
+  const index = trackUris.indexOf(trackUri);
 
-  console.log(lastIndex, index, lastIndex - index);
-  if (index === -1) {
-    // We are not in the playlist anymore
-    return -1;
-  }
+  console.log("track index", index);
 
-  return lastIndex - index;
+  return index;
 };
 
 export const updatePlaylistTrackIndexAsync = async (
