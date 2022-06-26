@@ -100,6 +100,8 @@ const publish = async (
   // Start the playlist from the start?
   // Creator of the playlist should stop party from room?
 
+  // TODO: invalidate all tracks previous than current index
+
   const collection = await mongoCollectionAsync("room");
   await collection.updateOne({ pin: room.pin }, { $set: { currentIndex } });
   await publishAsync(`fissa/room/${room.pin}/tracks/active`, state);

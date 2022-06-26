@@ -56,31 +56,33 @@ const handler: VercelApiHandler = async (request, response) => {
         );
 
         // TODO: Either give them an upvote or place them at the bottom of the playlist
-        tracksAlreadyInPlaylist.forEach(async (uri) => {
-          const index = trackIndex(tracks, uri);
-          if (index < room.currentIndex) {
-            console.log("update index", uri, index, room.currentIndex);
-            // if track already has been played -> add it to the bottom of the list
-            // TODO: also upvote?
-            await updatePlaylistTrackIndexAsync(
-              room.playlistId,
-              room.accessToken,
-              [uri],
-              index,
-              tracks.length
-            );
-          }
+        await Promise.all(
+          tracksAlreadyInPlaylist.map(async (uri) => {
+            const index = trackIndex(tracks, uri);
+            if (index < room.currentIndex) {
+              console.log("update index", uri, index, room.currentIndex);
+              // if track already has been played -> add it to the bottom of the list
+              // TODO: also upvote?
+              await updatePlaylistTrackIndexAsync(
+                room.playlistId,
+                room.accessToken,
+                [uri],
+                index,
+                tracks.length
+              );
+            }
 
-          const me = await getMeAsync(accessToken);
-          console.log(
-            `up vote for tracks as ${me.display_name}`,
-            tracksAlreadyInPlaylist
-          );
-          console.log("up vote for track", uri);
-          await voteAsync(room.pin, me.id, uri, VoteState.Upvote);
-          // TODO: else vote for the track
-          // Vote on track
-        });
+            const me = await getMeAsync(accessToken);
+            console.log(
+              `up vote for tracks as ${me.display_name}`,
+              tracksAlreadyInPlaylist
+            );
+            console.log("up vote for track", uri);
+            await voteAsync(room.pin, me.id, uri, VoteState.Upvote);
+            // TODO: else vote for the track
+            // Vote on track
+          })
+        );
 
         await publishAsync(`fissa/room/${pin}/tracks/added`, trackUris.length);
 
