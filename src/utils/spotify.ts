@@ -203,6 +203,9 @@ export const updatePlaylistTrackIndexAsync = async (
   rangeStart: number,
   insertBefore: number
 ) => {
+  console.log(
+    `update ${playlistId}, move ${uris.length} tracks from ${rangeStart} to ${insertBefore}`
+  );
   try {
     const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
     spotifyApi.setAccessToken(accessToken);
