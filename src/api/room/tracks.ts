@@ -84,8 +84,8 @@ const handler: VercelApiHandler = async (request, response) => {
           })
         );
 
+        console.log("publish tracks added");
         await publishAsync(`fissa/room/${pin}/tracks/added`, trackUris.length);
-
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
         console.error(error);
