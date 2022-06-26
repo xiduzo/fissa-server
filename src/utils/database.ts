@@ -62,6 +62,26 @@ const countVotes = (votes: Vote[]) => {
   }, {});
 };
 
+const saveVote = async (
+  collection: Collection<Document>,
+  state: VoteState,
+  vote?: Vote
+) => {
+  if (!vote) {
+    await collection.insertOne(vote as Omit<Vote, "_id">);
+    return;
+  }
+
+  await collection.updateOne(
+    { _id: vote._id },
+    {
+      $set: {
+        state,
+      },
+    }
+  );
+};
+
 export const voteAsync = async (
   pin: string,
   createdBy: string,
@@ -78,35 +98,12 @@ export const voteAsync = async (
       };
       const vote = await collection.findOne<Vote>(_vote);
 
-      console.log(vote);
-      // See if user voted before -> update vote
-      if (vote) {
-        await collection.updateOne(
-          { _id: vote._id },
-          {
-            $set: {
-              state,
-            },
-          }
-        );
-      } else {
-        console.log(
-          `vote on track by ${createdBy} on room ${pin} with state ${state}`
-        );
-
-        // TODO: do we need this else before after we resolve?
-        // If user has not voted before -> add vote
-        await collection.insertOne({
-          pin,
-          createdBy,
-          trackUri,
-          state,
-        });
-      }
+      await saveVote(collection, state, vote);
 
       const allVotes = await collection.find<Vote>({ pin }).toArray();
       const counted = countVotes(allVotes);
-      console.log(counted, allVotes);
+
+      // TODO reorder playlist based on votes
       await publishAsync(`fissa/room/${pin}/votes`, counted);
 
       resolve(_vote);
