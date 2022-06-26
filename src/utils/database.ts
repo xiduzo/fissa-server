@@ -8,6 +8,7 @@ import {
 } from "mongodb";
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
 import { Vote, VoteState } from "../lib/interfaces/Vote";
+import { publishAsync } from "./mqtt";
 
 const { user, password } = MONGO_CREDENTIALS;
 
@@ -49,6 +50,18 @@ export const mongoCollectionAsync = async (
   });
 };
 
+const countVotes = (votes: Vote[]) => {
+  return votes.reduce((acc, vote) => {
+    const currentVote = acc[vote.trackUri] ?? { total: 0 };
+
+    currentVote.total += vote.state === VoteState.Upvote ? 1 : -1;
+    return {
+      ...acc,
+      [vote.trackUri]: currentVote,
+    };
+  }, {});
+};
+
 export const voteAsync = async (
   pin: string,
   createdBy: string,
@@ -76,7 +89,6 @@ export const voteAsync = async (
             },
           }
         );
-        resolve(vote);
       } else {
         console.log(
           `vote on track by ${createdBy} on room ${pin} with state ${state}`
@@ -90,9 +102,14 @@ export const voteAsync = async (
           trackUri,
           state,
         });
-
-        resolve(_vote);
       }
+
+      const allVotes = await collection.find<Vote>({ pin }).toArray();
+      const counted = countVotes(allVotes);
+      console.log(counted, allVotes);
+      await publishAsync(`fissa/room/${pin}/votes`, counted);
+
+      resolve(_vote);
     } catch (error) {
       reject(error);
     }

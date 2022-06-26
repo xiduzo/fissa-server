@@ -36,12 +36,6 @@ const handler: VercelApiHandler = async (request, response) => {
         const me = await getMeAsync(accessToken);
         const vote = await voteAsync(pin, me.id, trackUri, state);
 
-        const collection = await mongoCollectionAsync("votes");
-        const allVotes = await collection.find<Vote>({ pin }).toArray();
-        const counted = countVotes(allVotes);
-        console.log(counted, allVotes);
-        await publishAsync(`fissa/room/${pin}/votes`, counted);
-
         // If the track has already been played -> add it to the bottom of the playlist
         // Rearrange tracks in playlist based on vote
         response.status(StatusCodes.OK).json(vote);
