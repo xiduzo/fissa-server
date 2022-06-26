@@ -33,7 +33,6 @@ const handler: VercelApiHandler = async (request, response) => {
       if (result.modifiedCount > 0) {
         // Make sure the shuffle is set to false
         // For owners of rooms
-        console.log("Setting shuffle to false");
         await setShuffleAsync(accessToken, false);
       }
 

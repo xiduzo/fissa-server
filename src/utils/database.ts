@@ -78,6 +78,10 @@ export const voteAsync = async (
         );
         resolve(vote);
       } else {
+        console.log(
+          `vote on track by ${createdBy} on room ${pin} with state ${state}`
+        );
+
         // TODO: do we need this else before after we resolve?
         // If user has not voted before -> add vote
         await collection.insertOne({

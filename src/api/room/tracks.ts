@@ -45,9 +45,6 @@ const handler: VercelApiHandler = async (request, response) => {
           (trackUri) => !tracksAlreadyInPlaylist.includes(trackUri)
         );
 
-        console.log("already in playlist", tracksAlreadyInPlaylist);
-        console.log("tracksToAdd", tracksToAdd);
-
         await addTracksToPlaylistAsync(
           // TODO: give specific error if the room owner access token doesn't work anymore
           room.accessToken,
@@ -55,14 +52,10 @@ const handler: VercelApiHandler = async (request, response) => {
           tracksToAdd
         );
 
-        // TODO: Either give them an upvote or place them at the bottom of the playlist
         await Promise.all(
           tracksAlreadyInPlaylist.map(async (uri) => {
             const index = trackIndex(tracks, uri);
             if (index < room.currentIndex) {
-              console.log("update index", uri, index, room.currentIndex);
-              // if track already has been played -> add it to the bottom of the list
-              // TODO: also upvote?
               await updatePlaylistTrackIndexAsync(
                 room.playlistId,
                 room.accessToken,
@@ -73,18 +66,10 @@ const handler: VercelApiHandler = async (request, response) => {
             }
 
             const me = await getMeAsync(accessToken);
-            console.log(
-              `up vote for tracks as ${me.display_name}`,
-              tracksAlreadyInPlaylist
-            );
-            console.log("up vote for track", uri);
             await voteAsync(room.pin, me.id, uri, VoteState.Upvote);
-            // TODO: else vote for the track
-            // Vote on track
           })
         );
 
-        console.log("publish tracks added");
         await publishAsync(`fissa/room/${pin}/tracks/added`, trackUris.length);
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
