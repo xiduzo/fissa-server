@@ -60,7 +60,7 @@ const handler: VercelApiHandler = async (request, response) => {
           const index = trackIndex(tracks, uri);
           if (index < room.currentIndex) {
             console.log("update index", uri, index, room.currentIndex);
-            // TODO: if track already has been played -> add it to the bottom of the list
+            // if track already has been played -> add it to the bottom of the list
             // TODO: also upvote?
             await updatePlaylistTrackIndexAsync(
               room.playlistId,
@@ -69,19 +69,17 @@ const handler: VercelApiHandler = async (request, response) => {
               index,
               tracks.length
             );
-          } else {
-            const me = await getMeAsync(accessToken);
-            console.log(
-              `up vote for tracks as ${me.display_name}`,
-              tracksAlreadyInPlaylist
-            );
-            tracksAlreadyInPlaylist.forEach(async (uri) => {
-              console.log("up vote for track", uri);
-              await voteAsync(room.pin, me.id, uri, VoteState.Upvote);
-            });
-            // TODO: else vote for the track
-            // Vote on track
           }
+
+          const me = await getMeAsync(accessToken);
+          console.log(
+            `up vote for tracks as ${me.display_name}`,
+            tracksAlreadyInPlaylist
+          );
+          console.log("up vote for track", uri);
+          await voteAsync(room.pin, me.id, uri, VoteState.Upvote);
+          // TODO: else vote for the track
+          // Vote on track
         });
 
         await publishAsync(`fissa/room/${pin}/tracks/added`, trackUris.length);
