@@ -6,7 +6,6 @@ import { mongoCollectionAsync, voteAsync } from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
 import {
   addTracksToPlaylistAsync,
-  getMeAsync,
   getPlaylistTracksAsync,
   trackIndex,
   updatePlaylistTrackIndexAsync,
@@ -65,8 +64,7 @@ const handler: VercelApiHandler = async (request, response) => {
               );
             }
 
-            const me = await getMeAsync(accessToken);
-            await voteAsync(room.pin, me.id, uri, VoteState.Upvote);
+            await voteAsync(room, accessToken, uri, VoteState.Upvote);
           })
         );
 

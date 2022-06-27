@@ -33,8 +33,7 @@ const handler: VercelApiHandler = async (request, response) => {
       if (!state) return;
 
       try {
-        const me = await getMeAsync(accessToken);
-        const vote = await voteAsync(pin, me.id, trackUri, state);
+        const vote = await voteAsync(pin, accessToken, trackUri, state);
         response.status(StatusCodes.OK).json(vote);
         // If the track has already been played -> add it to the bottom of the playlist
         // Rearrange tracks in playlist based on vote

@@ -7,8 +7,10 @@ import {
   ServerApiVersion,
 } from "mongodb";
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
+import { Room } from "../lib/interfaces/Room";
 import { Vote, VoteState } from "../lib/interfaces/Vote";
 import { publishAsync } from "./mqtt";
+import { getMeAsync, reorderPlaylist } from "./spotify";
 
 const { user, password } = MONGO_CREDENTIALS;
 
@@ -83,17 +85,20 @@ const saveVote = async (
 };
 
 export const voteAsync = async (
-  pin: string,
-  createdBy: string,
+  room: Room,
+  accessToken: string,
   trackUri: string,
   state: VoteState
 ): Promise<Partial<Vote>> => {
   return new Promise(async (resolve, reject) => {
+    const { pin, playlistId } = room;
     try {
+      const me = await getMeAsync(accessToken);
+
       const collection = await mongoCollectionAsync("votes");
       const _vote: Partial<Vote> = {
         pin,
-        createdBy,
+        createdBy: me.id,
         trackUri,
       };
       const vote = await collection.findOne<Vote>(_vote);
@@ -101,11 +106,12 @@ export const voteAsync = async (
       await saveVote(collection, state, vote);
 
       const allVotes = await collection.find<Vote>({ pin }).toArray();
+      const reorder = reorderPlaylist(accessToken, playlistId, allVotes);
       const counted = countVotes(allVotes);
 
       // TODO reorder playlist based on votes
+      await reorder;
       await publishAsync(`fissa/room/${pin}/votes`, counted);
-
       resolve(_vote);
     } catch (error) {
       reject(error);
