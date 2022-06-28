@@ -1,6 +1,6 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
-import { SortedVote, Vote } from "../lib/interfaces/Vote";
+import { SortedVotes } from "../lib/interfaces/Vote";
 
 enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
@@ -219,7 +219,7 @@ export const updatePlaylistTrackIndexAsync = async (
 export const reorderPlaylist = async (
   accessToken: string,
   playlistId: string,
-  votes: SortedVote[]
+  votes: SortedVotes
 ) => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
@@ -232,7 +232,9 @@ export const reorderPlaylist = async (
     currentlyPlaying
   );
 
-  const lowToHighTotalSortedVotes = votes.sort((a, b) => a.total - b.total);
+  const lowToHighTotalSortedVotes = Object.values(votes).sort(
+    (a, b) => a.total - b.total
+  );
   lowToHighTotalSortedVotes.forEach((vote) => {
     const voteIndex = trackIndex(tracks, vote.trackUri);
 

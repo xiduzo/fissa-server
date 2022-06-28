@@ -12,32 +12,33 @@ export type Vote = {
   trackUri: string;
 };
 
-export type SortedVote = {
+export type SortedVoteData = {
   trackUri: string;
   total: number;
   votes: Vote[];
 };
 
-export const sortVotes = (votes: Vote[]): SortedVote[] => {
+export type SortedVotes = { [trackUri: string]: SortedVoteData };
+
+export const sortVotes = (votes: Vote[]): SortedVotes => {
   const reduced = votes.reduce((curr, vote) => {
-    const index = curr.findIndex(
-      (sortedVote) => sortedVote.trackUri === vote.trackUri
-    );
+    const track = curr[vote.trackUri] ?? {
+      trackUri: vote.trackUri,
+      total: 0,
+      votes: [],
+    };
 
     const addToTotal = vote.state === VoteState.Upvote ? 1 : -1;
-    if (index === -1) {
-      curr.push({
-        trackUri: vote.trackUri,
-        total: addToTotal,
-        votes: [vote],
-      });
-    } else {
-      curr[index].total = curr[index].total + addToTotal;
-      curr[index].votes.push(vote);
-    }
 
-    return curr;
-  }, [] as SortedVote[]);
+    return {
+      ...curr,
+      [vote.trackUri]: {
+        ...track,
+        total: track.total + addToTotal,
+        votes: [...track.votes, vote],
+      },
+    };
+  }, {} as SortedVotes);
 
-  return reduced.sort((a, b) => b.total - a.total);
+  return reduced;
 };
