@@ -234,32 +234,27 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
   const lowToHighTotalSortedVotes = Object.values(votes).sort(
     (a, b) => a.total - b.total
   );
-  await Promise.all(
-    lowToHighTotalSortedVotes.map(async (vote) => {
-      const voteIndex = trackIndex(tracks, vote.trackUri);
-      const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
+  lowToHighTotalSortedVotes.map(async (vote) => {
+    const voteIndex = trackIndex(tracks, vote.trackUri);
+    const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
 
-      console.log(
-        `${vote.trackUri} is at index ${voteIndex} with votes ${vote.total} to ${newIndex}`
-      );
-      // if vote.total < 0, add to bottom
-      await updatePlaylistTrackIndexAsync(
-        playlistId,
-        accessToken,
-        [vote.trackUri],
-        voteIndex,
-        newIndex
-      );
-    })
-  );
-
-  console.log("send new tracks to room");
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-  // TODO: wait some time for spotify to update the playlist?
-  await publishAsync(
-    `fissa/room/${room.pin}/tracks/added`,
-    lowToHighTotalSortedVotes.length
-  );
+    console.log(
+      `${vote.trackUri} is at index ${voteIndex} with votes ${vote.total} to ${newIndex}`
+    );
+    // if vote.total < 0, add to bottom
+    await updatePlaylistTrackIndexAsync(
+      playlistId,
+      accessToken,
+      [vote.trackUri],
+      voteIndex,
+      newIndex
+    );
+    await publishAsync(
+      `fissa/room/${room.pin}/tracks/added`,
+      lowToHighTotalSortedVotes.length
+    );
+    console.log("update track list");
+  });
 
   try {
   } catch (e) {
