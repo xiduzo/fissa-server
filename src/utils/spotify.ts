@@ -234,6 +234,7 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
   const lowToHighTotalSortedVotes = Object.values(votes).sort(
     (a, b) => a.total - b.total
   );
+  console.log("lowToHighTotalSortedVotes", lowToHighTotalSortedVotes);
   lowToHighTotalSortedVotes.map(async (vote) => {
     const voteIndex = trackIndex(tracks, vote.trackUri);
     const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
