@@ -241,7 +241,7 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
       const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
 
       console.log(
-        `${vote.trackUri} is at index ${voteIndex} with votes ${vote.total} to ${newIndex}`
+        `${vote.trackUri} is at index ${voteIndex} with #${vote.total} votes to ${newIndex}`
       );
       // if vote.total < 0, add to bottom
       await updatePlaylistTrackIndexAsync(
@@ -255,10 +255,7 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     })
   );
 
-  await publishAsync(
-    `fissa/room/${room.pin}/tracks/added`,
-    lowToHighTotalSortedVotes.length
-  );
+  await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
   try {
   } catch (e) {
     console.error(e);
