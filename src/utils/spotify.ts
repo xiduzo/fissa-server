@@ -255,6 +255,7 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     })
   );
 
+  console.log("publish reordered track command");
   await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
   try {
   } catch (e) {
