@@ -23,11 +23,9 @@ export const publishAsync = async (
 export const updateVotes = async (pin: string) => {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log("updating votes for pin", pin);
       const collection = await mongoCollectionAsync("votes");
       const allVotes = await collection.find<Vote>({ pin }).toArray();
       const sorted = sortVotes(allVotes);
-      console.log("all votes", sorted);
       await publishAsync(`fissa/room/${pin}/votes`, sorted);
       resolve(allVotes);
     } catch (error) {

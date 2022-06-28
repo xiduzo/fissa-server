@@ -55,19 +55,16 @@ const saveVote = async (
   state: VoteState,
   vote: Vote
 ) => {
-  console.log("getting vote", vote);
   const _vote = await collection.findOne<Vote>({
     pin: vote.pin,
     createdBy: vote.createdBy,
     trackUri: vote.trackUri,
   });
   if (!_vote) {
-    console.log("insert vote", vote);
     await collection.insertOne(vote as Omit<Vote, "_id">);
     return;
   }
 
-  console.log("updating", vote);
   await collection.updateOne(
     { _id: _vote._id },
     {
