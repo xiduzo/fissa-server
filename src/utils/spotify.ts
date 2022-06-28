@@ -235,17 +235,18 @@ export const reorderPlaylist = async (
   const lowToHighTotalSortedVotes = Object.values(votes).sort(
     (a, b) => a.total - b.total
   );
-  lowToHighTotalSortedVotes.forEach((vote) => {
-    const voteIndex = trackIndex(tracks, vote.trackUri);
+  console.log(lowToHighTotalSortedVotes);
+  // lowToHighTotalSortedVotes.forEach((vote) => {
+  //   const voteIndex = trackIndex(tracks, vote.trackUri);
 
-    updatePlaylistTrackIndexAsync(
-      playlistId,
-      accessToken,
-      [vote.trackUri],
-      voteIndex,
-      currentIndex
-    );
-  });
+  //   updatePlaylistTrackIndexAsync(
+  //     playlistId,
+  //     accessToken,
+  //     [vote.trackUri],
+  //     voteIndex,
+  //     currentIndex
+  //   );
+  // });
 
   try {
   } catch (e) {

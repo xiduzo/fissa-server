@@ -3,10 +3,11 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { VoteState } from "../../lib/interfaces/Vote";
 import { mongoCollectionAsync, voteAsync } from "../../utils/database";
-import { publishAsync } from "../../utils/mqtt";
+import { publishAsync, updateVotes } from "../../utils/mqtt";
 import {
   addTracksToPlaylistAsync,
   getPlaylistTracksAsync,
+  reorderPlaylist,
 } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -61,6 +62,9 @@ const handler: VercelApiHandler = async (request, response) => {
             await voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
         );
+        const sortedVotes = await updateVotes(room.pin);
+        // TODO: sort tracks by votes
+        await reorderPlaylist(accessToken, room.playlistId, sortedVotes);
 
         await publishAsync(`fissa/room/${pin}/tracks/added`, trackUris.length);
         response.status(StatusCodes.OK).json(trackUris.length);
