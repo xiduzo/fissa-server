@@ -1,6 +1,8 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
+import { Room } from "../lib/interfaces/Room";
 import { SortedVotes } from "../lib/interfaces/Vote";
+import { publishAsync } from "./mqtt";
 
 enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
@@ -216,11 +218,8 @@ export const updatePlaylistTrackIndexAsync = async (
   }
 };
 
-export const reorderPlaylist = async (
-  accessToken: string,
-  playlistId: string,
-  votes: SortedVotes
-) => {
+export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
+  const { accessToken, playlistId } = room;
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
@@ -236,22 +235,29 @@ export const reorderPlaylist = async (
     (a, b) => a.total - b.total
   );
   // console.log(lowToHighTotalSortedVotes);
-  lowToHighTotalSortedVotes.forEach((vote) => {
-    const voteIndex = trackIndex(tracks, vote.trackUri);
-    const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
+  await Promise.all(
+    lowToHighTotalSortedVotes.map(async (vote) => {
+      const voteIndex = trackIndex(tracks, vote.trackUri);
+      const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
 
-    console.log(
-      `${vote.trackUri} is at index ${voteIndex} with votes ${vote.total} to ${newIndex}`
-    );
-    // if vote.total < 0, add to bottom
-    updatePlaylistTrackIndexAsync(
-      playlistId,
-      accessToken,
-      [vote.trackUri],
-      voteIndex,
-      newIndex
-    );
-  });
+      console.log(
+        `${vote.trackUri} is at index ${voteIndex} with votes ${vote.total} to ${newIndex}`
+      );
+      // if vote.total < 0, add to bottom
+      await updatePlaylistTrackIndexAsync(
+        playlistId,
+        accessToken,
+        [vote.trackUri],
+        voteIndex,
+        newIndex
+      );
+    })
+  );
+
+  await publishAsync(
+    `fissa/room/${room.pin}/tracks/added`,
+    lowToHighTotalSortedVotes.length
+  );
 
   try {
   } catch (e) {

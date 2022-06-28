@@ -25,7 +25,7 @@ const handler: VercelApiHandler = async (request, response) => {
         const sortedVotes = await updateVotes(pin);
         const collection = await mongoCollectionAsync("room");
         const room = await collection.findOne<Room>({ pin });
-        await reorderPlaylist(accessToken, room.playlistId, sortedVotes);
+        await reorderPlaylist(room, sortedVotes);
         response.status(StatusCodes.OK).json(vote);
       } catch (error) {
         console.error(error);

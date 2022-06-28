@@ -64,9 +64,7 @@ const handler: VercelApiHandler = async (request, response) => {
         );
         const sortedVotes = await updateVotes(room.pin);
         // TODO: sort tracks by votes
-        await reorderPlaylist(accessToken, room.playlistId, sortedVotes);
-
-        await publishAsync(`fissa/room/${pin}/tracks/added`, trackUris.length);
+        await reorderPlaylist(room, sortedVotes);
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
         console.error(error);
