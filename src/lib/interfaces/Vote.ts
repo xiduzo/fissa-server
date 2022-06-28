@@ -5,9 +5,15 @@ export enum VoteState {
 }
 
 export type Vote = {
-  _id?: string;
+  id?: string;
   pin: string;
   createdBy: string;
   state: VoteState;
   trackUri: string;
+};
+
+export type SortedVote = {
+  trackUri: string;
+  total: number;
+  votes: Vote[];
 };

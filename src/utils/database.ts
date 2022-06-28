@@ -8,7 +8,7 @@ import {
 } from "mongodb";
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
 import { Room } from "../lib/interfaces/Room";
-import { Vote, VoteState } from "../lib/interfaces/Vote";
+import { SortedVote, Vote, VoteState } from "../lib/interfaces/Vote";
 import { publishAsync } from "./mqtt";
 import { getMeAsync, reorderPlaylist } from "./spotify";
 
@@ -52,16 +52,28 @@ export const mongoCollectionAsync = async (
   });
 };
 
-const countVotes = (votes: Vote[]) => {
-  return votes.reduce((acc, vote) => {
-    const currentVote = acc[vote.trackUri] ?? { total: 0 };
+const sortVotes = (votes: Vote[]): SortedVote[] => {
+  const reduced = votes.reduce((curr, vote) => {
+    const index = curr.findIndex(
+      (sortedVote) => sortedVote.trackUri === vote.trackUri
+    );
 
-    currentVote.total += vote.state === VoteState.Upvote ? 1 : -1;
-    return {
-      ...acc,
-      [vote.trackUri]: currentVote,
-    };
-  }, {});
+    const addToTotal = vote.state === VoteState.Upvote ? 1 : -1;
+    if (index === -1) {
+      curr.push({
+        trackUri: vote.trackUri,
+        total: addToTotal,
+        votes: [vote],
+      });
+    } else {
+      curr[index].total = curr[index].total + addToTotal;
+      curr[index].votes.push(vote);
+    }
+
+    return curr;
+  }, [] as SortedVote[]);
+
+  return reduced.sort((a, b) => b.total - a.total);
 };
 
 const saveVote = async (
@@ -75,7 +87,7 @@ const saveVote = async (
   }
 
   await collection.updateOne(
-    { _id: vote._id },
+    { _id: vote.id },
     {
       $set: {
         state,
@@ -106,12 +118,12 @@ export const voteAsync = async (
       await saveVote(collection, state, vote);
 
       const allVotes = await collection.find<Vote>({ pin }).toArray();
-      const reorder = reorderPlaylist(accessToken, playlistId, allVotes);
-      const counted = countVotes(allVotes);
+      const sorted = sortVotes(allVotes);
+      const reorder = reorderPlaylist(accessToken, playlistId, sorted);
 
       // TODO reorder playlist based on votes
       await reorder;
-      await publishAsync(`fissa/room/${pin}/votes`, counted);
+      await publishAsync(`fissa/room/${pin}/votes`, sorted);
       resolve(_vote);
     } catch (error) {
       reject(error);

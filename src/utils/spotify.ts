@@ -1,6 +1,6 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
-import { Vote } from "../lib/interfaces/Vote";
+import { SortedVote, Vote } from "../lib/interfaces/Vote";
 
 enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
@@ -188,6 +188,10 @@ export const trackIndex = (
   return index;
 };
 
+/**
+ * @param rangeStart The position of the first track to be reordered.
+ * @param insertBefore The position where the tracks should be inserted.
+ */
 export const updatePlaylistTrackIndexAsync = async (
   playlistId: string,
   accessToken: string,
@@ -215,7 +219,7 @@ export const updatePlaylistTrackIndexAsync = async (
 export const reorderPlaylist = async (
   accessToken: string,
   playlistId: string,
-  votes: Vote[]
+  votes: SortedVote[]
 ) => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
@@ -228,11 +232,28 @@ export const reorderPlaylist = async (
     currentlyPlaying
   );
 
-  // TODO
-  // sort votes
-  // check if track index is > current index
-  // if so, put tracks on top
-  // update indexes of voted tracks
+  const lowToHighTotalSortedVotes = votes.sort((a, b) => a.total - b.total);
+  lowToHighTotalSortedVotes.forEach((vote) => {
+    const voteIndex = trackIndex(tracks, vote.trackUri);
+    // If our voteIndex is higher than the current index it is a track in the queue
+    // and we move it to the top of the queue
+    // Sorting should go a bit like this:
+    // With track queue of length 10: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    // Our voteIndex is 6
+    // Our currentIndex is 2
+    // Our new queue should be: 0, 1, 2, 6, 3, 4, 5, 7, 8, 9
+    //                                   ~
+    //             voteIndex<6> has moved to after currentIndex<2>
+    if (voteIndex > currentIndex) {
+      updatePlaylistTrackIndexAsync(
+        playlistId,
+        accessToken,
+        [vote.trackUri],
+        voteIndex,
+        currentIndex
+      );
+    }
+  });
 
   try {
   } catch (e) {
