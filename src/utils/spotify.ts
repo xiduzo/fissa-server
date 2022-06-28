@@ -235,18 +235,23 @@ export const reorderPlaylist = async (
   const lowToHighTotalSortedVotes = Object.values(votes).sort(
     (a, b) => a.total - b.total
   );
-  console.log(lowToHighTotalSortedVotes);
-  // lowToHighTotalSortedVotes.forEach((vote) => {
-  //   const voteIndex = trackIndex(tracks, vote.trackUri);
+  // console.log(lowToHighTotalSortedVotes);
+  lowToHighTotalSortedVotes.forEach((vote) => {
+    const voteIndex = trackIndex(tracks, vote.trackUri);
+    const newIndex = vote.total < 0 ? tracks.length : currentIndex;
 
-  //   updatePlaylistTrackIndexAsync(
-  //     playlistId,
-  //     accessToken,
-  //     [vote.trackUri],
-  //     voteIndex,
-  //     currentIndex
-  //   );
-  // });
+    console.log(
+      `${vote.trackUri} is at index ${voteIndex} with votes ${vote.total} to ${newIndex}`
+    );
+    // if vote.total < 0, add to bottom
+    // updatePlaylistTrackIndexAsync(
+    //   playlistId,
+    //   accessToken,
+    //   [vote.trackUri],
+    //   voteIndex,
+    //   vote.total < 0 ? tracks.length : currentIndex
+    // );
+  });
 
   try {
   } catch (e) {
