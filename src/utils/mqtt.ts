@@ -1,6 +1,6 @@
 import mqtt from "mqtt";
 import { MQTT_CREDENTIALS } from "../lib/constants/credentials";
-import { Vote } from "../lib/interfaces/Vote";
+import { sortVotes, Vote } from "../lib/interfaces/Vote";
 import { mongoCollectionAsync } from "./database";
 
 export const publishAsync = async (
@@ -26,9 +26,9 @@ export const updateVotes = async (pin: string) => {
       console.log("updating votes for pin", pin);
       const collection = await mongoCollectionAsync("votes");
       const allVotes = await collection.find<Vote>({ pin }).toArray();
-
-      console.log("all votes", allVotes);
-      await publishAsync(`fissa/room/${pin}/votes`, allVotes);
+      const sorted = sortVotes(allVotes);
+      console.log("all votes", sorted);
+      await publishAsync(`fissa/room/${pin}/votes`, sorted);
       resolve(allVotes);
     } catch (error) {
       reject(error);
