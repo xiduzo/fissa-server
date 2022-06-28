@@ -235,27 +235,29 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     (a, b) => a.total - b.total
   );
   console.log("lowToHighTotalSortedVotes", lowToHighTotalSortedVotes);
-  lowToHighTotalSortedVotes.map(async (vote) => {
-    const voteIndex = trackIndex(tracks, vote.trackUri);
-    const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
+  await Promise.all(
+    lowToHighTotalSortedVotes.map(async (vote) => {
+      const voteIndex = trackIndex(tracks, vote.trackUri);
+      const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
 
-    console.log(
-      `${vote.trackUri} is at index ${voteIndex} with votes ${vote.total} to ${newIndex}`
-    );
-    // if vote.total < 0, add to bottom
-    await updatePlaylistTrackIndexAsync(
-      playlistId,
-      accessToken,
-      [vote.trackUri],
-      voteIndex,
-      newIndex
-    );
-    await publishAsync(
-      `fissa/room/${room.pin}/tracks/added`,
-      lowToHighTotalSortedVotes.length
-    );
-    console.log("update track list");
-  });
+      console.log(
+        `${vote.trackUri} is at index ${voteIndex} with votes ${vote.total} to ${newIndex}`
+      );
+      // if vote.total < 0, add to bottom
+      await updatePlaylistTrackIndexAsync(
+        playlistId,
+        accessToken,
+        [vote.trackUri],
+        voteIndex,
+        newIndex
+      );
+      await publishAsync(
+        `fissa/room/${room.pin}/tracks/added`,
+        lowToHighTotalSortedVotes.length
+      );
+      console.log("update track list");
+    })
+  );
   try {
   } catch (e) {
     console.error(e);
