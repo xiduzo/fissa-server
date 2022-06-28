@@ -82,6 +82,7 @@ const saveVote = async (
   vote?: Vote
 ) => {
   if (!vote) {
+    console.log("insert vote", vote);
     await collection.insertOne(vote as Omit<Vote, "_id">);
     return;
   }
@@ -113,6 +114,7 @@ export const voteAsync = async (
         createdBy: me.id,
         trackUri,
       };
+      console.log("getting vote", _vote);
       const vote = await collection.findOne<Vote>(_vote);
 
       await saveVote(collection, state, vote);
