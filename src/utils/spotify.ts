@@ -235,24 +235,14 @@ export const reorderPlaylist = async (
   const lowToHighTotalSortedVotes = votes.sort((a, b) => a.total - b.total);
   lowToHighTotalSortedVotes.forEach((vote) => {
     const voteIndex = trackIndex(tracks, vote.trackUri);
-    // If our voteIndex is higher than the current index it is a track in the queue
-    // and we move it to the top of the queue
-    // Sorting should go a bit like this:
-    // With track queue of length 10: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    // Our voteIndex is 6
-    // Our currentIndex is 2
-    // Our new queue should be: 0, 1, 2, 6, 3, 4, 5, 7, 8, 9
-    //                                   ~
-    //             voteIndex<6> has moved to after currentIndex<2>
-    if (voteIndex > currentIndex) {
-      updatePlaylistTrackIndexAsync(
-        playlistId,
-        accessToken,
-        [vote.trackUri],
-        voteIndex,
-        currentIndex
-      );
-    }
+
+    updatePlaylistTrackIndexAsync(
+      playlistId,
+      accessToken,
+      [vote.trackUri],
+      voteIndex,
+      currentIndex
+    );
   });
 
   try {

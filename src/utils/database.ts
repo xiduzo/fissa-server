@@ -7,10 +7,8 @@ import {
   ServerApiVersion,
 } from "mongodb";
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
-import { Room } from "../lib/interfaces/Room";
-import { SortedVote, Vote, VoteState } from "../lib/interfaces/Vote";
-import { publishAsync } from "./mqtt";
-import { getMeAsync, reorderPlaylist } from "./spotify";
+import { Vote, VoteState } from "../lib/interfaces/Vote";
+import { getMeAsync } from "./spotify";
 
 const { user, password } = MONGO_CREDENTIALS;
 
@@ -52,43 +50,21 @@ export const mongoCollectionAsync = async (
   });
 };
 
-const sortVotes = (votes: Vote[]): SortedVote[] => {
-  const reduced = votes.reduce((curr, vote) => {
-    const index = curr.findIndex(
-      (sortedVote) => sortedVote.trackUri === vote.trackUri
-    );
-
-    const addToTotal = vote.state === VoteState.Upvote ? 1 : -1;
-    if (index === -1) {
-      curr.push({
-        trackUri: vote.trackUri,
-        total: addToTotal,
-        votes: [vote],
-      });
-    } else {
-      curr[index].total = curr[index].total + addToTotal;
-      curr[index].votes.push(vote);
-    }
-
-    return curr;
-  }, [] as SortedVote[]);
-
-  return reduced.sort((a, b) => b.total - a.total);
-};
-
 const saveVote = async (
   collection: Collection<Document>,
   state: VoteState,
-  vote?: Vote
+  vote: Vote
 ) => {
-  if (!vote) {
+  console.log("getting vote", vote);
+  if (!vote._id) {
     console.log("insert vote", vote);
     await collection.insertOne(vote as Omit<Vote, "_id">);
     return;
   }
 
+  console.log("updating", vote);
   await collection.updateOne(
-    { _id: vote.id },
+    { _id: vote._id },
     {
       $set: {
         state,
@@ -98,35 +74,25 @@ const saveVote = async (
 };
 
 export const voteAsync = async (
-  room: Room,
+  pin: string,
   accessToken: string,
   trackUri: string,
   state: VoteState
 ): Promise<Partial<Vote>> => {
   return new Promise(async (resolve, reject) => {
-    const { pin, playlistId } = room;
     try {
       const me = await getMeAsync(accessToken);
 
       const collection = await mongoCollectionAsync("votes");
-      const _vote: Partial<Vote> = {
+      const vote: Vote = {
         pin,
         createdBy: me.id,
         trackUri,
+        state,
       };
-      console.log("getting vote", _vote);
-      const vote = await collection.findOne<Vote>(_vote);
 
       await saveVote(collection, state, vote);
-
-      const allVotes = await collection.find<Vote>({ pin }).toArray();
-      const sorted = sortVotes(allVotes);
-      const reorder = reorderPlaylist(accessToken, playlistId, sorted);
-
-      // TODO reorder playlist based on votes
-      await reorder;
-      await publishAsync(`fissa/room/${pin}/votes`, sorted);
-      resolve(_vote);
+      resolve(vote);
     } catch (error) {
       reject(error);
     }

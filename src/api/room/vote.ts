@@ -1,21 +1,6 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { Vote, VoteState } from "../../lib/interfaces/Vote";
-import { mongoCollectionAsync, voteAsync } from "../../utils/database";
-import { publishAsync } from "../../utils/mqtt";
-import { getMeAsync } from "../../utils/spotify";
-
-const countVotes = (votes: Vote[]) => {
-  return votes.reduce((acc, vote) => {
-    const currentVote = acc[vote.trackUri] ?? { total: 0 };
-
-    currentVote.total += vote.state === VoteState.Upvote ? 1 : -1;
-    return {
-      ...acc,
-      [vote.trackUri]: currentVote,
-    };
-  }, {});
-};
+import { voteAsync } from "../../utils/database";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -37,8 +22,6 @@ const handler: VercelApiHandler = async (request, response) => {
         const vote = await voteAsync(pin, accessToken, trackUri, state);
         console.log("VercelApiHandler vote", vote);
         response.status(StatusCodes.OK).json(vote);
-        // If the track has already been played -> add it to the bottom of the playlist
-        // Rearrange tracks in playlist based on vote
       } catch (error) {
         console.error(error);
         response

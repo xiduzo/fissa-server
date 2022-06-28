@@ -7,8 +7,6 @@ import { publishAsync } from "../../utils/mqtt";
 import {
   addTracksToPlaylistAsync,
   getPlaylistTracksAsync,
-  trackIndex,
-  updatePlaylistTrackIndexAsync,
 } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -35,36 +33,32 @@ const handler: VercelApiHandler = async (request, response) => {
           room.playlistId
         );
 
-        // filter out tracks that are already in the playlist
-        const tracksAlreadyInPlaylist = tracks
-          .filter((track) => trackUris.includes(track.uri))
-          .map((track) => track.uri);
+        const _tracks = tracks.reduce(
+          (acc, track) => {
+            const { uri } = track;
 
-        const tracksToAdd = (trackUris as string[]).filter(
-          (trackUri) => !tracksAlreadyInPlaylist.includes(trackUri)
+            trackUris.includes(uri)
+              ? acc.alreadyInPlaylist.push(uri)
+              : acc.toAdd.push(uri);
+            return acc;
+          },
+          {
+            alreadyInPlaylist: [] as string[],
+            toAdd: [] as string[],
+          }
         );
 
         await addTracksToPlaylistAsync(
           // TODO: give specific error if the room owner access token doesn't work anymore
           room.accessToken,
           room.playlistId,
-          tracksToAdd
+          _tracks.toAdd
         );
 
+        // vote for all of the tracks to put them back in the queue
         await Promise.all(
-          tracksAlreadyInPlaylist.map(async (uri) => {
-            const index = trackIndex(tracks, uri);
-            if (index < room.currentIndex) {
-              await updatePlaylistTrackIndexAsync(
-                room.playlistId,
-                room.accessToken,
-                [uri],
-                index,
-                tracks.length
-              );
-            }
-
-            await voteAsync(room, accessToken, uri, VoteState.Upvote);
+          _tracks.alreadyInPlaylist.map(async (uri) => {
+            await voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
         );
 
