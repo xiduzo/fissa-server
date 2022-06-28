@@ -251,12 +251,13 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
         voteIndex,
         newIndex
       );
-      await publishAsync(
-        `fissa/room/${room.pin}/tracks/added`,
-        lowToHighTotalSortedVotes.length
-      );
       console.log("update track list");
     })
+  );
+
+  await publishAsync(
+    `fissa/room/${room.pin}/tracks/added`,
+    lowToHighTotalSortedVotes.length
   );
   try {
   } catch (e) {
