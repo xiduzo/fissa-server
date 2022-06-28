@@ -255,7 +255,6 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     );
     console.log("update track list");
   });
-
   try {
   } catch (e) {
     console.error(e);

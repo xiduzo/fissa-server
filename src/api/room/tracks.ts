@@ -29,12 +29,12 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        const playlistTracks = await getPlaylistTracksAsync(
+        const tracks = await getPlaylistTracksAsync(
           room.accessToken,
           room.playlistId
         );
 
-        const _trackUrisInPlaylist = playlistTracks.map((track) => track.uri);
+        const _trackUrisInPlaylist = tracks.map((track) => track.uri);
 
         const _tracks = trackUris.reduce(
           (acc, uri) => {
@@ -62,8 +62,8 @@ const handler: VercelApiHandler = async (request, response) => {
             await voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
         );
-
         const sortedVotes = await updateVotes(room.pin);
+        // TODO: sort tracks by votes
         await reorderPlaylist(room, sortedVotes);
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
