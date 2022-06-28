@@ -234,7 +234,6 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
   const lowToHighTotalSortedVotes = Object.values(votes).sort(
     (a, b) => a.total - b.total
   );
-  // console.log(lowToHighTotalSortedVotes);
   await Promise.all(
     lowToHighTotalSortedVotes.map(async (vote) => {
       const voteIndex = trackIndex(tracks, vote.trackUri);
@@ -254,6 +253,9 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     })
   );
 
+  console.log("send new tracks to room");
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  // TODO: wait some time for spotify to update the playlist?
   await publishAsync(
     `fissa/room/${room.pin}/tracks/added`,
     lowToHighTotalSortedVotes.length

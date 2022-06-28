@@ -9,7 +9,7 @@ import {
 } from "../../utils/spotify";
 
 type State = {
-  id: string;
+  uri: string;
   progress_ms: number;
   is_playing: boolean;
   currentIndex: number;
@@ -64,11 +64,16 @@ const updateRoom = async (
     return;
   }
 
-  if (state.id !== previousState.id) {
+  if (state.uri !== previousState.uri) {
     await publish(state, room, currentlyPlaying);
     return;
   }
   if (state.is_playing !== previousState.is_playing) {
+    const collection = await mongoCollectionAsync("votes");
+    await collection.deleteMany({
+      pin: room.pin,
+      trackUri: previousState.uri,
+    });
     await publish(state, room, currentlyPlaying);
     return;
   }
@@ -100,8 +105,6 @@ const publish = async (
   // Start the playlist from the start?
   // Creator of the playlist should stop party from room?
 
-  // TODO: invalidate all tracks previous than current index
-
   const collection = await mongoCollectionAsync("room");
   await collection.updateOne({ pin: room.pin }, { $set: { currentIndex } });
   await publishAsync(`fissa/room/${room.pin}/tracks/active`, state);
@@ -114,13 +117,13 @@ const getState = (
   const {
     is_playing,
     progress_ms,
-    item: { id },
+    item: { uri },
   } = currentlyPlaying;
 
   const previousState = states.get(pin);
 
   const state: State = {
-    id,
+    uri,
     progress_ms: previousState?.progress_ms ?? progress_ms,
     is_playing,
     currentIndex: 0,
