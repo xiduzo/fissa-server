@@ -1,6 +1,7 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { voteAsync } from "../../utils/database";
+import { updateVotes } from "../../utils/mqtt";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -21,6 +22,7 @@ const handler: VercelApiHandler = async (request, response) => {
         console.log("VercelApiHandler", pin, accessToken, trackUri, state);
         const vote = await voteAsync(pin, accessToken, trackUri, state);
         console.log("VercelApiHandler vote", vote);
+        updateVotes(pin);
         response.status(StatusCodes.OK).json(vote);
       } catch (error) {
         console.error(error);
