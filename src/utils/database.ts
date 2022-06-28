@@ -56,7 +56,8 @@ const saveVote = async (
   vote: Vote
 ) => {
   console.log("getting vote", vote);
-  if (!vote._id) {
+  const _vote = await collection.findOne<Vote>(vote);
+  if (!_vote) {
     console.log("insert vote", vote);
     await collection.insertOne(vote as Omit<Vote, "_id">);
     return;
@@ -64,7 +65,7 @@ const saveVote = async (
 
   console.log("updating", vote);
   await collection.updateOne(
-    { _id: vote._id },
+    { _id: _vote._id },
     {
       $set: {
         state,
