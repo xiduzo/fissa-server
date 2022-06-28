@@ -34,11 +34,11 @@ const handler: VercelApiHandler = async (request, response) => {
           room.playlistId
         );
 
-        const _tracks = tracks.reduce(
-          (acc, track) => {
-            const { uri } = track;
+        const _trackUrisInPlaylist = tracks.map((track) => track.uri);
 
-            trackUris.includes(uri)
+        const _tracks = trackUris.reduce(
+          (acc, uri) => {
+            _trackUrisInPlaylist.includes(uri)
               ? acc.alreadyInPlaylist.push(uri)
               : acc.toAdd.push(uri);
             return acc;
@@ -62,9 +62,11 @@ const handler: VercelApiHandler = async (request, response) => {
             await voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
         );
+
         const sortedVotes = await updateVotes(room.pin);
-        // TODO: sort tracks by votes
-        await reorderPlaylist(room, sortedVotes);
+        if (_tracks.alreadyInPlaylist.length) {
+          await reorderPlaylist(room, sortedVotes);
+        }
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
         console.error(error);
