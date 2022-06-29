@@ -18,7 +18,11 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { pin, trackUris, accessToken } = request.body;
+      const { pin, trackUris, accessToken } = request.body as {
+        pin: string;
+        trackUris: string[];
+        accessToken: string;
+      };
 
       try {
         const collection = await mongoCollectionAsync("room");
@@ -29,36 +33,27 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        const tracks = await getPlaylistTracksAsync(
+        const playlistTracks = await getPlaylistTracksAsync(
           room.accessToken,
           room.playlistId
         );
 
-        const _trackUrisInPlaylist = tracks.map((track) => track.uri);
+        const trackUrisInPlaylist = playlistTracks.map((track) => track.uri);
 
-        const _tracks = trackUris.reduce(
-          (acc, uri) => {
-            _trackUrisInPlaylist.includes(uri)
-              ? acc.alreadyInPlaylist.push(uri)
-              : acc.toAdd.push(uri);
-            return acc;
-          },
-          {
-            alreadyInPlaylist: [] as string[],
-            toAdd: [] as string[],
-          }
+        const tracksToAdd = trackUris.filter((uri) =>
+          trackUrisInPlaylist.includes(uri)
         );
 
         await addTracksToPlaylistAsync(
           // TODO: give specific error if the room owner access token doesn't work anymore
           room.accessToken,
           room.playlistId,
-          _tracks.toAdd
+          tracksToAdd
         );
 
         // vote for all of the tracks to put them back in the queue
         await Promise.all(
-          _tracks.alreadyInPlaylist.map(async (uri) => {
+          trackUris.map(async (uri) => {
             return voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
         );
