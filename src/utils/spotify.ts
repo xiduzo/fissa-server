@@ -253,10 +253,14 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
       );
       console.log("update track list");
     })
-  );
+  ).then(async () => {
+    console.log(
+      "publish reordered track command to ",
+      `fissa/room/${room.pin}/tracks/reordered`
+    );
+    await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
+  });
 
-  console.log("publish reordered track command");
-  await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
   try {
   } catch (e) {
     console.error(e);

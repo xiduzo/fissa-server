@@ -65,15 +65,18 @@ const updateRoom = async (
   }
 
   if (state.uri !== previousState.uri) {
-    await publish(state, room, currentlyPlaying);
-    return;
-  }
-  if (state.is_playing !== previousState.is_playing) {
     const collection = await mongoCollectionAsync("votes");
+    console.log(
+      `removing votes for track ${previousState.uri} in room ${room.pin}`
+    );
     await collection.deleteMany({
       pin: room.pin,
       trackUri: previousState.uri,
     });
+    await publish(state, room, currentlyPlaying);
+    return;
+  }
+  if (state.is_playing !== previousState.is_playing) {
     await publish(state, room, currentlyPlaying);
     return;
   }
