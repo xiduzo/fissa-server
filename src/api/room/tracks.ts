@@ -59,7 +59,7 @@ const handler: VercelApiHandler = async (request, response) => {
         // vote for all of the tracks to put them back in the queue
         await Promise.all(
           _tracks.alreadyInPlaylist.map(async (uri) => {
-            await voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
+            return voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
         );
         const sortedVotes = await updateVotes(room.pin);
