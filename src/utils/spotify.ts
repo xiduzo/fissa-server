@@ -219,53 +219,41 @@ export const updatePlaylistTrackIndexAsync = async (
 };
 
 export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
-  const { accessToken, playlistId } = room;
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
-
-  const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-  const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
-  const currentIndex = await poorMansCurrentIndexAsync(
-    accessToken,
-    playlistId,
-    currentlyPlaying
-  );
-
-  const lowToHighTotalSortedVotes = Object.values(votes).sort(
-    (a, b) => a.total - b.total
-  );
-  console.log("lowToHighTotalSortedVotes", lowToHighTotalSortedVotes);
-  const updatePromises = lowToHighTotalSortedVotes.map((vote) => {
-    const voteIndex = trackIndex(tracks, vote.trackUri);
-    const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
-
-    console.log(
-      `${vote.trackUri} is at index ${voteIndex} with #${vote.total} votes to ${newIndex}`
-    );
-    // if vote.total < 0, add to bottom
-    const promise = updatePlaylistTrackIndexAsync(
-      playlistId,
-      accessToken,
-      [vote.trackUri],
-      voteIndex,
-      newIndex
-    );
-
-    console.log("update track list", promise);
-    return promise;
-  });
-
-  console.log("update promises", updatePromises);
-  await Promise.all(updatePromises);
-
-  console.log(
-    "publish reordered track command to ",
-    `fissa/room/${room.pin}/tracks/reordered`
-  );
-  await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
-
   try {
-  } catch (e) {
-    console.error(e);
+    const { accessToken, playlistId } = room;
+    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+    spotifyApi.setAccessToken(accessToken);
+
+    const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+    const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
+    const currentIndex = await poorMansCurrentIndexAsync(
+      accessToken,
+      playlistId,
+      currentlyPlaying
+    );
+
+    const lowToHighTotalSortedVotes = Object.values(votes).sort(
+      (a, b) => a.total - b.total
+    );
+    const updatePromises = lowToHighTotalSortedVotes.map((vote) => {
+      const voteIndex = trackIndex(tracks, vote.trackUri);
+      const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
+
+      // if vote.total < 0, add to bottom
+      const promise = updatePlaylistTrackIndexAsync(
+        playlistId,
+        accessToken,
+        [vote.trackUri],
+        voteIndex,
+        newIndex
+      );
+
+      return promise;
+    });
+
+    await Promise.all(updatePromises);
+    await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
+  } catch (error) {
+    console.error(error);
   }
 };
