@@ -42,10 +42,13 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
       const { statusCode, message } = error;
       switch (statusCode) {
         case StatusCodes.UNAUTHORIZED:
-          console.warn(message);
+          console.log(StatusCodes.UNAUTHORIZED, message);
+          break;
+        case StatusCodes.INTERNAL_SERVER_ERROR:
+          console.log(StatusCodes.INTERNAL_SERVER_ERROR, message);
           break;
         default:
-          console.warn(message);
+          console.warn("UNKOWN ERROR", message);
           break;
       }
     }
