@@ -36,6 +36,13 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
 
       if (!myCurrentPlayingTrack) return;
 
+      const collection = await mongoCollectionAsync("votes");
+      // We want to remove all votes for the current playing track
+      await collection.deleteMany({
+        pin: room.pin,
+        trackUri: myCurrentPlayingTrack.item.uri,
+      });
+
       await updateRoom(myCurrentPlayingTrack, room);
     } catch (error) {
       const { statusCode, message } = error;
@@ -65,14 +72,6 @@ const updateRoom = async (
   }
 
   if (state.uri !== previousState.uri) {
-    const collection = await mongoCollectionAsync("votes");
-    console.log(
-      `removing votes for track ${previousState.uri} in room ${room.pin}`
-    );
-    await collection.deleteMany({
-      pin: room.pin,
-      trackUri: previousState.uri,
-    });
     await publish(state, room, currentlyPlaying);
     return;
   }
