@@ -235,25 +235,28 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     (a, b) => a.total - b.total
   );
   console.log("lowToHighTotalSortedVotes", lowToHighTotalSortedVotes);
-  await Promise.all(
-    lowToHighTotalSortedVotes.map((vote) => {
-      const voteIndex = trackIndex(tracks, vote.trackUri);
-      const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
+  const updatePromises = lowToHighTotalSortedVotes.map((vote) => {
+    const voteIndex = trackIndex(tracks, vote.trackUri);
+    const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
 
-      console.log(
-        `${vote.trackUri} is at index ${voteIndex} with #${vote.total} votes to ${newIndex}`
-      );
-      // if vote.total < 0, add to bottom
-      console.log("update track list");
-      return updatePlaylistTrackIndexAsync(
-        playlistId,
-        accessToken,
-        [vote.trackUri],
-        voteIndex,
-        newIndex
-      );
-    })
-  );
+    console.log(
+      `${vote.trackUri} is at index ${voteIndex} with #${vote.total} votes to ${newIndex}`
+    );
+    // if vote.total < 0, add to bottom
+    const promise = updatePlaylistTrackIndexAsync(
+      playlistId,
+      accessToken,
+      [vote.trackUri],
+      voteIndex,
+      newIndex
+    );
+
+    console.log("update track list", promise);
+    return promise;
+  });
+
+  console.log("update promises", updatePromises);
+  await Promise.all(updatePromises);
 
   console.log(
     "publish reordered track command to ",
