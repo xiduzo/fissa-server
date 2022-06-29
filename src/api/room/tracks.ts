@@ -40,15 +40,11 @@ const handler: VercelApiHandler = async (request, response) => {
 
         const trackUrisInPlaylist = playlistTracks.map((track) => track.uri);
 
-        const tracksToAdd = trackUris.filter(
-          (uri) => !trackUrisInPlaylist.includes(uri)
-        );
-
         await addTracksToPlaylistAsync(
           // TODO: give specific error if the room owner access token doesn't work anymore
           room.accessToken,
           room.playlistId,
-          tracksToAdd
+          trackUris.filter((uri) => !trackUrisInPlaylist.includes(uri))
         );
 
         // vote for all of the tracks to put them back in the queue
