@@ -40,8 +40,8 @@ const handler: VercelApiHandler = async (request, response) => {
 
         const trackUrisInPlaylist = playlistTracks.map((track) => track.uri);
 
-        const tracksToAdd = trackUris.filter((uri) =>
-          trackUrisInPlaylist.includes(uri)
+        const tracksToAdd = trackUris.filter(
+          (uri) => !trackUrisInPlaylist.includes(uri)
         );
 
         await addTracksToPlaylistAsync(
