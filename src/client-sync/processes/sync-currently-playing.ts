@@ -19,6 +19,7 @@ type State = {
 const states = new Map<string, State>();
 
 const SPOTIFY_PING_TIME = 2_000;
+const PROGRESS_SYNC_TIME = 20_000;
 
 export const syncCurrentlyPlaying = (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -79,7 +80,7 @@ const updateRoom = async (
 
   // Just sync the room once every X spotify pings
   // The rest of the progress should be handled by the client
-  if (diff > SPOTIFY_PING_TIME * 10) {
+  if (diff > PROGRESS_SYNC_TIME) {
     await publishNewRoomState(state, room, currentlyPlaying);
     return;
   }

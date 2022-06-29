@@ -63,7 +63,6 @@ const handler: VercelApiHandler = async (request, response) => {
           })
         );
         const sortedVotes = await updateVotes(room.pin);
-        // TODO: sort tracks by votes
         await reorderPlaylist(room, sortedVotes);
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {

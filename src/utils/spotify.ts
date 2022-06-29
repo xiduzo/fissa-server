@@ -236,7 +236,7 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
   );
   console.log("lowToHighTotalSortedVotes", lowToHighTotalSortedVotes);
   await Promise.all(
-    lowToHighTotalSortedVotes.map(async (vote) => {
+    lowToHighTotalSortedVotes.map((vote) => {
       const voteIndex = trackIndex(tracks, vote.trackUri);
       const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
 
@@ -244,22 +244,22 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
         `${vote.trackUri} is at index ${voteIndex} with #${vote.total} votes to ${newIndex}`
       );
       // if vote.total < 0, add to bottom
-      await updatePlaylistTrackIndexAsync(
+      console.log("update track list");
+      return updatePlaylistTrackIndexAsync(
         playlistId,
         accessToken,
         [vote.trackUri],
         voteIndex,
         newIndex
       );
-      console.log("update track list");
     })
-  ).then(async () => {
-    console.log(
-      "publish reordered track command to ",
-      `fissa/room/${room.pin}/tracks/reordered`
-    );
-    await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
-  });
+  );
+
+  console.log(
+    "publish reordered track command to ",
+    `fissa/room/${room.pin}/tracks/reordered`
+  );
+  await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
 
   try {
   } catch (e) {
