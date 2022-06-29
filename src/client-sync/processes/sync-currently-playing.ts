@@ -2,7 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
-import { publishAsync } from "../../utils/mqtt";
+import { publishAsync, updateVotes } from "../../utils/mqtt";
 import {
   getMyCurrentPlaybackStateAsync,
   poorMansCurrentIndexAsync,
@@ -36,13 +36,6 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
 
       if (!myCurrentPlayingTrack) return;
 
-      const collection = await mongoCollectionAsync("votes");
-      // We want to remove all votes for the current playing track
-      await collection.deleteMany({
-        pin: room.pin,
-        trackUri: myCurrentPlayingTrack.item.uri,
-      });
-
       await updateRoom(myCurrentPlayingTrack, room);
     } catch (error) {
       const { statusCode, message } = error;
@@ -67,16 +60,18 @@ const updateRoom = async (
   const { state, previousState } = getState(room.pin, currentlyPlaying);
 
   if (!previousState) {
-    await publish(state, room, currentlyPlaying);
+    await publishNewRoomState(state, room, currentlyPlaying);
+    await publishVotes(room.pin, currentlyPlaying.item.uri);
     return;
   }
 
   if (state.uri !== previousState.uri) {
-    await publish(state, room, currentlyPlaying);
+    await publishNewRoomState(state, room, currentlyPlaying);
+    await publishVotes(room.pin, currentlyPlaying.item.uri);
     return;
   }
   if (state.is_playing !== previousState.is_playing) {
-    await publish(state, room, currentlyPlaying);
+    await publishNewRoomState(state, room, currentlyPlaying);
     return;
   }
 
@@ -85,12 +80,23 @@ const updateRoom = async (
   // Just sync the room once every X spotify pings
   // The rest of the progress should be handled by the client
   if (diff > SPOTIFY_PING_TIME * 10) {
-    await publish(state, room, currentlyPlaying);
+    await publishNewRoomState(state, room, currentlyPlaying);
     return;
   }
 };
 
-const publish = async (
+const publishVotes = async (pin: string, trackUri: string) => {
+  const collection = await mongoCollectionAsync("votes");
+
+  // We want to remove all votes for the current playing track
+  await collection.deleteMany({
+    pin,
+    trackUri,
+  });
+  await updateVotes(pin);
+};
+
+const publishNewRoomState = async (
   state: State,
   room: Room,
   currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
