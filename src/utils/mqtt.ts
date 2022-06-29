@@ -7,17 +7,25 @@ export const publishAsync = async (
   topic: string,
   message: any
 ): Promise<void> => {
-  try {
-    mqtt
-      .connect("mqtt://mqtt.mdd-tardis.net", MQTT_CREDENTIALS)
-      .publish(topic, JSON.stringify(message), (error) => {
-        if (!error) return;
+  return new Promise((resolve, reject) => {
+    try {
+      mqtt
+        .connect("mqtt://mqtt.mdd-tardis.net", MQTT_CREDENTIALS)
+        .publish(topic, JSON.stringify(message), (error) => {
+          if (error) {
+            console.warn(error);
+            reject(error);
+            return;
+          }
 
-        console.warn(error);
-      });
-  } catch (error) {
-    return;
-  }
+          return resolve(message);
+        });
+    } catch (error) {
+      console.warn(error);
+      reject(error);
+      return;
+    }
+  });
 };
 
 export const updateVotes = async (pin: string): Promise<SortedVotes> => {
