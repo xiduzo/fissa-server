@@ -37,6 +37,7 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
       );
 
       if (!myCurrentPlayingTrack) return;
+      if (!myCurrentPlayingTrack.item) return;
 
       await updateRoom(myCurrentPlayingTrack, room);
     } catch (error) {
@@ -140,7 +141,7 @@ const getState = (
     uri,
     progress_ms: previousState?.progress_ms ?? progress_ms,
     is_playing,
-    is_in_playlist: currentlyPlaying.context.uri.includes(room.playlistId),
+    is_in_playlist: currentlyPlaying?.context?.uri.includes(room.playlistId),
     currentIndex: 0,
   };
 
