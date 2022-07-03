@@ -237,9 +237,8 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     );
     const updatePromises = lowToHighTotalSortedVotes.map((vote) => {
       const voteIndex = trackIndex(tracks, vote.trackUri);
-      const newIndex = vote.total < 0 ? tracks.length : currentIndex + 1;
+      const newIndex = vote.total < 0 ? tracks.length : currentIndex + 2; // The next track in queue is locked
 
-      // if vote.total < 0, add to bottom
       const promise = updatePlaylistTrackIndexAsync(
         playlistId,
         accessToken,
