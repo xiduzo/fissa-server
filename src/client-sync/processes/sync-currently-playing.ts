@@ -71,7 +71,7 @@ const updateRoom = async (
     return;
   }
 
-  if (state.uri !== previousState.uri) {
+  if (state.uri !== previousState?.uri) {
     await publishNewRoomState(state, room, currentlyPlaying);
     await publishVotes(room.pin, currentlyPlaying.item.uri);
     return;
