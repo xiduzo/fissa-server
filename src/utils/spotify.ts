@@ -55,8 +55,6 @@ export const createPlaylistAsync = async (
 
     let trackUris: string[] = [];
 
-    setShuffleAsync(accessToken);
-
     if (playlistId) {
       const trackObjects = await getPlaylistTracksAsync(
         accessToken,
@@ -76,12 +74,14 @@ export const createPlaylistAsync = async (
       await addTracksToPlaylistAsync(accessToken, playlist.body.id, trackUris);
     }
 
+    setShuffleAsync(accessToken);
+
     return {
       playlistId: playlist.body.id,
       createdBy: playlist.body.owner.id,
     };
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error("createPlaylistAsync", error);
   }
 };
 
@@ -171,7 +171,7 @@ export const poorMansCurrentIndexAsync = async (
 ): Promise<number> => {
   try {
     const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-    const index = trackIndex(tracks, currentlyPlaying.item.uri);
+    const index = trackIndex(tracks, currentlyPlaying.item?.uri ?? "");
     return index;
   } catch (e) {
     console.error(e);
