@@ -183,7 +183,7 @@ export const trackIndex = (
   tracks: SpotifyApi.TrackObjectFull[],
   trackUri: string
 ): number => {
-  const trackUris = tracks.map((track) => track.uri);
+  const trackUris = tracks?.map((track) => track.uri) ?? [];
 
   const index = trackUris.indexOf(trackUri);
 
