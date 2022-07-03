@@ -13,6 +13,7 @@ type State = {
   progress_ms: number;
   is_playing: boolean;
   currentIndex: number;
+  is_in_playlist: boolean;
 };
 
 // TODO: move this to a share cache?
@@ -47,6 +48,7 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
         case StatusCodes.INTERNAL_SERVER_ERROR:
           console.warn(StatusCodes.INTERNAL_SERVER_ERROR, message);
           break;
+
         default:
           console.warn("UNKOWN ERROR", message);
           break;
@@ -61,7 +63,7 @@ const updateRoom = async (
   currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse,
   room: Room
 ) => {
-  const { state, previousState } = getState(room.pin, currentlyPlaying);
+  const { state, previousState } = getState(room, currentlyPlaying);
 
   if (!previousState) {
     await publishNewRoomState(state, room, currentlyPlaying);
@@ -123,7 +125,7 @@ const publishNewRoomState = async (
 };
 
 const getState = (
-  pin: string,
+  room: Room,
   currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
 ) => {
   const {
@@ -132,16 +134,17 @@ const getState = (
     item: { uri },
   } = currentlyPlaying;
 
-  const previousState = states.get(pin);
+  const previousState = states.get(room.pin);
 
   const state: State = {
     uri,
     progress_ms: previousState?.progress_ms ?? progress_ms,
     is_playing,
+    is_in_playlist: currentlyPlaying.context.uri.includes(room.playlistId),
     currentIndex: 0,
   };
 
-  states.set(pin, state);
+  states.set(room.pin, state);
 
   return { state, previousState };
 };
