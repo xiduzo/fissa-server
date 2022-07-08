@@ -1,4 +1,4 @@
-FROM node:16
+FROM node
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 # where available (npm@5+)
 COPY package*.json ./
 
-RUN npm install
+RUN yarn
 # If you are building your code for production
 # RUN npm ci --only=production
 
@@ -17,7 +17,7 @@ COPY . .
 
 # Build the app
 COPY tsconfig.json ./
-RUN npm run build
+RUN yarn build
 
 EXPOSE 8000
 CMD [ "node", "public/client-sync/index.js" ]
