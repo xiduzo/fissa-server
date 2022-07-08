@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon --trace-warnings",
+    "run:client-sync": "node public/client-sync/index.js",
     "build": "tsc"
   },
   "author": "xiduzo",
