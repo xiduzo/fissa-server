@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { createServer } from "http";
 import cache from "node-cache";
 import { syncCurrentlyPlaying } from "./processes/sync-currently-playing";

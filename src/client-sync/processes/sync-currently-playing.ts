@@ -45,18 +45,22 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
       switch (statusCode) {
         case StatusCodes.UNAUTHORIZED:
           console.warn("UNAUTHORIZED", message);
+          // Reset access token for the room. This should sort itself out
+          // with the sync-rooms process
+          if (message.includes("Spotify's Web API")) {
+            // Overwrite app cache so we don't keep using the old access token
+            console.warn("Overwriting access token in room cache");
+            appCache.set("rooms", [
+              ...rooms.filter((_room) => _room.pin !== room.pin),
+              {
+                ...room,
+                accessToken: null,
+              },
+            ]);
+          }
           break;
         case StatusCodes.INTERNAL_SERVER_ERROR:
           console.warn("INTERNAL_SERVER_ERROR", message);
-          // Reset access token for the room. This should sort itself out
-          // with the sync-rooms process
-          if (message.includes("Spotify's Web API.")) {
-            const collection = await mongoCollectionAsync("room");
-            collection.updateOne(
-              { pin: room.pin },
-              { $set: { accessToken: null } }
-            );
-          }
           break;
         default:
           console.warn("UNKOWN ERROR", message);
