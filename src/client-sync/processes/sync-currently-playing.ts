@@ -45,8 +45,8 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
 
       await updateRoom(currentlyPlaying, room);
     } catch (error) {
+      console.log("----- something went wrong -----", error);
       const { statusCode, message } = error;
-      console.log("----- something went wrong -----");
       switch (statusCode) {
         case StatusCodes.UNAUTHORIZED:
           console.warn("UNAUTHORIZED", message);
