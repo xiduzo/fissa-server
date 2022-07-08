@@ -132,8 +132,8 @@ export const getMyCurrentPlaybackStateAsync = async (
 
     return response.body;
   } catch (error: any) {
-    console.error("No current playback state", error);
-    // throw 'No current playback state'
+    console.error("No current playback state");
+    throw new Error("No current playback state");
   }
 };
 
