@@ -34,8 +34,8 @@ export const addTracksToPlaylistAsync = async (
     }
 
     return tracksAdded;
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error("unable to add tracks to playlist", error);
     return 0;
   }
 };
@@ -81,7 +81,7 @@ export const createPlaylistAsync = async (
       createdBy: playlist.body.owner.id,
     };
   } catch (error) {
-    console.error("createPlaylistAsync", error);
+    console.error("unable to create playlist", error);
   }
 };
 
@@ -117,7 +117,7 @@ export const getPlaylistTracksAsync = async (
 
     return tracks;
   } catch (error) {
-    console.error(error);
+    console.error("could not get playlist tracks", error);
   }
 };
 
@@ -133,7 +133,7 @@ export const getMyCurrentPlaybackStateAsync = async (
     return response.body;
   } catch (error: any) {
     console.error("No current playback state");
-    throw new Error("No current playback state");
+    throw error;
   }
 };
 
@@ -147,6 +147,7 @@ export const getMeAsync = async (accessToken: string) => {
     return response.body;
   } catch (error: any) {
     console.error("failed to get me", error);
+    throw error;
   }
 };
 
@@ -159,8 +160,9 @@ export const setShuffleAsync = async (
     spotifyApi.setAccessToken(accessToken);
 
     await spotifyApi.setShuffle(shuffle);
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
+    throw error;
   }
 };
 
@@ -173,8 +175,8 @@ export const poorMansCurrentIndexAsync = async (
     const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
     const index = trackIndex(tracks, currentlyPlaying.item?.uri ?? "");
     return index;
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     return -1;
   }
 };
@@ -213,8 +215,8 @@ export const updatePlaylistTrackIndexAsync = async (
         range_length: uris.length,
       }
     );
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error("could not update track index", error);
   }
 };
 
@@ -253,6 +255,6 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     await Promise.all(updatePromises);
     await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
   } catch (error) {
-    console.error(error);
+    console.error("error reordering playlist", error);
   }
 };

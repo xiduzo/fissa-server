@@ -45,7 +45,6 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
 
       await updateRoom(currentlyPlaying, room);
     } catch (error) {
-      console.log("----- something went wrong -----", error);
       const { statusCode, message } = error;
       switch (statusCode) {
         case StatusCodes.UNAUTHORIZED:
@@ -54,7 +53,6 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
         case StatusCodes.INTERNAL_SERVER_ERROR:
           console.warn("INTERNAL_SERVER_ERROR", message);
           break;
-
         default:
           console.warn("UNKOWN ERROR", message);
           break;
