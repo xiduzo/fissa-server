@@ -31,15 +31,19 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
       return;
     }
 
+    console.log("accessToken", accessToken);
+
     try {
-      const myCurrentPlayingTrack = await getMyCurrentPlaybackStateAsync(
+      const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
         accessToken
       );
 
-      if (!myCurrentPlayingTrack) return;
-      if (!myCurrentPlayingTrack.item) return;
+      console.log("currentlyPlaying", currentlyPlaying);
 
-      await updateRoom(myCurrentPlayingTrack, room);
+      if (!currentlyPlaying) return;
+      if (!currentlyPlaying.item) return;
+
+      await updateRoom(currentlyPlaying, room);
     } catch (error) {
       const { statusCode, message } = error;
       console.log("----- something went wrong -----");
