@@ -31,14 +31,10 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
       return;
     }
 
-    console.log("accessToken", accessToken);
-
     try {
       const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
         accessToken
       );
-
-      console.log("currentlyPlaying", currentlyPlaying);
 
       if (!currentlyPlaying) return;
       if (!currentlyPlaying.item) return;
@@ -52,6 +48,15 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
           break;
         case StatusCodes.INTERNAL_SERVER_ERROR:
           console.warn("INTERNAL_SERVER_ERROR", message);
+          // Reset access token for the room. This should sort itself out
+          // with the sync-rooms process
+          if (message.includes("Spotify's Web API.")) {
+            const collection = await mongoCollectionAsync("room");
+            collection.updateOne(
+              { pin: room.pin },
+              { $set: { accessToken: null } }
+            );
+          }
           break;
         default:
           console.warn("UNKOWN ERROR", message);
