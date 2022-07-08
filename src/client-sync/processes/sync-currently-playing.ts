@@ -51,7 +51,7 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
             // Overwrite app cache so we don't keep using the old access token
             console.warn("Overwriting access token in room cache");
             appCache.set("rooms", [
-              ...rooms.filter((_room) => _room.pin !== room.pin),
+              ...rooms.filter((_room) => _room.accessToken !== accessToken),
               {
                 ...room,
                 accessToken: null,
