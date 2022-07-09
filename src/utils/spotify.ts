@@ -74,7 +74,11 @@ export const createPlaylistAsync = async (
       await addTracksToPlaylistAsync(accessToken, playlist.body.id, trackUris);
     }
 
-    setShuffleAsync(accessToken);
+    try {
+      await setShuffleAsync(accessToken);
+    } catch {
+      // ignore
+    }
 
     return {
       playlistId: playlist.body.id,
@@ -162,7 +166,7 @@ export const setShuffleAsync = async (
     await spotifyApi.setShuffle(shuffle);
   } catch (error) {
     console.error(error);
-    throw error;
+    // throw error;
   }
 };
 
