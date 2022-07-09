@@ -49,7 +49,7 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
           // with the sync-rooms process
           if (message.includes("Spotify's Web API")) {
             // Overwrite app cache so we don't keep using the old access token
-            console.warn("Overwriting access token in room cache");
+            console.warn("Overwriting access token in room cache", room.pin);
             appCache.set("rooms", [
               ...rooms.filter((_room) => _room.accessToken !== accessToken),
               {
