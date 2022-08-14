@@ -13,7 +13,9 @@ const handler: VercelApiHandler = async (request, response) => {
     case "GET":
       const query = request.query;
       const pin = "1234";
-      response.status(StatusCodes.OK).json({ request });
+      response
+        .status(StatusCodes.OK)
+        .json({ query: request.query, other: request.body });
       return;
       if (!pin) {
         response
