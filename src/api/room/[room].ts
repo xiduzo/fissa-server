@@ -2,11 +2,6 @@ import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
-import { createPin } from "../../utils/pin";
-import {
-  createPlaylistAsync,
-  startPlaylistFromTopAsync,
-} from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
