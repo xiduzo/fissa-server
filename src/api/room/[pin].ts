@@ -6,7 +6,7 @@ import { mongoCollectionAsync } from "../../utils/database";
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case "GET":
-      const pin = request.query.pin;
+      const pin = (request.query.pin as string).toUpperCase();
 
       if (!pin) {
         response
