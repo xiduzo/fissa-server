@@ -12,7 +12,7 @@ const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case "GET":
       response.json({
-        app: "room::tracks",
+        app: "room::track",
       });
       break;
     case "POST":
