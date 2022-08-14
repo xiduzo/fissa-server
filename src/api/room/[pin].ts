@@ -4,18 +4,10 @@ import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
 
 const handler: VercelApiHandler = async (request, response) => {
-  response
-    .status(StatusCodes.OK)
-    .json({ query: request.query, other: request.body });
-  return;
   switch (request.method) {
     case "GET":
-      const query = request.query;
-      const pin = "1234";
-      response
-        .status(StatusCodes.OK)
-        .json({ query: request.query, other: request.body });
-      return;
+      const pin = request.query.pin;
+
       if (!pin) {
         response
           .status(StatusCodes.BAD_REQUEST)
