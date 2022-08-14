@@ -4,8 +4,9 @@ import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
 import {
-  getMyCurrentPlaybackStateAsync,
+  getMyCurrentPlaybackStateAsync as getPlaybackStateAsync,
   poorMansCurrentIndexAsync,
+  startPlaylistFromTopAsync,
 } from "../../utils/spotify";
 
 type State = {
@@ -32,12 +33,12 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
     }
 
     try {
-      const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
-        accessToken
-      );
+      const currentlyPlaying = await getPlaybackStateAsync(accessToken);
 
-      if (!currentlyPlaying) return;
-      if (!currentlyPlaying.item) return;
+      if (!currentlyPlaying?.item) {
+        await startPlaylistFromTopAsync(room);
+        return;
+      }
 
       await updateRoom(currentlyPlaying, room);
     } catch (error) {

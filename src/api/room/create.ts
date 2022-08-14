@@ -2,7 +2,10 @@ import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { mongoCollectionAsync } from "../../utils/database";
 import { createPin } from "../../utils/pin";
-import { createPlaylistAsync } from "../../utils/spotify";
+import {
+  createPlaylistAsync,
+  startPlaylistFromTopAsync,
+} from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -41,6 +44,7 @@ const handler: VercelApiHandler = async (request, response) => {
         };
 
         await collection.insertOne(room);
+        await startPlaylistFromTopAsync(room);
 
         response.status(StatusCodes.OK).json(room);
       } catch (error) {

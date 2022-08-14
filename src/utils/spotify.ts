@@ -75,7 +75,7 @@ export const createPlaylistAsync = async (
     }
 
     try {
-      await setShuffleAsync(accessToken);
+      await disableShuffleAsync(accessToken);
     } catch {
       // ignore
     }
@@ -155,15 +155,14 @@ export const getMeAsync = async (accessToken: string) => {
   }
 };
 
-export const setShuffleAsync = async (
-  accessToken: string,
-  shuffle = false
+export const disableShuffleAsync = async (
+  accessToken: string
 ): Promise<void> => {
   try {
     const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
     spotifyApi.setAccessToken(accessToken);
 
-    await spotifyApi.setShuffle(shuffle);
+    await spotifyApi.setShuffle(false);
   } catch (error) {
     console.error(error);
     // throw error;
@@ -185,7 +184,7 @@ export const poorMansCurrentIndexAsync = async (
   }
 };
 
-export const trackIndex = (
+const trackIndex = (
   tracks: SpotifyApi.TrackObjectFull[],
   trackUri: string
 ): number => {
@@ -200,7 +199,7 @@ export const trackIndex = (
  * @param rangeStart The position of the first track to be reordered.
  * @param insertBefore The position where the tracks should be inserted.
  */
-export const updatePlaylistTrackIndexAsync = async (
+const updatePlaylistTrackIndexAsync = async (
   playlistId: string,
   accessToken: string,
   uris: string[],
@@ -261,4 +260,17 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
   } catch (error) {
     console.error("error reordering playlist", error);
   }
+};
+
+export const startPlaylistFromTopAsync = async (room: Room) => {
+  const { accessToken, playlistId } = room;
+  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  spotifyApi.setAccessToken(accessToken);
+
+  await spotifyApi.play({
+    context_uri: `spotify:playlist:${playlistId}`,
+    offset: {
+      position: 0,
+    },
+  });
 };
