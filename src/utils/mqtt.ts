@@ -27,16 +27,3 @@ export const publishAsync = async (
     }
   });
 };
-
-export const updateVotes = async (pin: string): Promise<SortedVotes> => {
-  try {
-    const collection = await mongoCollectionAsync("votes");
-    const allVotes = await collection.find<Vote>({ pin }).toArray();
-    const sorted = sortVotes(allVotes);
-    await publishAsync(`fissa/room/${pin}/votes`, sorted);
-    return sorted;
-  } catch (error) {
-    console.warn(error);
-    return {};
-  }
-};

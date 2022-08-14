@@ -2,7 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
-import { publishAsync, updateVotes } from "../../utils/mqtt";
+import { publishAsync } from "../../utils/mqtt";
 import {
   getMyCurrentPlaybackStateAsync,
   poorMansCurrentIndexAsync,
@@ -80,13 +80,13 @@ const updateRoom = async (
 
   if (!previousState) {
     await publishNewRoomState(state, room, currentlyPlaying);
-    await publishVotes(room.pin, currentlyPlaying.item.uri);
+    await deleteVotesForTrack(room.pin, currentlyPlaying.item.uri);
     return;
   }
 
   if (state.uri !== previousState?.uri) {
     await publishNewRoomState(state, room, currentlyPlaying);
-    await publishVotes(room.pin, currentlyPlaying.item.uri);
+    await deleteVotesForTrack(room.pin, currentlyPlaying.item.uri);
     return;
   }
   if (state.is_playing !== previousState.is_playing) {
@@ -104,7 +104,7 @@ const updateRoom = async (
   }
 };
 
-const publishVotes = async (pin: string, trackUri: string) => {
+const deleteVotesForTrack = async (pin: string, trackUri: string) => {
   const collection = await mongoCollectionAsync("votes");
 
   // We want to remove all votes for the current playing track
@@ -112,7 +112,6 @@ const publishVotes = async (pin: string, trackUri: string) => {
     pin,
     trackUri,
   });
-  await updateVotes(pin);
 };
 
 const publishNewRoomState = async (

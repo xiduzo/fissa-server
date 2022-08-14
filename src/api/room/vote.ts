@@ -1,9 +1,6 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { Room } from "../../lib/interfaces/Room";
-import { mongoCollectionAsync, voteAsync } from "../../utils/database";
-import { updateVotes } from "../../utils/mqtt";
-import { reorderPlaylist } from "../../utils/spotify";
+import { voteAsync } from "../../utils/database";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -22,10 +19,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
       try {
         const vote = await voteAsync(pin, accessToken, trackUri, state);
-        const sortedVotes = await updateVotes(pin);
-        const collection = await mongoCollectionAsync("room");
-        const room = await collection.findOne<Room>({ pin });
-        await reorderPlaylist(room, sortedVotes);
+
         response.status(StatusCodes.OK).json(vote);
       } catch (error) {
         console.error(error);

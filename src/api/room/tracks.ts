@@ -3,11 +3,9 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { VoteState } from "../../lib/interfaces/Vote";
 import { mongoCollectionAsync, voteAsync } from "../../utils/database";
-import { publishAsync, updateVotes } from "../../utils/mqtt";
 import {
   addTracksToPlaylistAsync,
   getPlaylistTracksAsync,
-  reorderPlaylist,
 } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -53,8 +51,7 @@ const handler: VercelApiHandler = async (request, response) => {
             return voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
         );
-        const sortedVotes = await updateVotes(room.pin);
-        await reorderPlaylist(room, sortedVotes);
+
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
         console.error(error);
