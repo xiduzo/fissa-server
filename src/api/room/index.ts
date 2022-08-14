@@ -11,7 +11,10 @@ import {
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case "GET":
-      const { pin } = request.body;
+      const query = request.query;
+      const pin = "1234";
+      response.status(StatusCodes.OK).json({ request });
+      return;
       if (!pin) {
         response
           .status(StatusCodes.BAD_REQUEST)
