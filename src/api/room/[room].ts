@@ -4,6 +4,10 @@ import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
 
 const handler: VercelApiHandler = async (request, response) => {
+  response
+    .status(StatusCodes.OK)
+    .json({ query: request.query, other: request.body });
+  return;
   switch (request.method) {
     case "GET":
       const query = request.query;
