@@ -7,6 +7,7 @@ import {
   startPlaylistFromTopAsync,
 } from "../../utils/spotify";
 
+// TODO: dont give back the accessToken in response object
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case "GET":

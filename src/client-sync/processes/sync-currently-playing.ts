@@ -40,6 +40,8 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
         return;
       }
 
+      // TODO check if the playlist context is the same as the room playlist
+
       await updateRoom(currentlyPlaying, room);
     } catch (error) {
       const { statusCode, message } = error;
