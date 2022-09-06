@@ -1,6 +1,10 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { voteAsync } from "../../utils/database";
+import { mongoCollectionAsync } from "../../utils/database";
+import { Vote } from "../../lib/interfaces/Vote";
+import { sortVotes } from "../../lib/interfaces/Vote";
+import { publishAsync } from "../../utils/mqtt";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -19,7 +23,12 @@ const handler: VercelApiHandler = async (request, response) => {
 
       try {
         const vote = await voteAsync(pin, accessToken, trackUri, state);
+        const collection = await mongoCollectionAsync("votes");
 
+        const allVotes = await collection.find<Vote>({ pin }).toArray();
+        const sorted = sortVotes(allVotes);
+        console.log("new vote");
+        await publishAsync(`fissa/room/${pin}/votes`, sorted);
         response.status(StatusCodes.OK).json(vote);
       } catch (error) {
         console.error(error);

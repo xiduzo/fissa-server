@@ -65,6 +65,9 @@ export const syncCurrentlyPlaying = (appCache: cache) => {
         case StatusCodes.INTERNAL_SERVER_ERROR:
           console.warn("INTERNAL_SERVER_ERROR", message);
           break;
+        case StatusCodes.NOT_FOUND:
+          if (message.includes("NO_ACTIVE_DEVICE")) return;
+          console.warn("NOT_FOUND", message);
         default:
           console.warn("UNKOWN ERROR", message);
           break;

@@ -1,7 +1,7 @@
 import mqtt from "mqtt";
 import { MQTT_CREDENTIALS } from "../lib/constants/credentials";
-import { SortedVotes, sortVotes, Vote } from "../lib/interfaces/Vote";
-import { mongoCollectionAsync } from "./database";
+
+const connection = mqtt.connect("mqtt://mqtt.mdd-tardis.net", MQTT_CREDENTIALS);
 
 export const publishAsync = async (
   topic: string,
@@ -9,21 +9,17 @@ export const publishAsync = async (
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
-      mqtt
-        .connect("mqtt://mqtt.mdd-tardis.net", MQTT_CREDENTIALS)
-        .publish(topic, JSON.stringify(message), (error) => {
-          if (error) {
-            console.warn(error);
-            reject(error);
-            return;
-          }
+      connection.publish(topic, JSON.stringify(message), (error) => {
+        if (error) {
+          console.warn("publishAsync", error);
+          reject(error);
+        }
 
-          return resolve(message);
-        });
+        resolve(message);
+      });
     } catch (error) {
-      console.warn(error);
+      console.warn("publishAsync", error);
       reject(error);
-      return;
     }
   });
 };

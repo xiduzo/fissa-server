@@ -9,6 +9,8 @@ import {
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
 import { Vote, VoteState } from "../lib/interfaces/Vote";
 import { getMeAsync } from "./spotify";
+import { publishAsync } from "./mqtt";
+import { sortVotes } from "../lib/interfaces/Vote";
 
 const { user, password } = MONGO_CREDENTIALS;
 
