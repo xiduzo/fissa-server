@@ -8,7 +8,7 @@ export const syncRooms = async (appCache: cache) => {
     .find<Room>({ accessToken: { $ne: null } })
     .toArray();
 
-  appCache.set("rooms", rooms);
+  appCache.set("rooms", rooms ?? []);
 
-  setTimeout(() => syncRooms(appCache), 15_000);
+  setTimeout(() => syncRooms(appCache), 5_000);
 };

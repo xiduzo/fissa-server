@@ -1,10 +1,11 @@
+import { logger } from "@utils/logger";
 import { StatusCodes } from "http-status-codes";
 import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
 import {
-  getMyCurrentPlaybackStateAsync as getPlaybackStateAsync,
+  getMyCurrentPlaybackStateAsync,
   poorMansCurrentIndexAsync,
   startPlaylistFromTopAsync,
 } from "../../utils/spotify";
@@ -17,65 +18,59 @@ type State = {
   is_in_playlist: boolean;
 };
 
-// TODO: move this to a share cache?
+// TODO: move this to a shared cache?
 const states = new Map<string, State>();
 
-const SPOTIFY_PING_TIME = 2_000;
 const PROGRESS_SYNC_TIME = 20_000;
 
-export const syncCurrentlyPlaying = (appCache: cache) => {
-  const rooms = appCache.get<Room[]>("rooms");
-  rooms?.forEach(async (room) => {
-    const { accessToken } = room;
-    if (!accessToken) {
-      // Somehow we have an active room without an access token
-      return;
-    }
-
-    try {
-      const currentlyPlaying = await getPlaybackStateAsync(accessToken);
-
-      if (!currentlyPlaying?.item) {
-        await startPlaylistFromTopAsync(room);
-        return;
-      }
-
-      // TODO check if the playlist context is the same as the room playlist
-
-      await updateRoom(currentlyPlaying, room);
-    } catch (error) {
-      const { statusCode, message } = error;
-      switch (statusCode) {
-        case StatusCodes.UNAUTHORIZED:
-          console.warn("UNAUTHORIZED", message);
-          // Reset access token for the room. This should sort itself out
-          // with the sync-rooms process
-          if (message.includes("Spotify's Web API")) {
-            // Overwrite app cache so we don't keep using the old access token
-            console.warn("Overwriting access token in room cache", room.pin);
-            appCache.set("rooms", [
-              ...rooms.filter((_room) => _room.accessToken !== accessToken),
-              {
-                ...room,
-                accessToken: null,
-              },
-            ]);
-          }
-          break;
-        case StatusCodes.INTERNAL_SERVER_ERROR:
-          console.warn("INTERNAL_SERVER_ERROR", message);
-          break;
-        case StatusCodes.NOT_FOUND:
-          if (message.includes("NO_ACTIVE_DEVICE")) return;
-          console.warn("NOT_FOUND", message);
-        default:
-          console.warn("UNKOWN ERROR", message);
-          break;
-      }
-    }
+export const syncCurrentlyPlaying = async (appCache: cache) => {
+  // const rooms: Room[] = appCache.get<Room[]>("rooms") ?? [
+  //   {
+  //     pin: "1234",
+  //     playlistId: "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",
+  //     accessToken: "ad",
+  //     currentIndex: 0,
+  //     expectedEndTime: 0,
+  //     id: "1234",
+  //   },
+  // ];
+  const rooms: Room[] = Array.from({ length: 2 }).map((_, i) => {
+    const now = new Date();
+    now.setTime(now.getTime() + 1000 * (Math.random() * 15));
+    logger.warn(now);
+    return {
+      pin: "1234",
+      playlistId: "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",
+      accessToken: "ad",
+      currentIndex: 0,
+      expectedEndTime: 1234,
+      id: "1234",
+    };
   });
 
-  setTimeout(() => syncCurrentlyPlaying(appCache), SPOTIFY_PING_TIME);
+  const promises = rooms.map(async (room) => {
+    // Whatever happens we need to return a resolved promise
+    // so all promises are resolved and we can loop again
+    return new Promise(async (resolve) => {
+      try {
+        const { accessToken } = room;
+        if (!accessToken) {
+          // Somehow we have an active room without an access token
+          // TODO add refresh token to DB and use to get new access token
+          throw new Error("No access token for room");
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      } catch (error) {
+        catchError(error, appCache, room);
+      } finally {
+        resolve(undefined);
+      }
+    });
+  });
+
+  await Promise.all(promises);
+  syncCurrentlyPlaying(appCache);
 };
 
 const updateRoom = async (
@@ -165,4 +160,36 @@ const getState = (
   states.set(room.pin, state);
 
   return { state, previousState };
+};
+
+const catchError = (error: any, appCache: cache, room: Room) => {
+  const rooms = appCache.get<Room[]>("rooms");
+  const { statusCode, message } = error;
+  switch (statusCode) {
+    case StatusCodes.UNAUTHORIZED:
+      logger.warn("UNAUTHORIZED", message);
+      // Reset access token for the room. This should sort itself out
+      // with the sync-rooms process
+      if (message.includes("Spotify's Web API")) {
+        // Overwrite app cache so we don't keep using the old access token
+        logger.warn("Overwriting access token in room cache", room.pin);
+        appCache.set("rooms", [
+          ...rooms.filter((_room) => _room.accessToken !== room.accessToken),
+          {
+            ...room,
+            accessToken: null,
+          },
+        ]);
+      }
+      break;
+    case StatusCodes.INTERNAL_SERVER_ERROR:
+      logger.warn("INTERNAL_SERVER_ERROR", message);
+      break;
+    case StatusCodes.NOT_FOUND:
+      if (message.includes("NO_ACTIVE_DEVICE")) return;
+      logger.warn("NOT_FOUND", message);
+    default:
+      logger.warn("UNKOWN ERROR", message);
+      break;
+  }
 };

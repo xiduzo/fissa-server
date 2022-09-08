@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import "dotenv/config";
 import { createServer } from "http";
 import cache from "node-cache";
@@ -11,13 +12,14 @@ const appCache = new cache({
 
 const httpServer = createServer();
 
-// TODO spawn as child processes
-syncRooms(appCache);
-syncCurrentlyPlaying(appCache);
-syncPlaylistOrder(appCache);
-
 const port = process.env.PORT ?? process.env.NODE_PORT ?? 8000;
 
 httpServer.listen(port, async () => {
-  console.log("Server running", httpServer.address());
+  logger.info("Server running", httpServer.address());
+
+  // TODO spawn as child processes
+  appCache.set("rooms", []);
+  syncRooms(appCache);
+  syncCurrentlyPlaying(appCache);
+  syncPlaylistOrder(appCache);
 });

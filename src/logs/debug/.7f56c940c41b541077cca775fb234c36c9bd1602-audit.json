@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": false,
+        "amount": 30
+    },
+    "auditLog": "/Users/sander.boer/Documents/fissa/fissa-server/src/logs/debug/.7f56c940c41b541077cca775fb234c36c9bd1602-audit.json",
+    "files": [
+        {
+            "date": 1662673338536,
+            "name": "/Users/sander.boer/Documents/fissa/fissa-server/src/logs/debug/2022-09-08.log",
+            "hash": "557677ce4e71f59e1b36626ab16a2b784158c1f2dbff3f4334d4338f2099ef91"
+        }
+    ],
+    "hashType": "sha256"
+}

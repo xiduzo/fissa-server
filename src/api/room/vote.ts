@@ -5,6 +5,7 @@ import { mongoCollectionAsync } from "../../utils/database";
 import { Vote } from "../../lib/interfaces/Vote";
 import { sortVotes } from "../../lib/interfaces/Vote";
 import { publishAsync } from "../../utils/mqtt";
+import { logger } from "@utils/logger";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -27,11 +28,10 @@ const handler: VercelApiHandler = async (request, response) => {
 
         const allVotes = await collection.find<Vote>({ pin }).toArray();
         const sorted = sortVotes(allVotes);
-        console.log("new vote");
         await publishAsync(`fissa/room/${pin}/votes`, sorted);
         response.status(StatusCodes.OK).json(vote);
       } catch (error) {
-        console.error(error);
+        logger.error(error);
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);

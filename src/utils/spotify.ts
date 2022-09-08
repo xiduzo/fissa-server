@@ -2,6 +2,7 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 import { Room } from "../lib/interfaces/Room";
 import { SortedVotes } from "../lib/interfaces/Vote";
+import { logger } from "./logger";
 import { publishAsync } from "./mqtt";
 
 enum SpotifyLimits {
@@ -35,7 +36,7 @@ export const addTracksToPlaylistAsync = async (
 
     return tracksAdded;
   } catch (error) {
-    console.error("addTracksToPlaylistAsync", error);
+    logger.error("addTracksToPlaylistAsync", error);
     return 0;
   }
 };
@@ -65,8 +66,8 @@ export const createPlaylistAsync = async (
     }
 
     const playlist = await spotifyApi.createPlaylist("🟣🔴🟢🔵🟠🟡", {
-      public: false,
-      collaborative: true,
+      public: true,
+      collaborative: false,
       description: "Playlist created with FISSA",
     });
 
@@ -85,7 +86,7 @@ export const createPlaylistAsync = async (
       createdBy: playlist.body.owner.id,
     };
   } catch (error) {
-    console.error("createPlaylistAsync", error);
+    logger.error("createPlaylistAsync", error);
   }
 };
 
@@ -121,7 +122,7 @@ export const getPlaylistTracksAsync = async (
 
     return tracks;
   } catch (error) {
-    console.error("getPlaylistTracksAsync", error);
+    logger.error("getPlaylistTracksAsync", error);
   }
 };
 
@@ -136,7 +137,7 @@ export const getMyCurrentPlaybackStateAsync = async (
 
     return response.body;
   } catch (error) {
-    console.error("getMyCurrentPlaybackStateAsync", error);
+    logger.error("getMyCurrentPlaybackStateAsync", error);
     throw error;
   }
 };
@@ -150,7 +151,7 @@ export const getMeAsync = async (accessToken: string) => {
 
     return response.body;
   } catch (error) {
-    console.error("getMeAsync", error);
+    logger.error("getMeAsync", error);
     throw error;
   }
 };
@@ -164,7 +165,7 @@ export const disableShuffleAsync = async (
 
     await spotifyApi.setShuffle(false);
   } catch (error) {
-    console.error("disableShuffleAsync", error);
+    logger.error("disableShuffleAsync", error);
     // throw error;
   }
 };
@@ -179,7 +180,7 @@ export const poorMansCurrentIndexAsync = async (
     const index = trackIndex(tracks, currentlyPlaying.item?.uri ?? "");
     return index;
   } catch (error) {
-    console.error("poorMansCurrentIndexAsync", error);
+    logger.error("poorMansCurrentIndexAsync", error);
     return -1;
   }
 };
@@ -219,7 +220,7 @@ const updatePlaylistTrackIndexAsync = async (
       }
     );
   } catch (error) {
-    console.error("updatePlaylistTrackIndexAsync", error);
+    logger.error("updatePlaylistTrackIndexAsync", error);
   }
 };
 
@@ -258,7 +259,7 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
     await Promise.all(updatePromises);
     await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
   } catch (error) {
-    console.error("reorderPlaylist", error);
+    logger.error("reorderPlaylist", error);
   }
 };
 

@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import NodeCache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { sortVotes, Vote } from "../../lib/interfaces/Vote";
@@ -11,7 +12,7 @@ const updatePlaylist = async (room: Room): Promise<void> => {
     const sorted = sortVotes(allVotes);
     // await reorderPlaylist(room, sorted);
   } catch (error) {
-    console.warn("updatePlaylist", error);
+    logger.warn("updatePlaylist", error);
   }
 };
 

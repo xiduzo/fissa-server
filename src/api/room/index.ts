@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { mongoCollectionAsync } from "../../utils/database";
@@ -45,11 +46,11 @@ const handler: VercelApiHandler = async (request, response) => {
         };
 
         await collection.insertOne(room);
-        await startPlaylistFromTopAsync({ ...room, currentIndex: 0 });
+        // await startPlaylistFromTopAsync({ ...room, currentIndex: 0 });
 
         response.status(StatusCodes.OK).json(room);
       } catch (error) {
-        console.error(error);
+        logger.error(error);
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
