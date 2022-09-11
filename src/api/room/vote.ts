@@ -5,7 +5,7 @@ import { mongoCollectionAsync } from "../../utils/database";
 import { Vote } from "../../lib/interfaces/Vote";
 import { sortVotes } from "../../lib/interfaces/Vote";
 import { publishAsync } from "../../utils/mqtt";
-import { logger } from "@utils/logger";
+import { logger } from "../../utils/logger";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {

@@ -1,4 +1,4 @@
-import { logger } from "@utils/logger";
+import { logger } from "../../utils/logger";
 import NodeCache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { sortVotes, Vote } from "../../lib/interfaces/Vote";

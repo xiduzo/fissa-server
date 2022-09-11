@@ -1,8 +1,8 @@
-import { logger } from "@utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
+import { logger } from "../../utils/logger";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {

@@ -1,4 +1,4 @@
-import { logger } from "@utils/logger";
+import { logger } from "../../utils/logger";
 import "dotenv/config";
 import { createServer } from "http";
 import cache from "node-cache";

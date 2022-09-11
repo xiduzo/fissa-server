@@ -1,29 +1,14 @@
 {
   "compilerOptions": {
-    "target": "es2017",
-    "lib": ["es2017", "esnext.asynciterable"],
-    "typeRoots": ["node_modules/@types"],
-    "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "forceConsistentCasingInFileNames": true,
+    "rootDir": "./src",
     "moduleResolution": "node",
-    "module": "commonjs",
-    "pretty": true,
-    "sourceMap": true,
-    "declaration": true,
-    "outDir": "public",
-    "allowJs": true,
-    "noEmit": false,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "importHelpers": true,
-    "baseUrl": "src",
-    "paths": {
-      "@config": ["config"],
-      "@utils/*": ["utils/*"]
-    }
+    "target": "es5",
+    "module": "commonjs",
+    "sourceMap": true,
+    "outDir": "public",
+    "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "src/**/*.json", ".env"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "../node_modules"]
 }

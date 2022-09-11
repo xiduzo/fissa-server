@@ -1,13 +1,13 @@
-import { logger } from "@utils/logger";
 import { StatusCodes } from "http-status-codes";
 import cache from "node-cache";
+
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
+import { logger } from "../../utils/logger";
 import { publishAsync } from "../../utils/mqtt";
 import {
   getMyCurrentPlaybackStateAsync,
   poorMansCurrentIndexAsync,
-  startPlaylistFromTopAsync,
 } from "../../utils/spotify";
 
 type State = {
@@ -22,33 +22,25 @@ type State = {
 const states = new Map<string, State>();
 
 const PROGRESS_SYNC_TIME = 20_000;
+const NEXT_CHECK_MARGIN = 500;
+
+const rooms: Room[] = Array.from({ length: 2 }).map((_, i) => {
+  const now = new Date();
+  now.setTime(now.getTime() + 1000 * (Math.random() * 15));
+  return {
+    pin: "1234",
+    playlistId: "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",
+    accessToken: "ad",
+    currentIndex: 0,
+    expectedEndTime: now,
+    id: "1234",
+  };
+});
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
-  // const rooms: Room[] = appCache.get<Room[]>("rooms") ?? [
-  //   {
-  //     pin: "1234",
-  //     playlistId: "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",
-  //     accessToken: "ad",
-  //     currentIndex: 0,
-  //     expectedEndTime: 0,
-  //     id: "1234",
-  //   },
-  // ];
-  const rooms: Room[] = Array.from({ length: 2 }).map((_, i) => {
-    const now = new Date();
-    now.setTime(now.getTime() + 1000 * (Math.random() * 15));
-    logger.warn(now);
-    return {
-      pin: "1234",
-      playlistId: "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",
-      accessToken: "ad",
-      currentIndex: 0,
-      expectedEndTime: 1234,
-      id: "1234",
-    };
-  });
+  // const rooms: Room[] = appCache.get<Room[]>("rooms");
 
-  const promises = rooms.map(async (room) => {
+  const promises = rooms.map(async (room): Promise<void> => {
     // Whatever happens we need to return a resolved promise
     // so all promises are resolved and we can loop again
     return new Promise(async (resolve) => {
@@ -60,11 +52,33 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           throw new Error("No access token for room");
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // TODO: create a new room endpoint to manually sync up with the room as a host
+
+        // Check the current playback state
+        // 1) If the track could have changed changed
+        //    - 1.1) Calculate the started time based on now - current progress
+        //    - 1.2) Update the room
+        //      - index
+        //      - start time
+        // 2) If the playlist is different than the rooms, stop session
+
+        // 1)
+        const millisecondsTillTrackEnds =
+          new Date().valueOf() - room.expectedEndTime.valueOf();
+
+        if (millisecondsTillTrackEnds > NEXT_CHECK_MARGIN) {
+          // Track still has plenty of time left
+          console.log(millisecondsTillTrackEnds);
+          resolve();
+        }
+
+        const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
+          accessToken
+        );
       } catch (error) {
         catchError(error, appCache, room);
       } finally {
-        resolve(undefined);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     });
   });
@@ -173,6 +187,7 @@ const catchError = (error: any, appCache: cache, room: Room) => {
       if (message.includes("Spotify's Web API")) {
         // Overwrite app cache so we don't keep using the old access token
         logger.warn("Overwriting access token in room cache", room.pin);
+        // TODO: refresh token in DB
         appCache.set("rooms", [
           ...rooms.filter((_room) => _room.accessToken !== room.accessToken),
           {

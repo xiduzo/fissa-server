@@ -1,7 +1,7 @@
-import { logger } from "@utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { mongoCollectionAsync } from "../../utils/database";
+import { logger } from "../../utils/logger";
 import { createPin } from "../../utils/pin";
 import {
   createPlaylistAsync,
