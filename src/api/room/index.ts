@@ -1,5 +1,6 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { createPin } from "../../utils/pin";
@@ -38,17 +39,18 @@ const handler: VercelApiHandler = async (request, response) => {
         const { playlistId: createdPlaylistId, createdBy } =
           await createPlaylistAsync(accessToken, playlistId);
 
-        const room = {
+        const room: Room = {
           pin: newPin,
           playlistId: createdPlaylistId,
           createdBy,
           accessToken,
+          currentIndex: -1,
         };
 
         await collection.insertOne(room);
-        // await startPlaylistFromTopAsync({ ...room, currentIndex: 0 });
+        await startPlaylistFromTopAsync(room);
 
-        response.status(StatusCodes.OK).json(room);
+        response.status(StatusCodes.OK).json(newPin);
       } catch (error) {
         logger.error(error);
         response

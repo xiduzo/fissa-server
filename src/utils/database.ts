@@ -101,3 +101,12 @@ export const voteAsync = async (
     throw new Error("Unable to vote");
   }
 };
+
+export const setTimeTillNextTrackAsync = async (
+  pin: string,
+  expectedEndTime: Date
+) => {
+  const collection = await mongoCollectionAsync("room");
+
+  await collection.updateOne({ pin }, { expectedEndTime });
+};

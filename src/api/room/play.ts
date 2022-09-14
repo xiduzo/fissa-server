@@ -6,21 +6,21 @@ import { VoteState } from "../../lib/interfaces/Vote";
 import { mongoCollectionAsync, voteAsync } from "../../utils/database";
 import {
   addTracksToPlaylistAsync,
+  disableShuffleAsync,
   getPlaylistTracksAsync,
+  startPlaylistFromTopAsync,
 } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case "GET":
       response.json({
-        app: "room::track",
+        app: "room::play",
       });
       break;
     case "POST":
-      const { pin, trackUris, accessToken } = request.body as {
+      const { pin } = request.body as {
         pin: string;
-        trackUris: string[];
-        accessToken: string;
       };
 
       try {
@@ -29,32 +29,12 @@ const handler: VercelApiHandler = async (request, response) => {
 
         if (!room) {
           response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
+          return;
         }
 
-        const playlistTracks = await getPlaylistTracksAsync(
-          room.accessToken,
-          room.playlistId
-        );
+        await startPlaylistFromTopAsync(room);
 
-        const trackUrisInPlaylist = playlistTracks.map((track) => track.uri);
-
-        await addTracksToPlaylistAsync(
-          // TODO: give specific error if the room owner access token doesn't work anymore
-          room.accessToken,
-          room.playlistId,
-          trackUris.filter((uri) => !trackUrisInPlaylist.includes(uri))
-        );
-
-        // vote for all of the tracks to put them back in the queue
-        await Promise.all(
-          trackUris.map(async (uri) => {
-            return voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
-          })
-        );
-
-        await publishAsync(`fissa/room/${pin}/tracks/added`);
-
-        response.status(StatusCodes.OK).json(trackUris.length);
+        response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
         logger.error(error);
         response

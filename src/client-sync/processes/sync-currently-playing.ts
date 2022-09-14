@@ -2,7 +2,10 @@ import { StatusCodes } from "http-status-codes";
 import cache from "node-cache";
 
 import { Room } from "../../lib/interfaces/Room";
-import { mongoCollectionAsync } from "../../utils/database";
+import {
+  mongoCollectionAsync,
+  setTimeTillNextTrackAsync,
+} from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { publishAsync } from "../../utils/mqtt";
 import {
@@ -24,33 +27,19 @@ const states = new Map<string, State>();
 const PROGRESS_SYNC_TIME = 20_000;
 const NEXT_CHECK_MARGIN = 500;
 
-const rooms: Room[] = Array.from({ length: 2 }).map((_, i) => {
-  const now = new Date();
-  now.setTime(now.getTime() + 1000 * (Math.random() * 15));
-  return {
-    pin: "1234",
-    playlistId: "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",
-    accessToken: "ad",
-    currentIndex: 0,
-    expectedEndTime: now,
-    id: "1234",
-  };
-});
-
 export const syncCurrentlyPlaying = async (appCache: cache) => {
-  // const rooms: Room[] = appCache.get<Room[]>("rooms");
+  const rooms: Room[] = appCache.get<Room[]>("rooms");
+  logger.info(rooms?.length);
 
-  const promises = rooms.map(async (room): Promise<void> => {
+  const promises = rooms?.map(async (room): Promise<void> => {
     // Whatever happens we need to return a resolved promise
     // so all promises are resolved and we can loop again
     return new Promise(async (resolve) => {
       try {
-        const { accessToken } = room;
-        if (!accessToken) {
-          // Somehow we have an active room without an access token
-          // TODO add refresh token to DB and use to get new access token
-          throw new Error("No access token for room");
-        }
+        const { pin, accessToken, expectedEndTime, currentIndex } = room;
+        if (!accessToken) return;
+        logger.info(`currentIndex ${currentIndex}`);
+        if (currentIndex <= 0) return;
 
         // TODO: create a new room endpoint to manually sync up with the room as a host
 
@@ -62,29 +51,39 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
         //      - start time
         // 2) If the playlist is different than the rooms, stop session
 
-        // 1)
+        logger.info(`expectedEndTime: ${expectedEndTime}`);
         const millisecondsTillTrackEnds =
-          new Date().valueOf() - room.expectedEndTime.valueOf();
+          new Date().valueOf() -
+          new Date(expectedEndTime ?? new Date()).valueOf();
 
         if (millisecondsTillTrackEnds > NEXT_CHECK_MARGIN) {
-          // Track still has plenty of time left
-          console.log(millisecondsTillTrackEnds);
-          resolve();
+          logger.info(
+            `millisecondsTillTrackEnds: ${millisecondsTillTrackEnds}`
+          );
+          return;
         }
+
+        logger.info("fetching currently playing");
 
         const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
           accessToken
         );
+
+        // Update room
       } catch (error) {
-        catchError(error, appCache, room);
+        catchError(error, room);
       } finally {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        logger.info("finally");
+        resolve();
       }
     });
   });
 
-  await Promise.all(promises);
-  syncCurrentlyPlaying(appCache);
+  if (promises?.length) {
+    await Promise.all(promises);
+  }
+
+  setTimeout(() => syncCurrentlyPlaying(appCache), 3_000);
 };
 
 const updateRoom = async (
@@ -176,9 +175,18 @@ const getState = (
   return { state, previousState };
 };
 
-const catchError = (error: any, appCache: cache, room: Room) => {
-  const rooms = appCache.get<Room[]>("rooms");
+const catchError = (error: any, room: Room) => {
+  if (error.statusCode) return catchHttpError(error, room);
+
+  logger.warn(`${room.pin}: ${error}`);
+};
+
+const catchHttpError = (
+  error: { statusCode: number; message: string },
+  room: Room
+) => {
   const { statusCode, message } = error;
+
   switch (statusCode) {
     case StatusCodes.UNAUTHORIZED:
       logger.warn("UNAUTHORIZED", message);
@@ -186,15 +194,8 @@ const catchError = (error: any, appCache: cache, room: Room) => {
       // with the sync-rooms process
       if (message.includes("Spotify's Web API")) {
         // Overwrite app cache so we don't keep using the old access token
-        logger.warn("Overwriting access token in room cache", room.pin);
         // TODO: refresh token in DB
-        appCache.set("rooms", [
-          ...rooms.filter((_room) => _room.accessToken !== room.accessToken),
-          {
-            ...room,
-            accessToken: null,
-          },
-        ]);
+        // logger.warn("Overwriting access token in room cache", room.pin);
       }
       break;
     case StatusCodes.INTERNAL_SERVER_ERROR:

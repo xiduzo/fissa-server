@@ -75,11 +75,7 @@ export const createPlaylistAsync = async (
       await addTracksToPlaylistAsync(accessToken, playlist.body.id, trackUris);
     }
 
-    try {
-      await disableShuffleAsync(accessToken);
-    } catch {
-      // ignore
-    }
+    await disableShuffleAsync(accessToken);
 
     return {
       playlistId: playlist.body.id,
@@ -159,14 +155,30 @@ export const getMeAsync = async (accessToken: string) => {
 export const disableShuffleAsync = async (
   accessToken: string
 ): Promise<void> => {
-  try {
-    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-    spotifyApi.setAccessToken(accessToken);
+  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  spotifyApi.setAccessToken(accessToken);
 
+  try {
     await spotifyApi.setShuffle(false);
   } catch (error) {
+    if (error.message?.includes("NO_ACTIVE_DEVICE")) {
+      logger.info("trying to set active device of user");
+
+      const myDevices = await spotifyApi.getMyDevices();
+
+      if (myDevices.body.devices.length > 0) {
+        await spotifyApi.transferMyPlayback([myDevices.body.devices[0].id]);
+        return;
+      }
+
+      logger.warn("no devices found for user");
+
+      return;
+    }
+
     logger.error("disableShuffleAsync", error);
-    // throw error;
+  } finally {
+    return Promise.resolve();
   }
 };
 
@@ -207,10 +219,10 @@ const updatePlaylistTrackIndexAsync = async (
   rangeStart: number,
   insertBefore: number
 ) => {
-  try {
-    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-    spotifyApi.setAccessToken(accessToken);
+  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  spotifyApi.setAccessToken(accessToken);
 
+  try {
     await spotifyApi.reorderTracksInPlaylist(
       playlistId,
       rangeStart,
@@ -225,11 +237,11 @@ const updatePlaylistTrackIndexAsync = async (
 };
 
 export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
-  try {
-    const { accessToken, playlistId } = room;
-    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-    spotifyApi.setAccessToken(accessToken);
+  const { accessToken, playlistId } = room;
+  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  spotifyApi.setAccessToken(accessToken);
 
+  try {
     const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
     const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
     const currentIndex = await poorMansCurrentIndexAsync(
@@ -268,10 +280,16 @@ export const startPlaylistFromTopAsync = async (room: Room) => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
-  await spotifyApi.play({
-    context_uri: `spotify:playlist:${playlistId}`,
-    offset: {
-      position: 0,
-    },
-  });
+  try {
+    await disableShuffleAsync(accessToken);
+
+    await spotifyApi.play({
+      context_uri: `spotify:playlist:${playlistId}`,
+      offset: {
+        position: 0,
+      },
+    });
+  } catch (error) {
+    logger.error("startPlaylistFromTopAsync", error);
+  }
 };

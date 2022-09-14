@@ -29,7 +29,7 @@ const handler: VercelApiHandler = async (request, response) => {
         const allVotes = await collection.find<Vote>({ pin }).toArray();
         const sorted = sortVotes(allVotes);
         await publishAsync(`fissa/room/${pin}/votes`, sorted);
-        response.status(StatusCodes.OK).json(vote);
+        response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
         logger.error(error);
         response
