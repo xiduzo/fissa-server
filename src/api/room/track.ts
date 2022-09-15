@@ -8,6 +8,7 @@ import {
   addTracksToPlaylistAsync,
   getPlaylistTracksAsync,
 } from "../../utils/spotify";
+import { publishAsync } from "../../utils/mqtt";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -37,22 +38,28 @@ const handler: VercelApiHandler = async (request, response) => {
         );
 
         const trackUrisInPlaylist = playlistTracks.map((track) => track.uri);
+        const trackUrisToAdd = trackUris.filter(
+          (uri) => !trackUrisInPlaylist.includes(uri)
+        );
 
         await addTracksToPlaylistAsync(
           // TODO: give specific error if the room owner access token doesn't work anymore
           room.accessToken,
           room.playlistId,
-          trackUris.filter((uri) => !trackUrisInPlaylist.includes(uri))
+          trackUrisToAdd
         );
 
-        // vote for all of the tracks to put them back in the queue
+        // vote for all of the tracks you just added
         await Promise.all(
           trackUris.map(async (uri) => {
             return voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
         );
 
-        await publishAsync(`fissa/room/${pin}/tracks/added`);
+        await publishAsync(
+          `fissa/room/${pin}/tracks/added`,
+          trackUrisToAdd.length
+        );
 
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
