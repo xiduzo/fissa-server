@@ -3,7 +3,6 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { voteAsync } from "../../utils/database";
 import { mongoCollectionAsync } from "../../utils/database";
 import { Vote } from "../../lib/interfaces/Vote";
-import { sortVotes } from "../../lib/interfaces/Vote";
 import { publishAsync } from "../../utils/mqtt";
 import { logger } from "../../utils/logger";
 
@@ -23,11 +22,11 @@ const handler: VercelApiHandler = async (request, response) => {
       if (!state) return;
 
       try {
-        const vote = await voteAsync(pin, accessToken, trackUri, state);
+        await voteAsync(pin, accessToken, trackUri, state);
         const collection = await mongoCollectionAsync("votes");
 
         const allVotes = await collection.find<Vote>({ pin }).toArray();
-        const sorted = sortVotes(allVotes);
+        await publishAsync(`fissa/room/${pin}/votes`, allVotes);
         await publishAsync(`fissa/room/${pin}/votes`, sorted);
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
