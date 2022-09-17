@@ -20,12 +20,10 @@ type State = {
   is_in_playlist: boolean;
 };
 
-const NEXT_CHECK_MARGIN = 500;
+const T_MINUS = 500;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
-  // const rooms: Room[] = appCache.get<Room[]>("rooms");
-  const collection = await mongoCollectionAsync<Room>("room");
-  const rooms = await collection.find().toArray();
+  const rooms = appCache.get<Room[]>("rooms");
 
   const promises = rooms?.map(async (room): Promise<void> => {
     // Whatever happens we need to return a resolved promise
@@ -33,31 +31,18 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
     return new Promise(async (resolve) => {
       try {
         const { pin, accessToken, expectedEndTime, currentIndex } = room;
+        logger.info(`Syncing room ${pin}`);
         if (!accessToken) return;
         logger.info(`currentIndex ${currentIndex}`);
-        if (currentIndex <= 0) return;
-
+        if (currentIndex < 0) return;
         // TODO: create a new room endpoint to manually sync up with the room as a host
 
-        // Check the current playback state
-        // 1) If the track could have changed changed
-        //    - 1.1) Calculate the started time based on now - current progress
-        //    - 1.2) Update the room
-        //      - index
-        //      - start time
-        // 2) If the playlist is different than the rooms, stop session
+        const tMinus = DateTime.fromISO(expectedEndTime).diff(
+          DateTime.now()
+        ).milliseconds;
 
-        logger.info(`expectedEndTime: ${expectedEndTime}`);
-        const millisecondsTillTrackEnds =
-          new Date().valueOf() -
-          new Date(expectedEndTime ?? new Date()).valueOf();
-
-        if (millisecondsTillTrackEnds > NEXT_CHECK_MARGIN) {
-          logger.info(
-            `millisecondsTillTrackEnds: ${millisecondsTillTrackEnds}`
-          );
-          return;
-        }
+        logger.info(`tMinus: ${tMinus}ms`);
+        if (tMinus > T_MINUS) return;
 
         const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
           accessToken
@@ -67,7 +52,6 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
       } catch (error) {
         catchError(error, room);
       } finally {
-        logger.info("finally");
         resolve();
       }
     });
@@ -77,7 +61,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
     await Promise.all(promises);
   }
 
-  setTimeout(() => syncCurrentlyPlaying(appCache), 3_000);
+  setTimeout(() => syncCurrentlyPlaying(appCache), T_MINUS);
 };
 
 const updateRoom = async (
@@ -92,7 +76,7 @@ const updateRoom = async (
     await collection.updateOne({ pin }, { $set: { currentIndex: -1 } });
   }
 
-  if (!context.uri.includes(playlistId)) {
+  if (!context?.uri.includes(playlistId)) {
     await collection.updateOne({ pin }, { $set: { currentIndex: -1 } });
   }
 
@@ -103,11 +87,12 @@ const updateRoom = async (
   );
 
   const durationOfTrackToGo = item.duration_ms - progress_ms;
-  const expectedEndTime = DateTime.now().plus({
-    milliseconds: durationOfTrackToGo,
-  });
+  const expectedEndTime = DateTime.now()
+    .plus({
+      milliseconds: durationOfTrackToGo,
+    })
+    .toISO();
 
-  logger.info(`expectedEndTime: ${expectedEndTime}`);
   await collection.updateOne(
     { pin },
     { $set: { currentIndex, expectedEndTime } }

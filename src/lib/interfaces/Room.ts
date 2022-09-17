@@ -5,5 +5,5 @@ export interface Room {
   accessToken: string;
   createdBy: string;
   currentIndex: number;
-  expectedEndTime?: Date;
+  expectedEndTime?: string;
 }
