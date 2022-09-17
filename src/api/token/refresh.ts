@@ -2,6 +2,7 @@ import { VercelApiHandler } from "@vercel/node";
 import { StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
+import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
 import { getMeAsync, disableShuffleAsync } from "../../utils/spotify";
 
@@ -22,7 +23,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
       const tokens = await spotifyApi.refreshAccessToken();
 
-      const collection = await mongoCollectionAsync("room");
+      const collection = await mongoCollectionAsync<Room>("room");
       const accessToken = tokens.body.access_token;
 
       const disableShuffle = disableShuffleAsync(accessToken);

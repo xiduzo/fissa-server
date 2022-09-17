@@ -1,11 +1,10 @@
 import { StatusCodes } from "http-status-codes";
+import { DateTime } from "luxon";
 import cache from "node-cache";
 
 import { Room } from "../../lib/interfaces/Room";
-import {
-  mongoCollectionAsync,
-  setTimeTillNextTrackAsync,
-} from "../../utils/database";
+import { Vote } from "../../lib/interfaces/Vote";
+import { mongoCollectionAsync } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { publishAsync } from "../../utils/mqtt";
 import {
@@ -21,15 +20,12 @@ type State = {
   is_in_playlist: boolean;
 };
 
-// TODO: move this to a shared cache?
-const states = new Map<string, State>();
-
-const PROGRESS_SYNC_TIME = 20_000;
 const NEXT_CHECK_MARGIN = 500;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
-  const rooms: Room[] = appCache.get<Room[]>("rooms");
-  logger.info(rooms?.length);
+  // const rooms: Room[] = appCache.get<Room[]>("rooms");
+  const collection = await mongoCollectionAsync<Room>("room");
+  const rooms = await collection.find().toArray();
 
   const promises = rooms?.map(async (room): Promise<void> => {
     // Whatever happens we need to return a resolved promise
@@ -63,13 +59,11 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           return;
         }
 
-        logger.info("fetching currently playing");
-
         const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
           accessToken
         );
 
-        // Update room
+        await updateRoom(currentlyPlaying, room);
       } catch (error) {
         catchError(error, room);
       } finally {
@@ -90,36 +84,41 @@ const updateRoom = async (
   currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse,
   room: Room
 ) => {
-  const { state, previousState } = getState(room, currentlyPlaying);
+  const { is_playing, context, item, progress_ms } = currentlyPlaying;
+  const { accessToken, pin, playlistId } = room;
+  const collection = await mongoCollectionAsync<Room>("room");
 
-  if (!previousState) {
-    await publishNewRoomState(state, room, currentlyPlaying);
-    await deleteVotesForTrack(room.pin, currentlyPlaying.item.uri);
-    return;
+  if (!is_playing) {
+    await collection.updateOne({ pin }, { $set: { currentIndex: -1 } });
   }
 
-  if (state.uri !== previousState?.uri) {
-    await publishNewRoomState(state, room, currentlyPlaying);
-    await deleteVotesForTrack(room.pin, currentlyPlaying.item.uri);
-    return;
-  }
-  if (state.is_playing !== previousState.is_playing) {
-    await publishNewRoomState(state, room, currentlyPlaying);
-    return;
+  if (!context.uri.includes(playlistId)) {
+    await collection.updateOne({ pin }, { $set: { currentIndex: -1 } });
   }
 
-  const diff = Math.abs(currentlyPlaying.progress_ms - state.progress_ms);
+  const currentIndex = await poorMansCurrentIndexAsync(
+    accessToken,
+    playlistId,
+    currentlyPlaying
+  );
 
-  // Just sync the room once every X spotify pings
-  // The rest of the progress should be handled by the client
-  if (diff > PROGRESS_SYNC_TIME) {
-    await publishNewRoomState(state, room, currentlyPlaying);
-    return;
-  }
+  const durationOfTrackToGo = item.duration_ms - progress_ms;
+  const expectedEndTime = DateTime.now().plus({
+    milliseconds: durationOfTrackToGo,
+  });
+
+  logger.info(`expectedEndTime: ${expectedEndTime}`);
+  await collection.updateOne(
+    { pin },
+    { $set: { currentIndex, expectedEndTime } }
+  );
+
+  // Reset votes for this track
+  await deleteVotesForTrack(room.pin, currentlyPlaying.item.uri);
 };
 
 const deleteVotesForTrack = async (pin: string, trackUri: string) => {
-  const collection = await mongoCollectionAsync("votes");
+  const collection = await mongoCollectionAsync<Vote>("votes");
 
   // We want to remove all votes for the current playing track
   await collection.deleteMany({
@@ -145,34 +144,9 @@ const publishNewRoomState = async (
   // Start the playlist from the start?
   // Creator of the playlist should stop party from room?
 
-  const collection = await mongoCollectionAsync("room");
+  const collection = await mongoCollectionAsync<Room>("room");
   await collection.updateOne({ pin: room.pin }, { $set: { currentIndex } });
   await publishAsync(`fissa/room/${room.pin}/tracks/active`, state);
-};
-
-const getState = (
-  room: Room,
-  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
-) => {
-  const {
-    is_playing,
-    progress_ms,
-    item: { uri },
-  } = currentlyPlaying;
-
-  const previousState = states.get(room.pin);
-
-  const state: State = {
-    uri,
-    progress_ms: previousState?.progress_ms ?? progress_ms,
-    is_playing,
-    is_in_playlist: currentlyPlaying?.context?.uri.includes(room.playlistId),
-    currentIndex: 0,
-  };
-
-  states.set(room.pin, state);
-
-  return { state, previousState };
 };
 
 const catchError = (error: any, room: Room) => {

@@ -24,7 +24,7 @@ const handler: VercelApiHandler = async (request, response) => {
       let blockedPins: string[] = [];
 
       try {
-        const collection = await mongoCollectionAsync("room");
+        const collection = await mongoCollectionAsync<Room>("room");
         do {
           newPin = createPin(blockedPins);
           const room = await collection.findOne({ pin: newPin });

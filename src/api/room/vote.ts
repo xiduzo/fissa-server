@@ -23,11 +23,10 @@ const handler: VercelApiHandler = async (request, response) => {
 
       try {
         await voteAsync(pin, accessToken, trackUri, state);
-        const collection = await mongoCollectionAsync("votes");
+        const collection = await mongoCollectionAsync<Vote>("votes");
 
-        const allVotes = await collection.find<Vote>({ pin }).toArray();
+        const allVotes = await collection.find({ pin }).toArray();
         await publishAsync(`fissa/room/${pin}/votes`, allVotes);
-        await publishAsync(`fissa/room/${pin}/votes`, sorted);
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
         logger.error(error);

@@ -1,6 +1,7 @@
 import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
+import { logger } from "../../utils/logger";
 
 const setCache = async (appCache: cache) => {
   const collection = await mongoCollectionAsync("room");
@@ -19,9 +20,10 @@ export const syncRooms = async (appCache: cache) => {
 };
 
 export const watch = async (appCache: cache) => {
-  const collection = await mongoCollectionAsync("room");
+  const collection = await mongoCollectionAsync<Room>("room");
 
   collection.watch<Room>().on("change", () => {
+    logger.info("room updated");
     setCache(appCache);
   });
 };

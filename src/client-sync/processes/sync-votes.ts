@@ -7,8 +7,8 @@ import { reorderPlaylist } from "../../utils/spotify";
 
 const updatePlaylist = async (room: Room): Promise<void> => {
   try {
-    const collection = await mongoCollectionAsync("votes");
-    const allVotes = await collection.find<Vote>({ pin: room.pin }).toArray();
+    const collection = await mongoCollectionAsync<Vote>("votes");
+    const allVotes = await collection.find({ pin: room.pin }).toArray();
     const sorted = sortVotes(allVotes);
     // await reorderPlaylist(room, sorted);
   } catch (error) {

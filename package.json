@@ -16,6 +16,7 @@
     "@vercel/node": "2.5.13",
     "dotenv": "16.0.2",
     "http-status-codes": "2.2.0",
+    "luxon": "^3.0.3",
     "mongodb": "4.9.1",
     "mqtt": "4.3.7",
     "node-cache": "5.1.2",
@@ -25,6 +26,7 @@
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "@types/luxon": "^3.0.1",
     "@types/node": "^18.7.15",
     "@types/spotify-web-api-node": "5.0.7",
     "nodemon": "2.0.19",

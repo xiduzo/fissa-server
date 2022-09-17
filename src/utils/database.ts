@@ -40,31 +40,31 @@ export const mongoDbAsync = async (): Promise<Db> => {
   });
 };
 
-export const mongoCollectionAsync = async (
+export const mongoCollectionAsync = async <T>(
   name: string,
   options?: CollectionOptions
-): Promise<Collection<Document>> => {
+): Promise<Collection<T & Document>> => {
   try {
     const database = await mongoDbAsync();
-    return database.collection(name, options);
+    return database.collection<T>(name, options);
   } catch (error) {
     logger.error("mongoCollectionAsync error", error);
   }
 };
 
 const saveVote = async (
-  collection: Collection<Document>,
+  collection: Collection<Vote>,
   state: VoteState,
   vote: Vote
 ) => {
-  const _vote = await collection.findOne<Vote>({
+  const _vote = await collection.findOne({
     pin: vote.pin,
     createdBy: vote.createdBy,
     trackUri: vote.trackUri,
   });
 
   if (!_vote) {
-    return await collection.insertOne(vote as Omit<Vote, "_id">);
+    return await collection.insertOne(vote);
   }
 
   return await collection.updateOne(
@@ -86,7 +86,7 @@ export const voteAsync = async (
   try {
     const me = await getMeAsync(accessToken);
 
-    const collection = await mongoCollectionAsync("votes");
+    const collection = await mongoCollectionAsync<Vote>("votes");
     const vote: Vote = {
       pin,
       createdBy: me.id,
@@ -100,13 +100,4 @@ export const voteAsync = async (
     logger.error("voteAsync error", error);
     throw new Error("Unable to vote");
   }
-};
-
-export const setTimeTillNextTrackAsync = async (
-  pin: string,
-  expectedEndTime: Date
-) => {
-  const collection = await mongoCollectionAsync("room");
-
-  await collection.updateOne({ pin }, { expectedEndTime });
 };
