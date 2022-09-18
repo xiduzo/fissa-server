@@ -81,6 +81,8 @@ export const updateRoom = async (room: Room) => {
     currentlyPlaying
   );
 
+  // TODO if index is tracks length - 1, add new tracks based on previous tracks
+
   newState.expectedEndTime = DateTime.now()
     .plus({
       milliseconds: item.duration_ms - progress_ms,

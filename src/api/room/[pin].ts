@@ -8,7 +8,7 @@ import { logger } from "../../utils/logger";
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case "GET":
-      const pin = (request.query.pin as string).toUpperCase();
+      const pin = (request.query.pin as string)?.toUpperCase();
 
       if (!pin) {
         response

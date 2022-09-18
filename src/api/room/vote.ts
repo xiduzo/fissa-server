@@ -8,12 +8,31 @@ import { logger } from "../../utils/logger";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
-    case "GET":
-      response.json({
-        app: "room::vote",
-      });
+    case "GET": {
+      try {
+        const pin = (request.query.pin as string)?.toUpperCase();
+
+        if (!pin) {
+          response
+            .status(StatusCodes.BAD_REQUEST)
+            .json(ReasonPhrases.BAD_REQUEST);
+          return;
+        }
+
+        const votes = await mongoCollectionAsync<Vote>("votes");
+
+        const roomVotes = await votes.find({ pin }).toArray();
+        logger.info(`room ${pin} votes: ${roomVotes}`);
+        response.status(StatusCodes.OK).json(roomVotes);
+      } catch (error) {
+        logger.error(`Votes GET handler error: ${error}`);
+        response
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+      }
       break;
-    case "POST":
+    }
+    case "POST": {
       const { pin, accessToken, trackUri, state } = request.body;
 
       if (!accessToken) return;
@@ -30,12 +49,13 @@ const handler: VercelApiHandler = async (request, response) => {
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
-        logger.error(error);
+        logger.error(`Votes POST handler error: ${error}`);
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
       }
       break;
+    }
   }
 };
 
