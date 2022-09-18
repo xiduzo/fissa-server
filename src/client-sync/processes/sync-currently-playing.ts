@@ -12,14 +12,6 @@ import {
   poorMansCurrentIndexAsync,
 } from "../../utils/spotify";
 
-type State = {
-  uri: string;
-  progress_ms: number;
-  is_playing: boolean;
-  currentIndex: number;
-  is_in_playlist: boolean;
-};
-
 const T_MINUS = 500;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
@@ -48,9 +40,12 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           accessToken
         );
 
-        await updateRoom(currentlyPlaying, room);
+        const newRoom = await updateRoom(currentlyPlaying, room);
+        if (!newRoom) return;
+
+        await publishAsync(`fissa/room/${pin}`, newRoom);
       } catch (error) {
-        catchError(error, room);
+        await catchError(error, room);
       } finally {
         resolve();
       }
@@ -67,18 +62,26 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 const updateRoom = async (
   currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse,
   room: Room
-) => {
+): Promise<Room | undefined> => {
   const { is_playing, context, item, progress_ms } = currentlyPlaying;
   const { accessToken, pin, playlistId } = room;
   const collection = await mongoCollectionAsync<Room>("room");
+  const clearState = { currentIndex: -1, expectedEndTime: undefined };
 
   if (!is_playing) {
-    await collection.updateOne({ pin }, { $set: { currentIndex: -1 } });
+    await collection.updateOne({ pin }, { $set: clearState });
+    return;
   }
 
   if (!context?.uri.includes(playlistId)) {
-    await collection.updateOne({ pin }, { $set: { currentIndex: -1 } });
+    await collection.updateOne({ pin }, { $set: clearState });
+    return;
   }
+
+  const deleteVotesPromise = deleteVotesForTrack(
+    room.pin,
+    currentlyPlaying.item.uri
+  );
 
   const currentIndex = await poorMansCurrentIndexAsync(
     accessToken,
@@ -86,10 +89,9 @@ const updateRoom = async (
     currentlyPlaying
   );
 
-  const durationOfTrackToGo = item.duration_ms - progress_ms;
   const expectedEndTime = DateTime.now()
     .plus({
-      milliseconds: durationOfTrackToGo,
+      milliseconds: item.duration_ms - progress_ms,
     })
     .toISO();
 
@@ -97,9 +99,13 @@ const updateRoom = async (
     { pin },
     { $set: { currentIndex, expectedEndTime } }
   );
+  await deleteVotesPromise;
 
-  // Reset votes for this track
-  await deleteVotesForTrack(room.pin, currentlyPlaying.item.uri);
+  return {
+    ...room,
+    currentIndex,
+    expectedEndTime,
+  };
 };
 
 const deleteVotesForTrack = async (pin: string, trackUri: string) => {
@@ -112,39 +118,18 @@ const deleteVotesForTrack = async (pin: string, trackUri: string) => {
   });
 };
 
-const publishNewRoomState = async (
-  state: State,
-  room: Room,
-  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
-) => {
-  state.progress_ms = currentlyPlaying.progress_ms; // Update state
-  const currentIndex = await poorMansCurrentIndexAsync(
-    room.accessToken,
-    room.playlistId,
-    currentlyPlaying
-  );
-  state.currentIndex = currentIndex;
-
-  // TODO: if current index = -1, we are not in the playlist anymore
-  // Start the playlist from the start?
-  // Creator of the playlist should stop party from room?
-
-  const collection = await mongoCollectionAsync<Room>("room");
-  await collection.updateOne({ pin: room.pin }, { $set: { currentIndex } });
-  await publishAsync(`fissa/room/${room.pin}/tracks/active`, state);
-};
-
-const catchError = (error: any, room: Room) => {
-  if (error.statusCode) return catchHttpError(error, room);
+const catchError = async (error: any, room: Room) => {
+  if (error.statusCode) return await catchHttpError(error, room);
 
   logger.warn(`${room.pin}: ${error}`);
 };
 
-const catchHttpError = (
+const catchHttpError = async (
   error: { statusCode: number; message: string },
   room: Room
 ) => {
   const { statusCode, message } = error;
+  const { pin } = room;
 
   switch (statusCode) {
     case StatusCodes.UNAUTHORIZED:
@@ -152,6 +137,12 @@ const catchHttpError = (
       // Reset access token for the room. This should sort itself out
       // with the sync-rooms process
       if (message.includes("Spotify's Web API")) {
+        const collection = await mongoCollectionAsync<Room>("room");
+
+        await collection.updateOne(
+          { pin },
+          { $set: { accessToken: undefined } }
+        );
         // Overwrite app cache so we don't keep using the old access token
         // TODO: refresh token in DB
         // logger.warn("Overwriting access token in room cache", room.pin);
