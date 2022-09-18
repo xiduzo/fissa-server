@@ -52,7 +52,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         response.status(StatusCodes.OK).json(newPin);
       } catch (error) {
-        logger.error(error);
+        logger.error(`room GET handler: ${error}`);
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);

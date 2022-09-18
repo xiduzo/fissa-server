@@ -33,7 +33,7 @@ export const mongoDbAsync = async (): Promise<Db> => {
         resolve(client.db("fissa"));
       });
     } catch (error) {
-      logger.error("mongoDbAsync error", error);
+      logger.error("mongoDbAsync", error);
       await mongoClient.close();
       reject(error);
     }
@@ -48,7 +48,7 @@ export const mongoCollectionAsync = async <T>(
     const database = await mongoDbAsync();
     return database.collection<T>(name, options);
   } catch (error) {
-    logger.error("mongoCollectionAsync error", error);
+    logger.error("mongoCollectionAsync", error);
   }
 };
 
@@ -97,7 +97,7 @@ export const voteAsync = async (
     await saveVote(votes, state, vote);
     return vote;
   } catch (error) {
-    logger.error("voteAsync error", error);
+    logger.error("voteAsync", error);
     throw new Error("Unable to vote");
   }
 };

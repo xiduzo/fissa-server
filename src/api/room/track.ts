@@ -63,7 +63,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
-        logger.error(error);
+        logger.error(`track POST handler: ${error}`);
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);

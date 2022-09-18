@@ -29,7 +29,7 @@ const handler: VercelApiHandler = async (request, response) => {
         delete room.accessToken;
         response.status(StatusCodes.OK).json(room);
       } catch (error) {
-        logger.error(error);
+        logger.error(`[pin] GET handler: ${error}`);
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);

@@ -126,15 +126,10 @@ const catchHttpError = async (
   switch (statusCode) {
     case StatusCodes.UNAUTHORIZED:
       logger.warn("UNAUTHORIZED", message);
-      // Reset access token for the room. This should sort itself out
-      // with the sync-rooms process
       if (message.includes("Spotify's Web API")) {
         const rooms = await mongoCollectionAsync<Room>("room");
 
         await rooms.updateOne({ pin }, { $set: { accessToken: undefined } });
-        // Overwrite app cache so we don't keep using the old access token
-        // TODO: refresh token in DB
-        // logger.warn("Overwriting access token in room cache", room.pin);
       }
       break;
     case StatusCodes.INTERNAL_SERVER_ERROR:

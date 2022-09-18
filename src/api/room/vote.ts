@@ -22,10 +22,9 @@ const handler: VercelApiHandler = async (request, response) => {
         const votes = await mongoCollectionAsync<Vote>("votes");
 
         const roomVotes = await votes.find({ pin }).toArray();
-        logger.info(`room ${pin} votes: ${roomVotes}`);
         response.status(StatusCodes.OK).json(roomVotes);
       } catch (error) {
-        logger.error(`Votes GET handler error: ${error}`);
+        logger.error(`Votes GET handler: ${error}`);
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
@@ -49,7 +48,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
-        logger.error(`Votes POST handler error: ${error}`);
+        logger.error(`Votes POST handler: ${error}`);
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
