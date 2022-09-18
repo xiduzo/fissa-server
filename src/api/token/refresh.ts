@@ -23,17 +23,14 @@ const handler: VercelApiHandler = async (request, response) => {
 
       const tokens = await spotifyApi.refreshAccessToken();
 
-      const collection = await mongoCollectionAsync<Room>("room");
+      const rooms = await mongoCollectionAsync<Room>("room");
       const accessToken = tokens.body.access_token;
 
       const disableShuffle = disableShuffleAsync(accessToken);
 
       const me = await getMeAsync(accessToken);
 
-      await collection.updateMany(
-        { createdBy: me?.id },
-        { $set: { accessToken } }
-      );
+      await rooms.updateMany({ createdBy: me?.id }, { $set: { accessToken } });
 
       await disableShuffle;
 

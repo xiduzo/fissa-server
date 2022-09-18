@@ -1,14 +1,13 @@
 import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
-import { logger } from "../../utils/logger";
 
 const setCache = async (appCache: cache) => {
-  const collection = await mongoCollectionAsync<Room>("room");
+  const rooms = await mongoCollectionAsync<Room>("room");
 
-  const rooms = await collection.find({ accessToken: { $ne: null } }).toArray();
+  const allRooms = await rooms.find({ accessToken: { $ne: null } }).toArray();
 
-  if (rooms.length > 0) appCache.set("rooms", rooms);
+  if (allRooms.length > 0) appCache.set("rooms", allRooms);
 };
 
 export const syncRooms = async (appCache: cache) => {
@@ -18,9 +17,9 @@ export const syncRooms = async (appCache: cache) => {
 };
 
 export const watch = async (appCache: cache) => {
-  const collection = await mongoCollectionAsync<Room>("room");
+  const rooms = await mongoCollectionAsync<Room>("room");
 
-  collection.watch<Room>().on("change", () => {
+  rooms.watch<Room>().on("change", () => {
     setCache(appCache);
   });
 };

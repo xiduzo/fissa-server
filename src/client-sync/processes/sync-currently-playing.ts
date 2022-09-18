@@ -57,16 +57,16 @@ export const updateRoom = async (room: Room) => {
   const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
 
   const { is_playing, context, item, progress_ms } = currentlyPlaying;
-  const collection = await mongoCollectionAsync<Room>("room");
+  const rooms = await mongoCollectionAsync<Room>("room");
   const newState = { currentIndex: -1, expectedEndTime: undefined };
 
   if (!is_playing) {
-    await collection.updateOne({ pin }, { $set: newState });
+    await rooms.updateOne({ pin }, { $set: newState });
     return;
   }
 
   if (!context?.uri.includes(playlistId)) {
-    await collection.updateOne({ pin }, { $set: newState });
+    await rooms.updateOne({ pin }, { $set: newState });
     return;
   }
 
@@ -87,8 +87,10 @@ export const updateRoom = async (room: Room) => {
     })
     .toISO();
 
-  await collection.updateOne({ pin }, { $set: newState });
+  await rooms.updateOne({ pin }, { $set: newState });
   await deleteVotesPromise;
+
+  delete room.accessToken;
 
   await publishAsync(`fissa/room/${pin}`, {
     ...room,
@@ -97,10 +99,10 @@ export const updateRoom = async (room: Room) => {
 };
 
 const deleteVotesForTrack = async (pin: string, trackUri: string) => {
-  const collection = await mongoCollectionAsync<Vote>("votes");
+  const votes = await mongoCollectionAsync<Vote>("votes");
 
   // We want to remove all votes for the current playing track
-  await collection.deleteMany({
+  await votes.deleteMany({
     pin,
     trackUri,
   });
@@ -125,12 +127,9 @@ const catchHttpError = async (
       // Reset access token for the room. This should sort itself out
       // with the sync-rooms process
       if (message.includes("Spotify's Web API")) {
-        const collection = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollectionAsync<Room>("room");
 
-        await collection.updateOne(
-          { pin },
-          { $set: { accessToken: undefined } }
-        );
+        await rooms.updateOne({ pin }, { $set: { accessToken: undefined } });
         // Overwrite app cache so we don't keep using the old access token
         // TODO: refresh token in DB
         // logger.warn("Overwriting access token in room cache", room.pin);

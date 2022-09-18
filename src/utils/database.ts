@@ -86,7 +86,7 @@ export const voteAsync = async (
   try {
     const me = await getMeAsync(accessToken);
 
-    const collection = await mongoCollectionAsync<Vote>("votes");
+    const votes = await mongoCollectionAsync<Vote>("votes");
     const vote: Vote = {
       pin,
       createdBy: me.id,
@@ -94,7 +94,7 @@ export const voteAsync = async (
       state,
     };
 
-    await saveVote(collection, state, vote);
+    await saveVote(votes, state, vote);
     return vote;
   } catch (error) {
     logger.error("voteAsync error", error);

@@ -19,8 +19,8 @@ const handler: VercelApiHandler = async (request, response) => {
       };
 
       try {
-        const collection = await mongoCollectionAsync<Room>("room");
-        const room = await collection.findOne({ pin });
+        const rooms = await mongoCollectionAsync<Room>("room");
+        const room = await rooms.findOne({ pin });
 
         if (!room) {
           response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);

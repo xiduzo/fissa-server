@@ -24,10 +24,10 @@ const handler: VercelApiHandler = async (request, response) => {
       let blockedPins: string[] = [];
 
       try {
-        const collection = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollectionAsync<Room>("room");
         do {
           newPin = createPin(blockedPins);
-          const room = await collection.findOne({ pin: newPin });
+          const room = await rooms.findOne({ pin: newPin });
 
           if (room) {
             blockedPins.push(newPin);
@@ -47,7 +47,7 @@ const handler: VercelApiHandler = async (request, response) => {
           currentIndex: -1,
         };
 
-        await collection.insertOne(room);
+        await rooms.insertOne(room);
         await startPlaylistFromTopAsync(room);
 
         response.status(StatusCodes.OK).json(newPin);

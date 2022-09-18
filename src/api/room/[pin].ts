@@ -1,6 +1,7 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
+import { Vote } from "../../lib/interfaces/Vote";
 import { mongoCollectionAsync } from "../../utils/database";
 import { logger } from "../../utils/logger";
 
@@ -17,9 +18,9 @@ const handler: VercelApiHandler = async (request, response) => {
       }
 
       try {
-        const collection = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollectionAsync<Room>("room");
 
-        const room = await collection.findOne({ pin });
+        const room = await rooms.findOne({ pin });
 
         if (!room) {
           response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
