@@ -129,7 +129,10 @@ const catchHttpError = async (
       if (message.includes("Spotify's Web API")) {
         const rooms = await mongoCollectionAsync<Room>("room");
 
-        await rooms.updateOne({ pin }, { $set: { accessToken: undefined } });
+        await rooms.updateOne(
+          { pin },
+          { $set: { accessToken: undefined, currentIndex: -1 } }
+        );
       }
       break;
     case StatusCodes.INTERNAL_SERVER_ERROR:
