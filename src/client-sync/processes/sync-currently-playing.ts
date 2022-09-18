@@ -36,14 +36,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
         logger.info(`tMinus: ${tMinus}ms`);
         if (tMinus > T_MINUS) return;
 
-        const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
-          accessToken
-        );
-
-        const newRoom = await updateRoom(currentlyPlaying, room);
-        if (!newRoom) return;
-
-        await publishAsync(`fissa/room/${pin}`, newRoom);
+        await updateRoom(room);
       } catch (error) {
         await catchError(error, room);
       } finally {
@@ -59,22 +52,21 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
   setTimeout(() => syncCurrentlyPlaying(appCache), T_MINUS);
 };
 
-const updateRoom = async (
-  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse,
-  room: Room
-): Promise<Room | undefined> => {
-  const { is_playing, context, item, progress_ms } = currentlyPlaying;
+export const updateRoom = async (room: Room) => {
   const { accessToken, pin, playlistId } = room;
+  const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
+
+  const { is_playing, context, item, progress_ms } = currentlyPlaying;
   const collection = await mongoCollectionAsync<Room>("room");
-  const clearState = { currentIndex: -1, expectedEndTime: undefined };
+  const newState = { currentIndex: -1, expectedEndTime: undefined };
 
   if (!is_playing) {
-    await collection.updateOne({ pin }, { $set: clearState });
+    await collection.updateOne({ pin }, { $set: newState });
     return;
   }
 
   if (!context?.uri.includes(playlistId)) {
-    await collection.updateOne({ pin }, { $set: clearState });
+    await collection.updateOne({ pin }, { $set: newState });
     return;
   }
 
@@ -83,29 +75,25 @@ const updateRoom = async (
     currentlyPlaying.item.uri
   );
 
-  const currentIndex = await poorMansCurrentIndexAsync(
+  newState.currentIndex = await poorMansCurrentIndexAsync(
     accessToken,
     playlistId,
     currentlyPlaying
   );
 
-  const expectedEndTime = DateTime.now()
+  newState.expectedEndTime = DateTime.now()
     .plus({
       milliseconds: item.duration_ms - progress_ms,
     })
     .toISO();
 
-  await collection.updateOne(
-    { pin },
-    { $set: { currentIndex, expectedEndTime } }
-  );
+  await collection.updateOne({ pin }, { $set: newState });
   await deleteVotesPromise;
 
-  return {
+  await publishAsync(`fissa/room/${pin}`, {
     ...room,
-    currentIndex,
-    expectedEndTime,
-  };
+    ...newState,
+  });
 };
 
 const deleteVotesForTrack = async (pin: string, trackUri: string) => {

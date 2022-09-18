@@ -2,14 +2,9 @@ import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
-import { VoteState } from "../../lib/interfaces/Vote";
 import { mongoCollectionAsync, voteAsync } from "../../utils/database";
-import {
-  addTracksToPlaylistAsync,
-  disableShuffleAsync,
-  getPlaylistTracksAsync,
-  startPlaylistFromTopAsync,
-} from "../../utils/spotify";
+import { startPlaylistFromTopAsync } from "../../utils/spotify";
+import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -33,6 +28,7 @@ const handler: VercelApiHandler = async (request, response) => {
         }
 
         await startPlaylistFromTopAsync(room);
+        await updateRoom(room);
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
