@@ -24,6 +24,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         if (!room) {
           response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
+          return;
         }
 
         delete room.accessToken;
