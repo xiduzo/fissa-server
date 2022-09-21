@@ -25,7 +25,6 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
         const { pin, accessToken, expectedEndTime, currentIndex } = room;
         logger.info(`Syncing room ${pin}`);
         if (!accessToken) return;
-        logger.info(`currentIndex ${currentIndex}`);
         if (currentIndex < 0) return;
         // TODO: create a new room endpoint to manually sync up with the room as a host
 
@@ -33,7 +32,6 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           DateTime.now()
         ).milliseconds;
 
-        logger.info(`tMinus: ${tMinus}ms`);
         if (tMinus > T_MINUS) return;
 
         await updateRoom(room);
@@ -81,7 +79,7 @@ export const updateRoom = async (room: Room) => {
     currentlyPlaying
   );
 
-  // TODO if index is tracks length - 1, add new tracks based on previous tracks
+  // TODO if index is tracks length - 1, add X new tracks based on previous tracks
 
   newState.expectedEndTime = DateTime.now()
     .plus({
