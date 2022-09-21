@@ -60,11 +60,19 @@ export const updateRoom = async (room: Room) => {
 
   if (!is_playing) {
     await rooms.updateOne({ pin }, { $set: newState });
+    await publishAsync(`fissa/room/${pin}`, {
+      ...room,
+      ...newState,
+    });
     return;
   }
 
   if (!context?.uri.includes(playlistId)) {
     await rooms.updateOne({ pin }, { $set: newState });
+    await publishAsync(`fissa/room/${pin}`, {
+      ...room,
+      ...newState,
+    });
     return;
   }
 
