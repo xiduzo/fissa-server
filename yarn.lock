@@ -124,10 +124,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.42.tgz#d7e8f22700efc94d125103075c074396b5f41f9b"
   integrity sha512-Q5BPGyGKcvQgAMbsr7qEGN/kIPN6zZecYYABeTDBizOsau+2NMdSVTar9UQw21A2+JyA2KRNDYaYrPB0Rpk2oQ==
 
-"@types/node@^18.7.18":
-  version "18.7.18"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.7.18.tgz#633184f55c322e4fb08612307c274ee6d5ed3154"
-  integrity sha512-m+6nTEOadJZuTPkKR/SYK3A2d7FZrgElol9UP1Kae90VVU4a6mxnPuLiIW1m4Cq4gZ/nWb9GrdVXJCoCazDAbg==
+"@types/node@^18.7.20":
+  version "18.7.20"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.7.20.tgz#d9442de7b5cb166476340b4271b15300fe058a39"
+  integrity sha512-adzY4vLLr5Uivmx8+zfSJ5fbdgKxX8UMtjtl+17n0B1q1Nz8JEmE151vefMdpD+1gyh+77weN4qEhej/O7budQ==
 
 "@types/spotify-api@*":
   version "0.0.16"
@@ -154,24 +154,24 @@
     "@types/node" "*"
     "@types/webidl-conversions" "*"
 
-"@vercel/build-utils@5.4.4":
-  version "5.4.4"
-  resolved "https://registry.yarnpkg.com/@vercel/build-utils/-/build-utils-5.4.4.tgz#f660cba2d1418e87ebccd162804a7e222673ad52"
-  integrity sha512-8p5gQA2ge/x8slRLPo7vsJrPiIctD4dDGx4mweZ+l1+NTMad6nqi+BSH/v3t8apBFtVWZpicUgWql7s/tlWtPA==
+"@vercel/build-utils@5.5.0":
+  version "5.5.0"
+  resolved "https://registry.yarnpkg.com/@vercel/build-utils/-/build-utils-5.5.0.tgz#aadfd219b17ce7d2eb3dba7995ce73edd597a6b4"
+  integrity sha512-nkRtGTu3VGUBETJAKiPJr1g6P6PeaZlquOArIsP0k9p6c04LXKVJvfBbMNyZzIp7xRYtt7xubj7msBC74464QQ==
 
 "@vercel/node-bridge@3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@vercel/node-bridge/-/node-bridge-3.0.0.tgz#443655b74713ec65531726fb5a30c5c528c804bf"
   integrity sha512-TNQK6cufwrhd8ASDk5YHHenH8Xhp9sY8xUjOTKnQQI37KLk+Sw2HlHhT5rzUFN23ahosUlkY8InwtYUmSNb9kw==
 
-"@vercel/node@2.5.16":
-  version "2.5.16"
-  resolved "https://registry.yarnpkg.com/@vercel/node/-/node-2.5.16.tgz#7de850c4a6bfe8ca06d3832cf5d86d36e85e1e13"
-  integrity sha512-0nFFL4oQqXBQC710x3OXp2x5Np1M40CWXPzubv00c7XnvzVJVmoBPUjPGoJ3Bpfu/1m6cpWEePgEe+Z8A2aKaw==
+"@vercel/node@2.5.18":
+  version "2.5.18"
+  resolved "https://registry.yarnpkg.com/@vercel/node/-/node-2.5.18.tgz#abb28f06af9f164077a33b89f44176a2cc9cdf2e"
+  integrity sha512-x0ao/JtNaHNdMWTfMXzyoX3s80xQQM8vE9Bexurmpmkqyq80ZHlBVvtppFGoSzWPw0AkZoJIdQsBmbkdlTV3lg==
   dependencies:
     "@edge-runtime/vm" "1.1.0-beta.32"
     "@types/node" "*"
-    "@vercel/build-utils" "5.4.4"
+    "@vercel/build-utils" "5.5.0"
     "@vercel/node-bridge" "3.0.0"
     "@vercel/static-config" "2.0.3"
     edge-runtime "1.1.0-beta.32"
