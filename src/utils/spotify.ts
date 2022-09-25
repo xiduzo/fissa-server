@@ -197,33 +197,26 @@ export const poorMansTrackIndex = (
   }
 };
 
-/**
- * @param rangeStart The position of the first track to be reordered.
- * @param insertBefore The position where the tracks should be inserted.
- */
 const updatePlaylistTrackIndexAsync = async (
   playlistId: string,
   accessToken: string,
   options: {
-    uris: string[];
-    rangeStart: number;
-    insertBefore: number;
-    snapshotId: string;
+    playlistIndex: number;
+    newTrackIndex: number;
   }
 ): Promise<string> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
-  const { uris, rangeStart, insertBefore, snapshotId } = options;
+  const { playlistIndex, newTrackIndex } = options;
 
   try {
     const response = await spotifyApi.reorderTracksInPlaylist(
       playlistId,
-      rangeStart,
-      insertBefore,
+      playlistIndex,
+      newTrackIndex + 1,
       {
-        range_length: uris.length,
-        snapshot_id: snapshotId,
+        range_length: 1,
       }
     );
     return response.body.snapshot_id;
@@ -260,68 +253,91 @@ const positiveScore = (score: { total: number; trackUri: string }) =>
 const negativeScore = (score: { total: number; trackUri: string }) =>
   score.total < 0;
 
+interface NewIndexBase {
+  totalTracks: number;
+  playlistIndex: number;
+  trackIndex: number;
+  sortedItems: number;
+  voteIndex: number;
+}
+type NewIndex = (props: NewIndexBase) => number;
+
+const positiveNewIndex: NewIndex = ({
+  playlistIndex,
+  sortedItems,
+  trackIndex,
+}) => playlistIndex + sortedItems + Number(trackIndex > playlistIndex);
+
+const negativeNewIndex: NewIndex = ({
+  totalTracks,
+  trackIndex,
+  playlistIndex,
+  voteIndex,
+}) => totalTracks - Number(trackIndex > playlistIndex) - voteIndex;
+
 export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   const { accessToken, playlistId } = room;
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
   try {
-    let tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-    const playlist = await spotifyApi.getPlaylist(playlistId);
-    let currentSnapshotId = playlist.body.snapshot_id;
-
-    const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
-    const currentIndex = poorMansTrackIndex(tracks, currentlyPlaying.item?.uri);
-
     const scores = getScores(votes);
 
     const positiveScores = scores.filter(positiveScore).sort(sortHighToLow);
     const negativeScores = scores.filter(negativeScore).sort(sortLowToHigh);
 
-    const alterations = [];
+    const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
+    const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
 
-    const positiveUpdates = positiveScores.map(async (score, index) => {
-      logger.info(
-        `searching track index for ${score.trackUri} on tracks ${tracks.map(
-          (x) => x.uri
-        )}`
-      );
-      const trackIndex = tracks.findIndex(
-        (track) => track.uri === score.trackUri
-      );
-      const expectedIndex = currentIndex + index + 1;
-      logger.info(`trackIndex: ${trackIndex}, expectedIndex: ${expectedIndex}`);
+    let trackUris = tracks.map((track) => track.uri);
+    let playlistIndex = poorMansTrackIndex(tracks, currentlyPlaying.item?.uri);
+    let sortedItems = 0;
 
-      if (expectedIndex === trackIndex) return;
+    logger.info(
+      `scores ${JSON.stringify([...positiveScores, ...negativeScores])}`
+    );
 
-      logger.info(`updating using: ${currentSnapshotId}`);
+    [...positiveScores, ...negativeScores].forEach(async (score, voteIndex) => {
+      const trackIndex = trackUris.indexOf(score.trackUri);
+      const method = score.total > 0 ? positiveNewIndex : negativeNewIndex;
+      const newTrackIndex = method({
+        playlistIndex,
+        sortedItems,
+        trackIndex,
+        totalTracks: tracks.length,
+        voteIndex,
+      });
 
-      const newSnapshotId = await updatePlaylistTrackIndexAsync(
-        playlistId,
-        accessToken,
-        {
-          uris: [score.trackUri],
-          rangeStart: trackIndex,
-          insertBefore: expectedIndex,
-          snapshotId: currentSnapshotId,
-        }
-      );
-      logger.info(`new snapshotId: ${newSnapshotId}`);
-      if (newSnapshotId) currentSnapshotId = newSnapshotId;
+      logger.info(`trackIndex: ${trackIndex}, newTrackIndex: ${newTrackIndex}`);
+
+      if (trackIndex < 0) {
+        logger.warn(`track ${score.trackUri} not found in playlist`);
+        return;
+      }
+
+      if (newTrackIndex === trackIndex) {
+        logger.info(`skipping ${score.trackUri}`);
+        return;
+      }
+
+      await updatePlaylistTrackIndexAsync(playlistId, accessToken, {
+        playlistIndex,
+        newTrackIndex,
+      });
+
+      sortedItems += 1;
+      playlistIndex -= Number(trackIndex < playlistIndex);
+
+      trackUris.splice(trackIndex, 1);
+      trackUris = [
+        ...trackUris.slice(0, newTrackIndex),
+        score.trackUri,
+        ...trackUris.slice(newTrackIndex),
+      ];
     });
 
-    await Promise.all(positiveUpdates);
-    logger.info("done updating playlist");
-    // positiveScores.forEach(async (score) => {
-    //   const trackIndex = poorMansTrackIndex(tracks, score.trackUri);
-
-    //   if (trackIndex < currentIndex) {
-    //     logger.info(
-    //       `Track is already in playlist, sorting it with ${score.total} points`
-    //     );
-    //   }
-    // });
-    // await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
+    logger.info("====done updating playlist====");
+    await publishAsync(`fissa/room/${room.pin}/tracks/reordered`);
   } catch (error) {
     logger.error("reorderPlaylist", error);
   }
