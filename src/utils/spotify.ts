@@ -204,24 +204,32 @@ export const poorMansTrackIndex = (
 const updatePlaylistTrackIndexAsync = async (
   playlistId: string,
   accessToken: string,
-  uris: string[],
-  rangeStart: number,
-  insertBefore: number
-) => {
+  options: {
+    uris: string[];
+    rangeStart: number;
+    insertBefore: number;
+    snapshotId: string;
+  }
+): Promise<string> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
+  const { uris, rangeStart, insertBefore, snapshotId } = options;
+
   try {
-    await spotifyApi.reorderTracksInPlaylist(
+    const response = await spotifyApi.reorderTracksInPlaylist(
       playlistId,
       rangeStart,
       insertBefore,
       {
         range_length: uris.length,
+        snapshot_id: snapshotId,
       }
     );
+    return response.body.snapshot_id;
   } catch (error) {
     logger.error("updatePlaylistTrackIndexAsync", error);
+    return null;
   }
 };
 
@@ -258,15 +266,52 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   spotifyApi.setAccessToken(accessToken);
 
   try {
-    const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+    let tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+    const playlist = await spotifyApi.getPlaylist(playlistId);
+    let currentSnapshotId = playlist.body.snapshot_id;
+
     const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
     const currentIndex = poorMansTrackIndex(tracks, currentlyPlaying.item?.uri);
 
     const scores = getScores(votes);
 
-    const positiveScores = scores.filter(positiveScore).sort(sortLowToHigh);
-    const negativeScores = scores.filter(negativeScore).sort(sortHighToLow);
+    const positiveScores = scores.filter(positiveScore).sort(sortHighToLow);
+    const negativeScores = scores.filter(negativeScore).sort(sortLowToHigh);
 
+    const alterations = [];
+
+    const positiveUpdates = positiveScores.map(async (score, index) => {
+      logger.info(
+        `searching track index for ${score.trackUri} on tracks ${tracks.map(
+          (x) => x.uri
+        )}`
+      );
+      const trackIndex = tracks.findIndex(
+        (track) => track.uri === score.trackUri
+      );
+      const expectedIndex = currentIndex + index + 1;
+      logger.info(`trackIndex: ${trackIndex}, expectedIndex: ${expectedIndex}`);
+
+      if (expectedIndex === trackIndex) return;
+
+      logger.info(`updating using: ${currentSnapshotId}`);
+
+      const newSnapshotId = await updatePlaylistTrackIndexAsync(
+        playlistId,
+        accessToken,
+        {
+          uris: [score.trackUri],
+          rangeStart: trackIndex,
+          insertBefore: expectedIndex,
+          snapshotId: currentSnapshotId,
+        }
+      );
+      logger.info(`new snapshotId: ${newSnapshotId}`);
+      if (newSnapshotId) currentSnapshotId = newSnapshotId;
+    });
+
+    await Promise.all(positiveUpdates);
+    logger.info("done updating playlist");
     // positiveScores.forEach(async (score) => {
     //   const trackIndex = poorMansTrackIndex(tracks, score.trackUri);
 
