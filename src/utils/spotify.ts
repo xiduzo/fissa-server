@@ -254,7 +254,9 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   spotifyApi.setAccessToken(accessToken);
 
   try {
-    const scores = getScores(votes);
+    const scores = getScores(votes).sort((a, b) =>
+      a.trackUri.localeCompare(b.trackUri)
+    );
 
     const positiveScores = scores.filter(positiveScore).sort(highToLow);
     const negativeScores = scores.filter(negativeScore).sort(lowToHigh);
