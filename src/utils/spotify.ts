@@ -168,17 +168,14 @@ export const disableShuffleAsync = async (
     await spotifyApi.setShuffle(false);
   } catch (error) {
     if (error.message?.includes("NO_ACTIVE_DEVICE")) {
-      logger.info("trying to set active device of user");
-
       const myDevices = await spotifyApi.getMyDevices();
 
-      if (myDevices.body.devices.length > 0) {
-        await spotifyApi.transferMyPlayback([myDevices.body.devices[0].id]);
+      if (myDevices.body.devices.length <= 0) {
+        logger.warn("no devices found for user");
         return;
       }
 
-      logger.warn("no devices found for user");
-
+      await spotifyApi.transferMyPlayback([myDevices.body.devices[0].id]);
       return;
     }
 
@@ -269,10 +266,6 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
     let playlistIndex = poorMansTrackIndex(tracks, currentlyPlaying.item?.uri);
     let sortedItems = 0;
 
-    logger.info(
-      `scores ${JSON.stringify([...positiveScores, ...negativeScores])}`
-    );
-
     const updates = [...positiveScores, ...negativeScores].map(
       async (score, voteIndex) => {
         const trackIndex = trackUris.indexOf(score.trackUri);
@@ -286,25 +279,15 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
         });
 
         if (trackIndex < 0) {
-          logger.warn(`track ${score.trackUri} not found in playlist`);
+          logger.warn(
+            `total: ${score.total} track ${score.trackUri} not found in playlist`
+          );
           return;
         }
 
         if (newTrackIndex === trackIndex) {
-          logger.info(`skipping ${score.trackUri}`);
           return;
         }
-
-        logger.info(
-          `score ${JSON.stringify(
-            score
-          )}, trackIndex: ${trackIndex}, newTrackIndex: ${newTrackIndex}`
-        );
-
-        await updatePlaylistTrackIndexAsync(playlistId, accessToken, {
-          trackIndex,
-          newTrackIndex,
-        });
 
         sortedItems += 1;
         playlistIndex -= Number(trackIndex < playlistIndex);
@@ -315,13 +298,15 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
           score.trackUri,
           ...trackUris.slice(newTrackIndex),
         ];
+
+        await updatePlaylistTrackIndexAsync(playlistId, accessToken, {
+          trackIndex,
+          newTrackIndex,
+        });
       }
     );
 
-    logger.info("====wait to update playlists====");
     await Promise.all(updates);
-
-    logger.info("====done updating playlist====");
   } catch (error) {
     logger.error("reorderPlaylist", error);
   }

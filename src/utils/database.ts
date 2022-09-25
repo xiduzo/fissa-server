@@ -52,26 +52,28 @@ export const mongoCollectionAsync = async <T>(
   }
 };
 
-const saveVote = async (
-  collection: Collection<Vote>,
-  state: VoteState,
-  vote: Vote
-) => {
-  const _vote = await collection.findOne({
+const saveVote = async (vote: Vote) => {
+  const votes = await mongoCollectionAsync<Vote>("votes");
+
+  const _vote = await votes.findOne({
     pin: vote.pin,
     createdBy: vote.createdBy,
     trackUri: vote.trackUri,
   });
 
   if (!_vote) {
-    return await collection.insertOne(vote);
+    return await votes.insertOne(vote);
   }
 
-  return await collection.updateOne(
+  if (vote.state === _vote.state) {
+    return await votes.deleteOne({ _id: _vote._id });
+  }
+
+  return await votes.updateOne(
     { _id: _vote._id },
     {
       $set: {
-        state,
+        state: vote.state,
       },
     }
   );
@@ -86,7 +88,6 @@ export const voteAsync = async (
   try {
     const me = await getMeAsync(accessToken);
 
-    const votes = await mongoCollectionAsync<Vote>("votes");
     const vote: Vote = {
       pin,
       createdBy: me.id,
@@ -94,7 +95,7 @@ export const voteAsync = async (
       state,
     };
 
-    await saveVote(votes, state, vote);
+    await saveVote(vote);
     return vote;
   } catch (error) {
     logger.error("voteAsync", error);
