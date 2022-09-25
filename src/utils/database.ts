@@ -82,7 +82,7 @@ export const voteAsync = async (
   accessToken: string,
   trackUri: string,
   state: VoteState
-): Promise<Partial<Vote>> => {
+): Promise<Vote> => {
   try {
     const me = await getMeAsync(accessToken);
 

@@ -9,7 +9,8 @@ import { logger } from "../../utils/logger";
 import { publishAsync } from "../../utils/mqtt";
 import {
   getMyCurrentPlaybackStateAsync,
-  poorMansCurrentIndexAsync,
+  getPlaylistTracksAsync,
+  poorMansTrackIndex,
 } from "../../utils/spotify";
 
 const T_MINUS = 500;
@@ -22,8 +23,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
     // so all promises are resolved and we can loop again
     return new Promise(async (resolve) => {
       try {
-        const { pin, accessToken, expectedEndTime, currentIndex } = room;
-        logger.info(`Syncing room ${pin}`);
+        const { accessToken, expectedEndTime, currentIndex } = room;
         if (!accessToken) return;
         if (currentIndex < 0) return;
         // TODO: create a new room endpoint to manually sync up with the room as a host
@@ -81,10 +81,11 @@ export const updateRoom = async (room: Room) => {
     currentlyPlaying.item.uri
   );
 
-  newState.currentIndex = await poorMansCurrentIndexAsync(
-    accessToken,
-    playlistId,
-    currentlyPlaying
+  const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+
+  newState.currentIndex = poorMansTrackIndex(
+    tracks,
+    currentlyPlaying.item?.uri
   );
 
   // TODO if index is tracks length - 1, add X new tracks based on previous tracks

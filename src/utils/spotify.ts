@@ -1,13 +1,18 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 import { Room } from "../lib/interfaces/Room";
-import { SortedVotes } from "../lib/interfaces/Vote";
+import { SortedVotes, Vote } from "../lib/interfaces/Vote";
 import { logger } from "./logger";
 import { publishAsync } from "./mqtt";
 
 enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
 }
+
+type CreatePlaylistAsync = {
+  playlistId: string;
+  createdBy: string;
+};
 
 export const addTracksToPlaylistAsync = async (
   accessToken: string,
@@ -39,11 +44,6 @@ export const addTracksToPlaylistAsync = async (
     logger.error("addTracksToPlaylistAsync", error);
     return 0;
   }
-};
-
-type CreatePlaylistAsync = {
-  playlistId: string;
-  createdBy: string;
 };
 
 export const createPlaylistAsync = async (
@@ -182,30 +182,19 @@ export const disableShuffleAsync = async (
   }
 };
 
-export const poorMansCurrentIndexAsync = async (
-  accessToken: string,
-  playlistId: string,
-  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
-): Promise<number> => {
+export const poorMansTrackIndex = (
+  tracks: SpotifyApi.TrackObjectFull[],
+  currentUri?: string
+): number => {
   try {
-    const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-    const index = trackIndex(tracks, currentlyPlaying.item?.uri ?? "");
+    const trackUris = tracks?.map((track) => track.uri) ?? [];
+
+    const index = trackUris.indexOf(currentUri);
     return index;
   } catch (error) {
     logger.error("poorMansCurrentIndexAsync", error);
     return -1;
   }
-};
-
-const trackIndex = (
-  tracks: SpotifyApi.TrackObjectFull[],
-  trackUri: string
-): number => {
-  const trackUris = tracks?.map((track) => track.uri) ?? [];
-
-  const index = trackUris.indexOf(trackUri);
-
-  return index;
 };
 
 /**
@@ -236,7 +225,34 @@ const updatePlaylistTrackIndexAsync = async (
   }
 };
 
-export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
+const getScores = (votes: Vote[]): { total: number; trackUri: string }[] => {
+  return Object.values(
+    votes.reduce((acc, vote) => {
+      const currentScore = acc[vote.trackUri]?.total ?? 0;
+      const addition = vote.state === "up" ? 1 : -1;
+      return {
+        ...acc,
+        [vote.trackUri]: {
+          total: currentScore + addition,
+          trackUri: vote.trackUri,
+        },
+      };
+    }, {})
+  );
+};
+
+const sortHighToLow = (a: { total: number }, b: { total: number }): number =>
+  b.total - a.total;
+
+const sortLowToHigh = (a: { total: number }, b: { total: number }): number =>
+  a.total - b.total;
+
+const positiveScore = (score: { total: number; trackUri: string }) =>
+  score.total > 0;
+const negativeScore = (score: { total: number; trackUri: string }) =>
+  score.total < 0;
+
+export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   const { accessToken, playlistId } = room;
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
@@ -244,32 +260,23 @@ export const reorderPlaylist = async (room: Room, votes: SortedVotes) => {
   try {
     const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
     const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
-    const currentIndex = await poorMansCurrentIndexAsync(
-      accessToken,
-      playlistId,
-      currentlyPlaying
-    );
+    const currentIndex = poorMansTrackIndex(tracks, currentlyPlaying.item?.uri);
 
-    const lowToHighTotalSortedVotes = Object.values(votes).sort(
-      (a, b) => a.total - b.total
-    );
-    const updatePromises = lowToHighTotalSortedVotes.map((vote) => {
-      const voteIndex = trackIndex(tracks, vote.trackUri);
-      const newIndex = vote.total < 0 ? tracks.length : currentIndex + 2; // The next track in queue is locked
+    const scores = getScores(votes);
 
-      const promise = updatePlaylistTrackIndexAsync(
-        playlistId,
-        accessToken,
-        [vote.trackUri],
-        voteIndex,
-        newIndex
-      );
+    const positiveScores = scores.filter(positiveScore).sort(sortLowToHigh);
+    const negativeScores = scores.filter(negativeScore).sort(sortHighToLow);
 
-      return promise;
-    });
+    // positiveScores.forEach(async (score) => {
+    //   const trackIndex = poorMansTrackIndex(tracks, score.trackUri);
 
-    await Promise.all(updatePromises);
-    await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
+    //   if (trackIndex < currentIndex) {
+    //     logger.info(
+    //       `Track is already in playlist, sorting it with ${score.total} points`
+    //     );
+    //   }
+    // });
+    // await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
   } catch (error) {
     logger.error("reorderPlaylist", error);
   }

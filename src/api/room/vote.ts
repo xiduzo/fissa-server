@@ -5,6 +5,8 @@ import { mongoCollectionAsync } from "../../utils/database";
 import { Vote } from "../../lib/interfaces/Vote";
 import { publishAsync } from "../../utils/mqtt";
 import { logger } from "../../utils/logger";
+import { reorderPlaylist } from "../../utils/spotify";
+import { Room } from "../../lib/interfaces/Room";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -45,6 +47,11 @@ const handler: VercelApiHandler = async (request, response) => {
 
         const roomVotes = await votes.find({ pin }).toArray();
         await publishAsync(`fissa/room/${pin}/votes`, roomVotes);
+
+        const rooms = await mongoCollectionAsync<Room>("room");
+        const room = await rooms.findOne({ pin });
+        await reorderPlaylist(room, roomVotes);
+        // await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {

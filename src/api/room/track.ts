@@ -2,11 +2,12 @@ import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
-import { VoteState } from "../../lib/interfaces/Vote";
+import { Vote, VoteState } from "../../lib/interfaces/Vote";
 import { mongoCollectionAsync, voteAsync } from "../../utils/database";
 import {
   addTracksToPlaylistAsync,
   getPlaylistTracksAsync,
+  reorderPlaylist,
 } from "../../utils/spotify";
 import { publishAsync } from "../../utils/mqtt";
 
@@ -51,7 +52,7 @@ const handler: VercelApiHandler = async (request, response) => {
         );
 
         // vote for all of the tracks you just added
-        await Promise.all(
+        const votes = await Promise.all(
           trackUris.map(async (uri) => {
             return voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
           })
@@ -61,6 +62,8 @@ const handler: VercelApiHandler = async (request, response) => {
           `fissa/room/${pin}/tracks/added`,
           trackUrisToAdd.length
         );
+
+        await reorderPlaylist(room, votes);
 
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {
