@@ -206,19 +206,23 @@ const updatePlaylistTrackIndexAsync = async (
   options: {
     trackIndex: number;
     newTrackIndex: number;
+    snapshotId: string;
   }
 ): Promise<string> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
-  const { trackIndex, newTrackIndex } = options;
+  const { trackIndex, newTrackIndex, snapshotId } = options;
 
   logger.info(`insert track on index ${trackIndex} before ${newTrackIndex}`);
   try {
     const response = await spotifyApi.reorderTracksInPlaylist(
       playlistId,
       trackIndex,
-      newTrackIndex
+      newTrackIndex,
+      {
+        snapshot_id: snapshotId,
+      }
     );
     return response.body.snapshot_id;
   } catch (error) {
@@ -263,6 +267,7 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
 
     const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
     const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+    const playlist = await spotifyApi.getPlaylist(playlistId);
 
     let trackUris = tracks.map((track) => track.uri);
     let playlistIndex = poorMansTrackIndex(tracks, currentlyPlaying.item?.uri);
@@ -304,6 +309,7 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
         await updatePlaylistTrackIndexAsync(playlistId, accessToken, {
           trackIndex,
           newTrackIndex,
+          snapshotId: playlist.body.snapshot_id,
         });
       }
     );
