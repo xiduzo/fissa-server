@@ -9,8 +9,6 @@ import {
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
 import { Vote, VoteState } from "../lib/interfaces/Vote";
 import { getMeAsync } from "./spotify";
-import { publishAsync } from "./mqtt";
-import { sortVotes } from "../lib/interfaces/Vote";
 import { logger } from "./logger";
 
 const { user, password } = MONGO_CREDENTIALS;
@@ -25,13 +23,8 @@ export const mongoClient = new MongoClient(
 export const mongoDbAsync = async (): Promise<Db> => {
   return new Promise(async (resolve, reject) => {
     try {
-      mongoClient.connect(async (error, client) => {
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        resolve(client.db("fissa"));
-      });
+      const client = await mongoClient.connect();
+      resolve(client.db("fissa"));
     } catch (error) {
       logger.error("mongoDbAsync", error);
       await mongoClient.close();
