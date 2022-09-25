@@ -19,7 +19,11 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { pin, trackUris, accessToken } = request.body as {
+      const {
+        pin,
+        trackUris,
+        accessToken: userAccessToken,
+      } = request.body as {
         pin: string;
         trackUris: string[];
         accessToken: string;
@@ -34,9 +38,11 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
+        const { accessToken, playlistId } = room;
+
         const playlistTracks = await getPlaylistTracksAsync(
-          room.accessToken,
-          room.playlistId
+          accessToken,
+          playlistId
         );
 
         const trackUrisInPlaylist = playlistTracks.map((track) => track.uri);
@@ -46,15 +52,15 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await addTracksToPlaylistAsync(
           // TODO: give specific error if the room owner access token doesn't work anymore
-          room.accessToken,
-          room.playlistId,
+          accessToken,
+          playlistId,
           trackUrisToAdd
         );
 
         // vote for all of the tracks you just added
-        const votes = await Promise.all(
+        await Promise.all(
           trackUris.map(async (uri) => {
-            return voteAsync(room.pin, accessToken, uri, VoteState.Upvote);
+            return voteAsync(room.pin, userAccessToken, uri, VoteState.Upvote);
           })
         );
 
@@ -63,7 +69,11 @@ const handler: VercelApiHandler = async (request, response) => {
           trackUrisToAdd.length
         );
 
-        await reorderPlaylist(room, votes);
+        const votes = await mongoCollectionAsync<Vote>("votes");
+        const roomVotes = await votes.find({ pin }).toArray();
+
+        await reorderPlaylist(room, roomVotes);
+        await publishAsync(`fissa/room/${room.pin}/tracks/reordered`);
 
         response.status(StatusCodes.OK).json(trackUris.length);
       } catch (error) {

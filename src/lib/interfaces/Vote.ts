@@ -15,10 +15,34 @@ export type Vote = {
 export type SortedVoteData = {
   trackUri: string;
   total: number;
-  votes: Vote[];
 };
 
 export type SortedVotes = { [trackUri: string]: SortedVoteData };
+
+export const positiveScore = (score: SortedVoteData) => score.total > 0;
+export const negativeScore = (score: SortedVoteData) => score.total < 0;
+
+export const highToLow = (a: SortedVoteData, b: SortedVoteData): number =>
+  b.total - a.total;
+
+export const lowToHigh = (a: SortedVoteData, b: SortedVoteData): number =>
+  a.total - b.total;
+
+export const getScores = (votes: Vote[]): SortedVoteData[] => {
+  return Object.values(
+    votes.reduce((acc, vote) => {
+      const currentScore = acc[vote.trackUri]?.total ?? 0;
+      const addition = vote.state === "up" ? 1 : -1;
+      return {
+        ...acc,
+        [vote.trackUri]: {
+          total: currentScore + addition,
+          trackUri: vote.trackUri,
+        },
+      };
+    }, {})
+  );
+};
 
 export const sortVotes = (votes: Vote[]): SortedVotes => {
   const reduced = votes.reduce((curr, vote) => {
@@ -35,7 +59,6 @@ export const sortVotes = (votes: Vote[]): SortedVotes => {
       [vote.trackUri]: {
         ...track,
         total: track.total + addToTotal,
-        votes: [...track.votes, vote],
       },
     };
   }, {} as SortedVotes);

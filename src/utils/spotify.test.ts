@@ -122,6 +122,24 @@ describe("sorting positive votes", () => {
     expect(sorting).toHaveBeenCalledTimes(3);
   });
 
+  it("should sort multiple votes with same total", () => {
+    const sortedVotes: { total: number; uri: string }[] = [
+      {
+        total: 1,
+        uri: "4",
+      },
+      {
+        total: 1,
+        uri: "6",
+      },
+    ];
+
+    const result = sortVotes(sortedVotes, positiveNewIndex);
+
+    expect(result).toStrictEqual(["0", "1", "2", "4", "6", "3", "5"]);
+    expect(sorting).toHaveBeenCalledTimes(2);
+  });
+
   it("should sort passed items", () => {
     const sortedVotes: { total: number; uri: string }[] = [
       {

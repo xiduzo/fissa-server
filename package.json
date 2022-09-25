@@ -1,7 +1,7 @@
 {
-  "name": "nodejs-spotify-token-swap",
-  "version": "1.0.0",
-  "description": "A token swap service for nodejs",
+  "name": "fissa-server",
+  "version": "1.3.0",
+  "description": "Boring backend stuff for fissa",
   "license": "ISC",
   "author": "xiduzo",
   "main": "server.js",

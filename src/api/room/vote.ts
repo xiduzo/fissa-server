@@ -51,7 +51,7 @@ const handler: VercelApiHandler = async (request, response) => {
         const rooms = await mongoCollectionAsync<Room>("room");
         const room = await rooms.findOne({ pin });
         await reorderPlaylist(room, roomVotes);
-        // await publishAsync(`fissa/room/${room.pin}/tracks/reordered`, votes);
+        await publishAsync(`fissa/room/${room.pin}/tracks/reordered`);
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {

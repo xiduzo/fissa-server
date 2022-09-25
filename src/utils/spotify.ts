@@ -1,9 +1,15 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 import { Room } from "../lib/interfaces/Room";
-import { SortedVotes, Vote } from "../lib/interfaces/Vote";
+import {
+  getScores,
+  negativeScore,
+  positiveScore,
+  highToLow,
+  lowToHigh,
+  Vote,
+} from "../lib/interfaces/Vote";
 import { logger } from "./logger";
-import { publishAsync } from "./mqtt";
 
 enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
@@ -201,23 +207,21 @@ const updatePlaylistTrackIndexAsync = async (
   playlistId: string,
   accessToken: string,
   options: {
-    playlistIndex: number;
+    trackIndex: number;
     newTrackIndex: number;
   }
 ): Promise<string> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
-  const { playlistIndex, newTrackIndex } = options;
+  const { trackIndex, newTrackIndex } = options;
 
+  logger.info(`insert track on index ${trackIndex} before ${newTrackIndex}`);
   try {
     const response = await spotifyApi.reorderTracksInPlaylist(
       playlistId,
-      playlistIndex,
-      newTrackIndex + 1,
-      {
-        range_length: 1,
-      }
+      trackIndex,
+      newTrackIndex
     );
     return response.body.snapshot_id;
   } catch (error) {
@@ -226,41 +230,13 @@ const updatePlaylistTrackIndexAsync = async (
   }
 };
 
-const getScores = (votes: Vote[]): { total: number; trackUri: string }[] => {
-  return Object.values(
-    votes.reduce((acc, vote) => {
-      const currentScore = acc[vote.trackUri]?.total ?? 0;
-      const addition = vote.state === "up" ? 1 : -1;
-      return {
-        ...acc,
-        [vote.trackUri]: {
-          total: currentScore + addition,
-          trackUri: vote.trackUri,
-        },
-      };
-    }, {})
-  );
-};
-
-const sortHighToLow = (a: { total: number }, b: { total: number }): number =>
-  b.total - a.total;
-
-const sortLowToHigh = (a: { total: number }, b: { total: number }): number =>
-  a.total - b.total;
-
-const positiveScore = (score: { total: number; trackUri: string }) =>
-  score.total > 0;
-const negativeScore = (score: { total: number; trackUri: string }) =>
-  score.total < 0;
-
-interface NewIndexBase {
+type NewIndex = (props: {
   totalTracks: number;
   playlistIndex: number;
   trackIndex: number;
   sortedItems: number;
   voteIndex: number;
-}
-type NewIndex = (props: NewIndexBase) => number;
+}) => number;
 
 const positiveNewIndex: NewIndex = ({
   playlistIndex,
@@ -283,8 +259,8 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   try {
     const scores = getScores(votes);
 
-    const positiveScores = scores.filter(positiveScore).sort(sortHighToLow);
-    const negativeScores = scores.filter(negativeScore).sort(sortLowToHigh);
+    const positiveScores = scores.filter(positiveScore).sort(highToLow);
+    const negativeScores = scores.filter(negativeScore).sort(lowToHigh);
 
     const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
     const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
@@ -297,47 +273,55 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
       `scores ${JSON.stringify([...positiveScores, ...negativeScores])}`
     );
 
-    [...positiveScores, ...negativeScores].forEach(async (score, voteIndex) => {
-      const trackIndex = trackUris.indexOf(score.trackUri);
-      const method = score.total > 0 ? positiveNewIndex : negativeNewIndex;
-      const newTrackIndex = method({
-        playlistIndex,
-        sortedItems,
-        trackIndex,
-        totalTracks: tracks.length,
-        voteIndex,
-      });
+    const updates = [...positiveScores, ...negativeScores].map(
+      async (score, voteIndex) => {
+        const trackIndex = trackUris.indexOf(score.trackUri);
+        const method = score.total > 0 ? positiveNewIndex : negativeNewIndex;
+        const newTrackIndex = method({
+          playlistIndex,
+          sortedItems,
+          trackIndex,
+          totalTracks: tracks.length,
+          voteIndex,
+        });
 
-      logger.info(`trackIndex: ${trackIndex}, newTrackIndex: ${newTrackIndex}`);
+        if (trackIndex < 0) {
+          logger.warn(`track ${score.trackUri} not found in playlist`);
+          return;
+        }
 
-      if (trackIndex < 0) {
-        logger.warn(`track ${score.trackUri} not found in playlist`);
-        return;
+        if (newTrackIndex === trackIndex) {
+          logger.info(`skipping ${score.trackUri}`);
+          return;
+        }
+
+        logger.info(
+          `score ${JSON.stringify(
+            score
+          )}, trackIndex: ${trackIndex}, newTrackIndex: ${newTrackIndex}`
+        );
+
+        await updatePlaylistTrackIndexAsync(playlistId, accessToken, {
+          trackIndex,
+          newTrackIndex,
+        });
+
+        sortedItems += 1;
+        playlistIndex -= Number(trackIndex < playlistIndex);
+
+        trackUris.splice(trackIndex, 1);
+        trackUris = [
+          ...trackUris.slice(0, newTrackIndex),
+          score.trackUri,
+          ...trackUris.slice(newTrackIndex),
+        ];
       }
+    );
 
-      if (newTrackIndex === trackIndex) {
-        logger.info(`skipping ${score.trackUri}`);
-        return;
-      }
-
-      await updatePlaylistTrackIndexAsync(playlistId, accessToken, {
-        playlistIndex,
-        newTrackIndex,
-      });
-
-      sortedItems += 1;
-      playlistIndex -= Number(trackIndex < playlistIndex);
-
-      trackUris.splice(trackIndex, 1);
-      trackUris = [
-        ...trackUris.slice(0, newTrackIndex),
-        score.trackUri,
-        ...trackUris.slice(newTrackIndex),
-      ];
-    });
+    logger.info("====wait to update playlists====");
+    await Promise.all(updates);
 
     logger.info("====done updating playlist====");
-    await publishAsync(`fissa/room/${room.pin}/tracks/reordered`);
   } catch (error) {
     logger.error("reorderPlaylist", error);
   }
