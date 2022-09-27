@@ -207,14 +207,15 @@ const updatePlaylistTrackIndexAsync = async (
   options: {
     trackIndex: number;
     newTrackIndex: number;
+    snapshotId?: string;
   }
 ): Promise<string> => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
-  const { trackIndex, newTrackIndex } = options;
+  const { trackIndex, newTrackIndex, snapshotId } = options;
 
-  logger.info(`insert track on index ${trackIndex} before ${newTrackIndex}`);
+  logger.warn(`insert track on index ${trackIndex} on ${newTrackIndex}`);
   try {
     const response = await spotifyApi.reorderTracksInPlaylist(
       playlistId,
@@ -222,6 +223,7 @@ const updatePlaylistTrackIndexAsync = async (
       newTrackIndex,
       {
         range_length: 1,
+        snapshot_id: snapshotId,
       }
     );
     return response.body.snapshot_id;
@@ -267,36 +269,43 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
 
     logger.info(`positiveScores ${JSON.stringify(positiveScores)}`);
 
-    const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
-    let sortedItems = 0;
+    const { item } = await getMyCurrentPlaybackStateAsync(accessToken);
+    let snapshotId: string | undefined;
+    const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+    let playlistIndex = poorMansTrackIndex(tracks, item?.uri);
+    const nextTrackOffset = 1; // 1 to insert after the current index, 1 to make sure the next track is locked
 
-    for (let i = 0; i < positiveScores.length; i++) {
-      const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-      const playlistIndex = poorMansTrackIndex(
-        tracks,
-        currentlyPlaying.item?.uri
-      );
-      const trackIndex = poorMansTrackIndex(tracks, positiveScores[i].trackUri);
+    for (let index = 0; index < positiveScores.length; index++) {
+      logger.info(">>>>>>>>>>>>>>");
+      const score = positiveScores[index];
+      const trackIndex = poorMansTrackIndex(tracks, score.trackUri);
 
-      const expectedNewIndex = playlistIndex + sortedItems + 1; // +1 because we are inserting after the currently playing track
+      const expectedNewIndex = playlistIndex + index + nextTrackOffset;
       logger.info(
-        JSON.stringify({ playlistIndex, trackIndex, expectedNewIndex })
+        JSON.stringify({ total: score.total, trackIndex, expectedNewIndex })
       );
-      if (trackIndex === expectedNewIndex) continue;
 
-      sortedItems += 1;
-      logger.info(
-        JSON.stringify({
+      if (trackIndex === expectedNewIndex) {
+        logger.info("track is already in the right place");
+        continue;
+      }
+
+      if (trackIndex < playlistIndex) {
+        playlistIndex -= 1; // We are going to move a track from above the playlistIndex, so we need to adjust the playlistIndex
+      }
+
+      snapshotId = await updatePlaylistTrackIndexAsync(
+        playlistId,
+        accessToken,
+        {
           trackIndex: trackIndex,
           newTrackIndex: expectedNewIndex,
-        })
+        }
       );
-      await updatePlaylistTrackIndexAsync(playlistId, accessToken, {
-        trackIndex: trackIndex,
-        newTrackIndex: expectedNewIndex,
-      });
     }
 
+    logger.info(">>>>>>>>>>>>>>");
+    logger.info("done sorting positive scores");
     await updateRoom(room);
   } catch (error) {
     logger.error("reorderPlaylist", error);
