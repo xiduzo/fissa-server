@@ -3,7 +3,10 @@ import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync, voteAsync } from "../../utils/database";
-import { startPlaylistFromTopAsync } from "../../utils/spotify";
+import {
+  getMyCurrentPlaybackStateAsync,
+  startPlaylistFromTopAsync,
+} from "../../utils/spotify";
 import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -27,7 +30,19 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        await startPlaylistFromTopAsync(room);
+        // TODO: check if room is already playing
+        const { playlistId, accessToken } = room;
+
+        const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
+          accessToken
+        );
+
+        const { context } = currentlyPlaying;
+
+        if (!context?.uri.includes(playlistId)) {
+          await startPlaylistFromTopAsync(room);
+        }
+
         await updateRoom(room);
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);

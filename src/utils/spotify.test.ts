@@ -1,297 +1,132 @@
+import { SortedVoteData } from "../lib/interfaces/Vote";
+
 const sorting = jest.fn();
 
-const tracks: SpotifyApi.TrackObjectFull[] = [
-  {
-    uri: "0",
-  } as SpotifyApi.TrackObjectFull,
-  {
-    uri: "1",
-  } as SpotifyApi.TrackObjectFull,
-  {
-    uri: "2",
-  } as SpotifyApi.TrackObjectFull,
-  {
-    uri: "3",
-  } as SpotifyApi.TrackObjectFull,
-  {
-    uri: "4",
-  } as SpotifyApi.TrackObjectFull,
-  {
-    uri: "5",
-  } as SpotifyApi.TrackObjectFull,
-  {
-    uri: "6",
-  } as SpotifyApi.TrackObjectFull,
-];
+const tracks: SpotifyApi.TrackObjectFull[] = Array.from({ length: 10 }).map(
+  (_, index) =>
+    ({
+      uri: `${index}`,
+    } as SpotifyApi.TrackObjectFull)
+);
 
-interface NewIndexBase {
-  totalTracks: number;
-  playlistIndex: number;
-  trackIndex: number;
-  sortedItems: number;
-  voteIndex: number;
-}
-type NewIndex = (props: NewIndexBase) => number;
+const trackUris = tracks.map((track) => track.uri);
 
-const positiveNewIndex: NewIndex = ({
-  playlistIndex,
-  sortedItems,
-  trackIndex,
-}) => playlistIndex + sortedItems + Number(trackIndex > playlistIndex);
-
-const negativeNewIndex: NewIndex = ({
-  totalTracks,
-  trackIndex,
-  playlistIndex,
-  voteIndex,
-}) => totalTracks - Number(trackIndex > playlistIndex) - voteIndex;
-
-const sortVotes = (
-  sortedVotes: { total: number; uri: string }[],
-  newIndex: NewIndex
-): string[] => {
-  let playlistIndex = 2;
-  let tracksCopy = [...tracks];
+const sortPositiveVotes = async (votes: SortedVoteData[]) => {
+  const positionChanges = new Map(tracks.map((_, index) => [index, 0]));
   let sortedItems = 0;
 
-  sortedVotes.forEach((vote, voteIndex) => {
-    const trackIndex = tracksCopy.findIndex((track) => track.uri === vote.uri);
-    const newTrackIndex = newIndex({
-      playlistIndex,
+  const playlistIndex = trackUris.indexOf(tracks[2]?.uri);
+  for (let i = 0; i < votes.length; i++) {
+    const trackIndex = trackUris.indexOf(votes[i]?.trackUri);
+    const actualTrackIndex = trackIndex + positionChanges.get(trackIndex);
+    const actualPlaylistIndex =
+      playlistIndex + positionChanges.get(playlistIndex);
+
+    const insertBefore = actualPlaylistIndex + sortedItems + 1;
+
+    if (insertBefore === actualTrackIndex) continue;
+    console.log({
+      vote: votes[i],
       trackIndex,
-      sortedItems,
-      totalTracks: tracksCopy.length,
-      voteIndex,
+      actualTrackIndex,
+      playlistIndex,
+      actualPlaylistIndex,
+      insertBefore,
+      positionChanges,
     });
 
-    if (trackIndex === newTrackIndex) return;
+    if (insertBefore > actualPlaylistIndex) {
+      const start = playlistIndex + 1;
+      const diff = Math.abs(actualTrackIndex - actualPlaylistIndex) - 1;
+      for (let j = 0; j < tracks.length; j++) {
+        const otherActualIndex = j + positionChanges.get(j);
+        console.log({ j, otherActualIndex, start });
+        if (otherActualIndex >= start && otherActualIndex < insertBefore) {
+          positionChanges.set(j, positionChanges.get(j) + 1);
+        }
+      }
+      // loop over all tracks
+      // if actual track index is between start and insertBefore
+      // increase position change by 1
+      console.log({ trackIndex, diff });
+      positionChanges.set(trackIndex, positionChanges.get(trackIndex) - diff);
+    }
 
     sortedItems += 1;
-    playlistIndex -= Number(trackIndex < playlistIndex);
-    sorting();
-    const track = tracksCopy[trackIndex];
-    tracksCopy.splice(trackIndex, 1);
-    tracksCopy = [
-      ...tracksCopy.slice(0, newTrackIndex),
-      track,
-      ...tracksCopy.slice(newTrackIndex),
-    ];
-  });
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.random() * 5 * 200)
+    );
+  }
 
-  return tracksCopy.map((x) => x.uri);
+  return positionChanges;
 };
 
-describe("sorting positive votes", () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
-  });
-
-  it("should sort a single vote", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
+describe("reorder playlist", () => {
+  it.skip("sorts the votes", async () => {
+    const votes: SortedVoteData[] = [
       {
+        trackUri: "5",
         total: 2,
-        uri: "4",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, positiveNewIndex);
-
-    expect(result).toStrictEqual(["0", "1", "2", "4", "3", "5", "6"]);
-    expect(sorting).toHaveBeenCalledTimes(1);
-  });
-
-  it("should sort multiple votes", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: 3,
-        uri: "4",
       },
       {
-        total: 2,
-        uri: "6",
-      },
-      {
+        trackUri: "4",
         total: 1,
-        uri: "5",
       },
     ];
 
-    const result = sortVotes(sortedVotes, positiveNewIndex);
+    const result = await sortPositiveVotes(votes);
 
-    expect(result).toStrictEqual(["0", "1", "2", "4", "6", "5", "3"]);
-    expect(sorting).toHaveBeenCalledTimes(3);
+    expect(result).toStrictEqual(
+      new Map([
+        [0, 0],
+        [1, 0],
+        [2, 0],
+        [3, 2],
+        [4, 0],
+        [5, -2],
+        [6, 0],
+        [7, 0],
+        [8, 0],
+        [9, 0],
+      ])
+    );
   });
 
-  it("should sort multiple votes with same total", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
+  it("sorts complex votes", async () => {
+    const votes: SortedVoteData[] = [
       {
-        total: 1,
-        uri: "4",
+        trackUri: "8",
+        total: 4,
       },
       {
-        total: 1,
-        uri: "6",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, positiveNewIndex);
-
-    expect(result).toStrictEqual(["0", "1", "2", "4", "6", "3", "5"]);
-    expect(sorting).toHaveBeenCalledTimes(2);
-  });
-
-  it("should sort passed items", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: 2,
-        uri: "0",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, positiveNewIndex);
-
-    expect(result).toStrictEqual(["1", "2", "0", "3", "4", "5", "6"]);
-    expect(sorting).toHaveBeenCalledTimes(1);
-  });
-
-  it("should sort complex votes", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: 6,
-        uri: "0",
-      },
-      {
+        trackUri: "6",
         total: 3,
-        uri: "6",
       },
       {
+        trackUri: "4",
         total: 2,
-        uri: "4",
+      },
+      {
+        trackUri: "7",
+        total: 1,
       },
     ];
 
-    const result = sortVotes(sortedVotes, positiveNewIndex);
+    const result = await sortPositiveVotes(votes);
 
-    expect(result).toStrictEqual(["1", "2", "0", "6", "4", "3", "5"]);
-    expect(sorting).toHaveBeenCalledTimes(3);
-  });
-
-  it("should not sort items which are already in the correct position", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: 6,
-        uri: "2",
-      },
-      {
-        total: 3,
-        uri: "6",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, positiveNewIndex);
-
-    expect(result).toStrictEqual(["0", "1", "2", "6", "3", "4", "5"]);
-    expect(sorting).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("sorting negative votes", () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
-  });
-
-  it("should sort a single vote", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: -2,
-        uri: "4",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, negativeNewIndex);
-
-    expect(result).toStrictEqual(["0", "1", "2", "3", "5", "6", "4"]);
-    expect(sorting).toHaveBeenCalledTimes(1);
-  });
-
-  it("should sort multiple votes", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: -3,
-        uri: "2",
-      },
-      {
-        total: -2,
-        uri: "4",
-      },
-
-      {
-        total: -1,
-        uri: "5",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, negativeNewIndex);
-
-    expect(result).toStrictEqual(["0", "1", "3", "6", "5", "4", "2"]);
-    expect(sorting).toHaveBeenCalledTimes(3);
-  });
-
-  it("should sort passed items", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: -2,
-        uri: "0",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, negativeNewIndex);
-
-    expect(result).toStrictEqual(["1", "2", "3", "4", "5", "6", "0"]);
-    expect(sorting).toHaveBeenCalledTimes(1);
-  });
-
-  it("should sort complex items", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: -4,
-        uri: "0",
-      },
-      {
-        total: -3,
-        uri: "5",
-      },
-      {
-        total: -2,
-        uri: "4",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, negativeNewIndex);
-
-    expect(result).toStrictEqual(["1", "2", "3", "6", "4", "5", "0"]);
-    expect(sorting).toHaveBeenCalledTimes(3);
-  });
-
-  it("should not sort items which are already in the correct position", () => {
-    const sortedVotes: { total: number; uri: string }[] = [
-      {
-        total: -4,
-        uri: "0",
-      },
-      {
-        total: -3,
-        uri: "6",
-      },
-      {
-        total: -2,
-        uri: "4",
-      },
-    ];
-
-    const result = sortVotes(sortedVotes, negativeNewIndex);
-
-    expect(result).toStrictEqual(["1", "2", "3", "5", "4", "6", "0"]);
-    expect(sorting).toHaveBeenCalledTimes(2);
+    expect(result).toStrictEqual(
+      new Map([
+        [0, 0],
+        [1, 0],
+        [2, 0],
+        [3, 4],
+        [4, 1],
+        [5, 3],
+        [6, -2],
+        [7, -1],
+        [8, -5],
+        [9, 0],
+      ])
+    );
   });
 });
