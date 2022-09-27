@@ -299,8 +299,6 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
 
       if (trackIndex < startIndex) {
         startIndex -= 1; // We are going to move a track from above the playlistIndex, so we need to adjust the playlistIndex
-      } else {
-        startIndex += 1;
       }
 
       snapshotId = await updatePlaylistTrackIndexAsync(
