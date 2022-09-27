@@ -215,7 +215,9 @@ const updatePlaylistTrackIndexAsync = async (
 
   const { trackIndex, newTrackIndex, snapshotId } = options;
 
-  logger.warn(`insert track on index ${trackIndex} on ${newTrackIndex}`);
+  logger.warn(
+    `insert track on index ${trackIndex} on ${newTrackIndex} for snapshot ${snapshotId}`
+  );
   try {
     const response = await spotifyApi.reorderTracksInPlaylist(
       playlistId,
@@ -302,6 +304,7 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
         {
           trackIndex: trackIndex,
           newTrackIndex: expectedNewIndex,
+          snapshotId,
         }
       );
     }
