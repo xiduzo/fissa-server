@@ -273,20 +273,20 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
 
     const { item } = await getMyCurrentPlaybackStateAsync(accessToken);
     let snapshotId: string | undefined;
-    const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-    let startIndex = poorMansTrackIndex(tracks, item?.uri);
     const nextTrackOffset = 1; // 1 to insert after the current index, 1 to make sure the next track is locked
 
     for (let index = 0; index < positiveScores.length; index++) {
       logger.info(">>>>>>>>>>>>>>");
+      const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+      let currentIndex = poorMansTrackIndex(tracks, item?.uri);
       const score = positiveScores[index];
       const trackIndex = poorMansTrackIndex(tracks, score.trackUri);
 
-      const expectedNewIndex = startIndex + index + nextTrackOffset;
+      const expectedNewIndex = currentIndex + index + nextTrackOffset;
       logger.info(
         JSON.stringify({
           total: score.total,
-          startIndex,
+          currentIndex,
           trackIndex,
           expectedNewIndex,
         })
@@ -297,8 +297,8 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
         continue;
       }
 
-      if (trackIndex < startIndex) {
-        startIndex -= 1; // We are going to move a track from above the playlistIndex, so we need to adjust the playlistIndex
+      if (trackIndex < currentIndex) {
+        currentIndex -= 1; // We are going to move a track from above the playlistIndex, so we need to adjust the playlistIndex
       }
 
       snapshotId = await updatePlaylistTrackIndexAsync(
