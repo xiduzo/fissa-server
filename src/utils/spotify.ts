@@ -284,7 +284,12 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
 
       const expectedNewIndex = startIndex + index + nextTrackOffset;
       logger.info(
-        JSON.stringify({ total: score.total, trackIndex, expectedNewIndex })
+        JSON.stringify({
+          total: score.total,
+          startIndex,
+          trackIndex,
+          expectedNewIndex,
+        })
       );
 
       if (trackIndex === expectedNewIndex) {
