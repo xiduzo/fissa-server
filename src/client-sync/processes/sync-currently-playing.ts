@@ -3,11 +3,13 @@ import { DateTime } from "luxon";
 import cache from "node-cache";
 
 import { Room } from "../../lib/interfaces/Room";
+import { Track } from "../../lib/interfaces/Track";
 import { Vote } from "../../lib/interfaces/Vote";
 import { mongoCollectionAsync } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { publishAsync } from "../../utils/mqtt";
 import {
+  addTackToQueueAsync,
   getMyCurrentPlaybackStateAsync,
   getPlaylistTracksAsync,
   poorMansTrackIndex,
@@ -26,12 +28,12 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
         const { accessToken, expectedEndTime, currentIndex } = room;
         if (!accessToken) return;
         if (currentIndex < 0) return;
-        // TODO: create a new room endpoint to manually sync up with the room as a host
 
         const tMinus = DateTime.fromISO(expectedEndTime).diff(
           DateTime.now()
         ).milliseconds;
 
+        logger.info(tMinus);
         if (tMinus > T_MINUS) return;
 
         await updateRoom(room);
@@ -51,69 +53,67 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 };
 
 export const updateRoom = async (room: Room) => {
-  const { accessToken, pin, playlistId } = room;
+  const { accessToken, pin, currentIndex } = room;
   const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
 
-  const { is_playing, context, item, progress_ms } = currentlyPlaying;
-  const rooms = await mongoCollectionAsync<Room>("room");
+  const { is_playing, item, progress_ms } = currentlyPlaying;
   const newState = { currentIndex: -1, expectedEndTime: undefined };
 
   if (!is_playing) {
-    await rooms.updateOne({ pin }, { $set: newState });
-    await publishAsync(`fissa/room/${pin}`, {
-      ...room,
-      ...newState,
-    });
+    await saveAndPublishRoom(room, newState);
     return;
   }
 
-  if (!context?.uri.includes(playlistId)) {
-    await rooms.updateOne({ pin }, { $set: newState });
-    await publishAsync(`fissa/room/${pin}`, {
-      ...room,
-      ...newState,
-    });
-    return;
+  const deleteVotesPromise = deleteVotesForTrack(pin, item.id);
+
+  logger.info("update room");
+  const tracks = await mongoCollectionAsync<Track>("track");
+  const playlistTracks = await tracks.find({ pin }).toArray();
+  const sortedTracks = playlistTracks.sort((a, b) => a.index - b.index);
+
+  newState.currentIndex = playlistTracks.find(
+    (track) => track.id === item.id
+  ).index;
+
+  if (newState.currentIndex >= 0) {
+    newState.expectedEndTime = DateTime.now()
+      .plus({
+        milliseconds: item.duration_ms - progress_ms,
+      })
+      .toISO();
   }
 
-  const deleteVotesPromise = deleteVotesForTrack(
-    room.pin,
-    currentlyPlaying.item.uri
+  logger.info(
+    `new index: ${newState.currentIndex}, current index: ${currentIndex}`
   );
-
-  const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-
-  newState.currentIndex = poorMansTrackIndex(
-    tracks,
-    currentlyPlaying.item?.uri
-  );
-
+  if (newState.currentIndex >= currentIndex + 1) {
+    logger.info("Adding next track to queue");
+    console.log(
+      `Adding next track to queue: ${
+        sortedTracks[newState.currentIndex + 1].name
+      }`
+    );
+    await addTackToQueueAsync(
+      accessToken,
+      sortedTracks[newState.currentIndex + 1].id
+    );
+  }
+  if (newState.currentIndex >= playlistTracks.length - 1) {
+    logger.warn("playlist will finished");
+  }
   // TODO if index is tracks length - 1, add X new tracks based on previous tracks
 
-  newState.expectedEndTime = DateTime.now()
-    .plus({
-      milliseconds: item.duration_ms - progress_ms,
-    })
-    .toISO();
-
-  await rooms.updateOne({ pin }, { $set: newState });
+  await saveAndPublishRoom(room, newState);
   await deleteVotesPromise;
-
-  delete room.accessToken;
-
-  await publishAsync(`fissa/room/${pin}`, {
-    ...room,
-    ...newState,
-  });
 };
 
-const deleteVotesForTrack = async (pin: string, trackUri: string) => {
-  const votes = await mongoCollectionAsync<Vote>("votes");
+const deleteVotesForTrack = async (pin: string, trackId: string) => {
+  const votes = await mongoCollectionAsync<Vote>("vote");
 
   // We want to remove all votes for the current playing track
   await votes.deleteMany({
     pin,
-    trackUri,
+    trackId,
   });
 };
 
@@ -152,4 +152,21 @@ const catchHttpError = async (
       logger.warn("UNKOWN ERROR", message);
       break;
   }
+};
+
+const saveAndPublishRoom = async (
+  room: Room,
+  state: { currentIndex: number; expectedEndTime: string | undefined }
+) => {
+  const rooms = await mongoCollectionAsync<Room>("room");
+
+  const { pin } = room;
+
+  await rooms.updateOne({ pin }, { $set: state });
+
+  delete room.accessToken;
+  await publishAsync(`fissa/room/${pin}`, {
+    ...room,
+    ...state,
+  });
 };

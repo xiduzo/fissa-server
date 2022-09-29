@@ -46,12 +46,12 @@ export const mongoCollectionAsync = async <T>(
 };
 
 const saveVote = async (vote: Vote) => {
-  const votes = await mongoCollectionAsync<Vote>("votes");
+  const votes = await mongoCollectionAsync<Vote>("vote");
 
   const _vote = await votes.findOne({
     pin: vote.pin,
     createdBy: vote.createdBy,
-    trackUri: vote.trackUri,
+    trackId: vote.trackId,
   });
 
   if (!_vote) {
@@ -75,7 +75,7 @@ const saveVote = async (vote: Vote) => {
 export const voteAsync = async (
   pin: string,
   accessToken: string,
-  trackUri: string,
+  trackId: string,
   state: VoteState
 ): Promise<Vote> => {
   try {
@@ -84,7 +84,7 @@ export const voteAsync = async (
     const vote: Vote = {
       pin,
       createdBy: me.id,
-      trackUri,
+      trackId,
       state,
     };
 

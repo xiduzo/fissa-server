@@ -1,7 +1,9 @@
+import { access } from "fs";
 import SpotifyWebApi from "spotify-web-api-node";
 import { updateRoom } from "../client-sync/processes/sync-currently-playing";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 import { Room } from "../lib/interfaces/Room";
+import { Track } from "../lib/interfaces/Track";
 import {
   getScores,
   negativeScore,
@@ -51,6 +53,17 @@ export const addTracksToPlaylistAsync = async (
     logger.error("addTracksToPlaylistAsync", error);
     return 0;
   }
+};
+
+export const getTracksAsync = async (
+  accessToken: string,
+  trackIds: string[]
+): Promise<SpotifyApi.TrackObjectFull[]> => {
+  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  spotifyApi.setAccessToken(accessToken);
+
+  const response = await spotifyApi.getTracks(trackIds);
+  return response.body.tracks;
 };
 
 export const createPlaylistAsync = async (
@@ -186,14 +199,11 @@ export const disableShuffleAsync = async (
   }
 };
 
-export const poorMansTrackIndex = (
-  tracks: SpotifyApi.TrackObjectFull[],
-  currentUri?: string
-): number => {
+export const poorMansTrackIndex = (tracks: Track[], id?: string): number => {
   try {
-    const trackUris = tracks?.map((track) => track.uri) ?? [];
+    const trackIDs = tracks?.map((track) => track.id) ?? [];
 
-    const index = trackUris.indexOf(currentUri);
+    const index = trackIDs.indexOf(id);
     return index;
   } catch (error) {
     logger.error("poorMansCurrentIndexAsync", error);
@@ -257,60 +267,60 @@ const negativeNewIndex: NewIndex = ({
 }) => totalTracks - Number(trackIndex > playlistIndex) - voteIndex;
 
 export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
-  const { accessToken, playlistId } = room;
+  const { accessToken } = room;
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
   try {
-    const scores = getScores(votes).sort((a, b) =>
-      a.trackUri.localeCompare(b.trackUri)
-    );
+    // const scores = getScores(votes).sort((a, b) =>
+    //   a.trackUri.localeCompare(b.trackUri)
+    // );
 
-    const positiveScores = scores.filter(positiveScore).sort(highToLow);
-    const negativeScores = scores.filter(negativeScore).sort(lowToHigh);
+    // const positiveScores = scores.filter(positiveScore).sort(highToLow);
+    // const negativeScores = scores.filter(negativeScore).sort(lowToHigh);
 
-    logger.info(`positiveScores ${JSON.stringify(positiveScores)}`);
+    // logger.info(`positiveScores ${JSON.stringify(positiveScores)}`);
 
-    const { item } = await getMyCurrentPlaybackStateAsync(accessToken);
-    let snapshotId: string | undefined;
-    const nextTrackOffset = 2; // 1 to insert after the current index, 1 to make sure the next track is locked
+    // const { item } = await getMyCurrentPlaybackStateAsync(accessToken);
+    // let snapshotId: string | undefined;
+    // const nextTrackOffset = 2; // 1 to insert after the current index, 1 to make sure the next track is locked
 
-    for (let index = 0; index < positiveScores.length; index++) {
-      logger.info(">>>>>>>>>>>>>>");
-      const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-      let currentIndex = poorMansTrackIndex(tracks, item?.uri);
-      const score = positiveScores[index];
-      const trackIndex = poorMansTrackIndex(tracks, score.trackUri);
+    // for (let index = 0; index < positiveScores.length; index++) {
+    //   logger.info(">>>>>>>>>>>>>>");
+    //   const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
+    //   let currentIndex = poorMansTrackIndex(tracks, item?.uri);
+    //   const score = positiveScores[index];
+    //   const trackIndex = poorMansTrackIndex(tracks, score.trackUri);
 
-      const expectedNewIndex = currentIndex + index + nextTrackOffset;
-      logger.info(
-        JSON.stringify({
-          total: score.total,
-          currentIndex,
-          trackIndex,
-          expectedNewIndex,
-        })
-      );
+    //   const expectedNewIndex = currentIndex + index + nextTrackOffset;
+    //   logger.info(
+    //     JSON.stringify({
+    //       total: score.total,
+    //       currentIndex,
+    //       trackIndex,
+    //       expectedNewIndex,
+    //     })
+    //   );
 
-      if (trackIndex === expectedNewIndex) {
-        logger.info("track is already in the right place");
-        continue;
-      }
+    //   if (trackIndex === expectedNewIndex) {
+    //     logger.info("track is already in the right place");
+    //     continue;
+    //   }
 
-      if (trackIndex < currentIndex) {
-        currentIndex -= 1; // We are going to move a track from above the playlistIndex, so we need to adjust the playlistIndex
-      }
+    //   if (trackIndex < currentIndex) {
+    //     currentIndex -= 1; // We are going to move a track from above the playlistIndex, so we need to adjust the playlistIndex
+    //   }
 
-      snapshotId = await updatePlaylistTrackIndexAsync(
-        playlistId,
-        accessToken,
-        {
-          trackIndex: trackIndex,
-          newTrackIndex: expectedNewIndex,
-          snapshotId,
-        }
-      );
-    }
+    //   snapshotId = await updatePlaylistTrackIndexAsync(
+    //     playlistId,
+    //     accessToken,
+    //     {
+    //       trackIndex: trackIndex,
+    //       newTrackIndex: expectedNewIndex,
+    //       snapshotId,
+    //     }
+    //   );
+    // }
 
     logger.info(">>>>>>>>>>>>>>");
     logger.info("done sorting positive scores");
@@ -320,21 +330,47 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   }
 };
 
-export const startPlaylistFromTopAsync = async (room: Room) => {
-  const { accessToken, playlistId } = room;
+export const startPlaylistFromTopAsync = async (
+  accessToken: string,
+  tracks?: Track[]
+) => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
   try {
     await disableShuffleAsync(accessToken);
 
+    const uris =
+      tracks?.map((track) => `spotify:track:${track.id}`) ??
+      (await spotifyApi.getMyTopTracks({ limit: 25 })).body.items.map(
+        (track) => track.uri
+      );
+
+    // const tracks = await spotifyApi.getMyTopTracks({ limit: 25 });
     await spotifyApi.play({
-      context_uri: `spotify:playlist:${playlistId}`,
-      offset: {
-        position: 0,
-      },
+      uris,
     });
+    await spotifyApi.play();
   } catch (error) {
     logger.error("startPlaylistFromTopAsync", error);
+  }
+};
+
+export const addTackToQueueAsync = async (
+  accessToken: string,
+  trackId: string,
+  deviceId?: string
+) => {
+  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  spotifyApi.setAccessToken(accessToken);
+
+  logger.info(`spotify:track:${trackId}`);
+
+  try {
+    await spotifyApi.addToQueue(`spotify:track:${trackId}`, {
+      device_id: deviceId,
+    });
+  } catch (error) {
+    logger.error("addTackToQueueAsync", error);
   }
 };

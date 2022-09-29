@@ -2,30 +2,45 @@ import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
-import { Vote, VoteState } from "../../lib/interfaces/Vote";
+import { VoteState } from "../../lib/interfaces/Vote";
 import { mongoCollectionAsync, voteAsync } from "../../utils/database";
-import {
-  addTracksToPlaylistAsync,
-  getPlaylistTracksAsync,
-  reorderPlaylist,
-} from "../../utils/spotify";
+import { getTracksAsync } from "../../utils/spotify";
 import { publishAsync } from "../../utils/mqtt";
+import { Track } from "../../lib/interfaces/Track";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
-    case "GET":
-      response.json({
-        app: "room::track",
-      });
+    case "GET": {
+      const pin = (request.query.pin as string)?.toUpperCase();
+
+      if (!pin) {
+        return response
+          .status(StatusCodes.BAD_REQUEST)
+          .json(ReasonPhrases.BAD_REQUEST);
+      }
+
+      try {
+        const tracks = await mongoCollectionAsync<Track>("track");
+        const roomTracks = await tracks.find({ pin }).toArray();
+        const sortedTracks = roomTracks.sort((a, b) => a.index - b.index);
+        response.status(StatusCodes.OK).json(sortedTracks);
+      } catch (error) {
+        logger.error(`track POST handler: ${error}`);
+        response
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+      }
       break;
-    case "POST":
+    }
+
+    case "POST": {
       const {
         pin,
-        trackUris,
+        trackIds,
         accessToken: userAccessToken,
       } = request.body as {
         pin: string;
-        trackUris: string[];
+        trackIds: string[];
         accessToken: string;
       };
 
@@ -38,44 +53,46 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        const { accessToken, playlistId } = room;
+        const { accessToken } = room;
+        const spotifyTracks = await getTracksAsync(accessToken, trackIds);
 
-        const playlistTracks = await getPlaylistTracksAsync(
-          accessToken,
-          playlistId
+        const tracks = await mongoCollectionAsync<Track>("track");
+        const roomTracks = await tracks.find({ pin }).toArray();
+
+        const roomTrackIds = roomTracks.map((track) => track.id);
+        const tracksToAdd = trackIds.filter(
+          (trackId) => !roomTrackIds.includes(trackId)
         );
 
-        const trackUrisInPlaylist = playlistTracks.map((track) => track.uri);
-        const trackUrisToAdd = trackUris.filter(
-          (uri) => !trackUrisInPlaylist.includes(uri)
-        );
+        const inserts = tracksToAdd.map(async (trackId, index) => {
+          const track = spotifyTracks.find((track) => track.id === trackId);
 
-        await addTracksToPlaylistAsync(
-          // TODO: give specific error if the room owner access token doesn't work anymore
-          accessToken,
-          playlistId,
-          trackUrisToAdd
-        );
+          return tracks.insertOne({
+            pin,
+            index: roomTracks.length + index,
+            artists: track.artists.map((artist) => artist.name).join(", "),
+            name: track.name,
+            id: track.id,
+            image: track.album.images[0]?.url,
+            duration_ms: track.duration_ms,
+          });
+        });
 
-        // vote for all of the tracks you just added
-        await Promise.all(
-          trackUris.map(async (uri) => {
-            return voteAsync(room.pin, userAccessToken, uri, VoteState.Upvote);
-          })
-        );
+        const votes = trackIds.map(async (id) => {
+          return voteAsync(room.pin, userAccessToken, id, VoteState.Upvote);
+        });
 
-        await publishAsync(
-          `fissa/room/${pin}/tracks/added`,
-          trackUrisToAdd.length
-        );
+        await publishAsync(`fissa/room/${pin}/tracks/added`, trackIds.length);
+        await Promise.all(inserts);
+        await Promise.all(votes);
 
-        const votes = await mongoCollectionAsync<Vote>("votes");
-        const roomVotes = await votes.find({ pin }).toArray();
+        // const votes = await mongoCollectionAsync<Vote>("vote");
+        // const roomVotes = await votes.find({ pin }).toArray();
 
-        await reorderPlaylist(room, roomVotes);
-        await publishAsync(`fissa/room/${room.pin}/tracks/reordered`);
+        // await reorderPlaylist(room, roomVotes);
+        // await publishAsync(`fissa/room/${room.pin}/tracks/reordered`);
 
-        response.status(StatusCodes.OK).json(trackUris.length);
+        response.status(StatusCodes.OK).json(trackIds.length);
       } catch (error) {
         logger.error(`track POST handler: ${error}`);
         response
@@ -83,6 +100,7 @@ const handler: VercelApiHandler = async (request, response) => {
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
       }
       break;
+    }
   }
 };
 

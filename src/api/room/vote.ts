@@ -21,7 +21,7 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        const votes = await mongoCollectionAsync<Vote>("votes");
+        const votes = await mongoCollectionAsync<Vote>("vote");
 
         const roomVotes = await votes.find({ pin }).toArray();
         response.status(StatusCodes.OK).json(roomVotes);
@@ -34,16 +34,16 @@ const handler: VercelApiHandler = async (request, response) => {
       break;
     }
     case "POST": {
-      const { pin, accessToken, trackUri, state } = request.body;
+      const { pin, accessToken, trackId, state } = request.body;
 
       if (!accessToken) return;
       if (!pin) return;
-      if (!trackUri) return;
+      if (!trackId) return;
       if (!state) return;
 
       try {
-        await voteAsync(pin, accessToken, trackUri, state);
-        const votes = await mongoCollectionAsync<Vote>("votes");
+        await voteAsync(pin, accessToken, trackId, state);
+        const votes = await mongoCollectionAsync<Vote>("vote");
 
         const roomVotes = await votes.find({ pin }).toArray();
         await publishAsync(`fissa/room/${pin}/votes`, roomVotes);

@@ -41,14 +41,13 @@ const handler: VercelApiHandler = async (request, response) => {
 
         const room: Room = {
           pin: newPin,
-          playlistId: createdPlaylistId,
           createdBy,
           accessToken,
           currentIndex: -1,
         };
 
         await rooms.insertOne(room);
-        await startPlaylistFromTopAsync(room);
+        await startPlaylistFromTopAsync(accessToken);
 
         response.status(StatusCodes.OK).json(newPin);
       } catch (error) {

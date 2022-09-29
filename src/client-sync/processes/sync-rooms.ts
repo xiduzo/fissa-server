@@ -1,7 +1,6 @@
 import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollectionAsync } from "../../utils/database";
-import { logger } from "../../utils/logger";
 
 const setCache = async (appCache: cache) => {
   const rooms = await mongoCollectionAsync<Room>("room");
