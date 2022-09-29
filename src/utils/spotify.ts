@@ -273,7 +273,7 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
 
     const { item } = await getMyCurrentPlaybackStateAsync(accessToken);
     let snapshotId: string | undefined;
-    const nextTrackOffset = 1; // 1 to insert after the current index, 1 to make sure the next track is locked
+    const nextTrackOffset = 2; // 1 to insert after the current index, 1 to make sure the next track is locked
 
     for (let index = 0; index < positiveScores.length; index++) {
       logger.info(">>>>>>>>>>>>>>");
