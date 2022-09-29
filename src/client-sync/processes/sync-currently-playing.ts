@@ -86,22 +86,20 @@ export const updateRoom = async (room: Room) => {
   logger.info(
     `new index: ${newState.currentIndex}, current index: ${currentIndex}`
   );
+
   if (newState.currentIndex >= currentIndex + 1) {
     logger.info("Adding next track to queue");
-    console.log(
-      `Adding next track to queue: ${
-        sortedTracks[newState.currentIndex + 1].name
-      }`
-    );
-    await addTackToQueueAsync(
-      accessToken,
-      sortedTracks[newState.currentIndex + 1].id
-    );
+    const nextTrack = sortedTracks[newState.currentIndex + 1];
+
+    if (nextTrack) {
+      console.log(`Adding next track to queue: ${nextTrack.name}`);
+      await addTackToQueueAsync(accessToken, nextTrack.id);
+      return;
+    }
+
+    logger.warn("playlist will finish if nothing is add");
+    // TODO if index is tracks length - 1, add X new tracks based on previous tracks
   }
-  if (newState.currentIndex >= playlistTracks.length - 1) {
-    logger.warn("playlist will finished");
-  }
-  // TODO if index is tracks length - 1, add X new tracks based on previous tracks
 
   await saveAndPublishRoom(room, newState);
   await deleteVotesPromise;
