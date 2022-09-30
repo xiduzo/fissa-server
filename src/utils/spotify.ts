@@ -50,7 +50,7 @@ export const addTracksToPlaylist = async (
 
     return tracksAdded;
   } catch (error) {
-    logger.error("addTracksToPlaylistAsync", error);
+    logger.error("addTracksToPlaylist", error);
     return 0;
   }
 };
@@ -82,7 +82,7 @@ export const createPlaylist = async (
 
     return playlist.body.id;
   } catch (error) {
-    logger.error("createPlaylistAsync", error);
+    logger.error("createPlaylist", error);
   }
 };
 
@@ -117,7 +117,7 @@ export const getPlaylistTracks = async (
 
     return tracks;
   } catch (error) {
-    logger.error("getPlaylistTracksAsync", error);
+    logger.error("getPlaylistTracks", error);
   }
 };
 
@@ -131,7 +131,7 @@ export const getMyCurrentPlaybackState = async (
 
     return response.body;
   } catch (error) {
-    logger.error("getMyCurrentPlaybackStateAsync", error);
+    logger.error("getMyCurrentPlaybackState", error);
     throw error;
   }
 };
@@ -144,7 +144,7 @@ export const getMe = async (accessToken: string) => {
 
     return response.body;
   } catch (error) {
-    logger.error("getMeAsync", error);
+    logger.error("getMe", error);
     throw error;
   }
 };
@@ -167,7 +167,7 @@ export const disableShuffle = async (accessToken: string): Promise<void> => {
       return;
     }
 
-    logger.error("disableShuffleAsync", error);
+    logger.error("disableShuffle", error);
   } finally {
     return Promise.resolve();
   }
@@ -180,7 +180,7 @@ export const poorMansTrackIndex = (tracks: Track[], id?: string): number => {
     const index = trackIDs.indexOf(id);
     return index;
   } catch (error) {
-    logger.error("poorMansCurrentIndexAsync", error);
+    logger.error("poorMansTrackIndex", error);
     return -1;
   }
 };
@@ -274,9 +274,10 @@ export const getMyTopTracks = async (accessToken: string) => {
 
   try {
     const response = await spotifyApi.getMyTopTracks({ limit: 20 });
+    logger.info(`got ${response.body.items.length} top tracks`);
     return response.body.items;
   } catch (error) {
-    logger.error(`getMyTopTracksAsync ${JSON.stringify(error)}`);
+    logger.error(`getMyTopTracks ${JSON.stringify(error)}`);
   }
 };
 
@@ -301,7 +302,7 @@ export const startPlaylistFromTrack = async (
       return;
     }
   } catch (error) {
-    logger.error("startPlaylistFromTrackAsync", error);
+    logger.error("startPlaylistFromTrack", error);
   }
 };
 
@@ -320,7 +321,7 @@ export const addTackToQueue = async (
       device_id: deviceId,
     });
   } catch (error) {
-    logger.error("addTackToQueueAsync", error);
+    logger.error("addTackToQueue", error);
   }
 };
 
@@ -339,6 +340,6 @@ export const getRecommendedTracks = async (
     });
     return request.body.tracks;
   } catch (error) {
-    logger.error("getRandomTracksAsync", error);
+    logger.error("getRecommendedTracks", error);
   }
 };

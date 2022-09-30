@@ -91,20 +91,14 @@ export const updateRoom = async (room: Room) => {
     if (nextTrack) {
       await addTackToQueue(accessToken, nextTrack.id);
     } else {
-      const seedTrackIds = tracks.map((track) => track.id);
-      const recommendations = await getRecommendedTracks(
-        accessToken,
-        seedTrackIds
-      );
+      const seedIds = tracks.map((track) => track.id);
+      const recommendations = await getRecommendedTracks(accessToken, seedIds);
+      const recommendedIds = recommendations.map((track) => track.id);
       logger.info(`adding ${recommendations.length} recommendations to room`);
 
-      await addTackToQueue(accessToken, seedTrackIds[0]);
-      await addTracks(
-        accessToken,
-        pin,
-        recommendations.map((track) => track.id)
-      );
-      await publishAsync(`fissa/room/${pin}/tracks/added`, seedTrackIds.length);
+      await addTackToQueue(accessToken, recommendedIds[0]);
+      await addTracks(accessToken, pin, recommendedIds);
+      await publishAsync(`fissa/room/${pin}/tracks/added`, seedIds.length);
     }
   }
 
