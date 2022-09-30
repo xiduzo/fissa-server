@@ -1,14 +1,20 @@
 import { StatusCodes } from "http-status-codes";
 import { DateTime } from "luxon";
 import cache from "node-cache";
-
 import { Room } from "../../lib/interfaces/Room";
-import { Track } from "../../lib/interfaces/Track";
 import { Vote } from "../../lib/interfaces/Vote";
-import { mongoCollection } from "../../utils/database";
+import {
+  addTracks,
+  getRoomTracks,
+  mongoCollection,
+} from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { publishAsync } from "../../utils/mqtt";
-import { addTackToQueue, getMyCurrentPlaybackState } from "../../utils/spotify";
+import {
+  addTackToQueue,
+  getMyCurrentPlaybackState,
+  getRecommendedTracks,
+} from "../../utils/spotify";
 
 const T_MINUS = 250;
 
@@ -63,12 +69,10 @@ export const updateRoom = async (room: Room) => {
   const deleteVotesPromise = deleteVotesForTrack(pin, item.id);
 
   logger.info("update room");
-  const tracks = await mongoCollection<Track>("track");
-  const playlistTracks = await tracks.find({ pin }).toArray();
-  const sortedTracks = playlistTracks.sort((a, b) => a.index - b.index);
+  const tracks = await getRoomTracks(pin);
 
   newState.currentIndex =
-    playlistTracks.find((track) => track.id === item.id)?.index ?? -1;
+    tracks.find((track) => track.id === item.id)?.index ?? -1;
 
   if (newState.currentIndex >= 0) {
     newState.expectedEndTime = DateTime.now()
@@ -82,15 +86,27 @@ export const updateRoom = async (room: Room) => {
     `new index: ${newState.currentIndex}, current index: ${currentIndex}`
   );
 
-  if (newState.currentIndex >= currentIndex + 1) {
-    const nextTrack = sortedTracks[newState.currentIndex + 1];
+  if (newState.currentIndex > 0 && newState.currentIndex !== currentIndex) {
+    const nextTrack = tracks[newState.currentIndex + 1];
 
     if (nextTrack) {
       console.log(`Adding next track to queue: ${nextTrack.name}`);
       await addTackToQueue(accessToken, nextTrack.id);
     } else {
-      // TODO if index is tracks length - 1, add X new tracks based on previous tracks
-      logger.warn("playlist will finish if nothing is add");
+      const seedTrackIds = tracks.map((track) => track.id);
+      const recommendations = await getRecommendedTracks(
+        accessToken,
+        seedTrackIds
+      );
+      logger.info(`adding ${recommendations.length} recommendations`);
+
+      await addTackToQueue(accessToken, seedTrackIds[0]);
+      await addTracks(
+        accessToken,
+        pin,
+        recommendations.map((track) => track.id)
+      );
+      await publishAsync(`fissa/room/${pin}/tracks/added`, seedTrackIds.length);
     }
   }
 

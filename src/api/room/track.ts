@@ -1,10 +1,14 @@
 import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { Room } from "../../lib/interfaces/Room";
 import { VoteState } from "../../lib/interfaces/Vote";
-import { addTracks, mongoCollection, vote } from "../../utils/database";
-import { getTracks } from "../../utils/spotify";
+import {
+  addTracks,
+  getRoom,
+  getRoomTracks,
+  mongoCollection,
+  vote,
+} from "../../utils/database";
 import { publishAsync } from "../../utils/mqtt";
 import { Track } from "../../lib/interfaces/Track";
 
@@ -20,10 +24,8 @@ const handler: VercelApiHandler = async (request, response) => {
       }
 
       try {
-        const tracks = await mongoCollection<Track>("track");
-        const roomTracks = await tracks.find({ pin }).toArray();
-        const sortedTracks = roomTracks.sort((a, b) => a.index - b.index);
-        response.status(StatusCodes.OK).json(sortedTracks);
+        const tracks = await getRoomTracks(pin);
+        response.status(StatusCodes.OK).json(tracks);
       } catch (error) {
         logger.error(`track POST handler: ${error}`);
         response
@@ -45,8 +47,7 @@ const handler: VercelApiHandler = async (request, response) => {
       };
 
       try {
-        const rooms = await mongoCollection<Room>("room");
-        const room = await rooms.findOne({ pin });
+        const room = await getRoom(pin);
 
         if (!room) {
           response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
@@ -54,9 +55,8 @@ const handler: VercelApiHandler = async (request, response) => {
         }
 
         const { accessToken } = room;
-        const spotifyTracks = await getTracks(accessToken, trackIds);
 
-        const addedTracksPromise = addTracks(spotifyTracks, pin, trackIds);
+        const addedTracksPromise = addTracks(accessToken, pin, trackIds);
 
         const votes = trackIds.map(async (id) => {
           return vote(room.pin, userAccessToken, id, VoteState.Upvote);

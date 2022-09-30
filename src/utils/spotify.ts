@@ -273,26 +273,33 @@ export const getMyTopTracks = async (accessToken: string) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
-    const tracks = await spotifyApi.getMyTopTracks({ limit: 10 });
-    return tracks.body.items;
+    const response = await spotifyApi.getMyTopTracks({ limit: 20 });
+    return response.body.items;
   } catch (error) {
-    logger.error("getMyTopTracksAsync", error);
+    logger.error(`getMyTopTracksAsync ${JSON.stringify(error)}`);
   }
 };
 
 export const startPlaylistFromTrack = async (
   accessToken: string,
-  uri: string
+  uri: string,
+  tryIndex: number = 0
 ) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
-    await disableShuffle(accessToken);
     await spotifyApi.play({
       uris: [uri],
     });
-    // 👆 does not seem to do the job properly, so just call play again
-    await spotifyApi.play();
+    await disableShuffle(accessToken);
+
+    if (tryIndex < 5) {
+      const { is_playing, item } = await getMyCurrentPlaybackState(accessToken);
+      if (is_playing) return;
+      if (item.uri === uri) return;
+      await startPlaylistFromTrack(accessToken, uri, tryIndex + 1);
+      return;
+    }
   } catch (error) {
     logger.error("startPlaylistFromTrackAsync", error);
   }
@@ -314,5 +321,24 @@ export const addTackToQueue = async (
     });
   } catch (error) {
     logger.error("addTackToQueueAsync", error);
+  }
+};
+
+export const getRecommendedTracks = async (
+  accessToken: string,
+  seedTrackIds: string[]
+) => {
+  const spotifyApi = spotifyClient(accessToken);
+
+  try {
+    const request = await spotifyApi.getRecommendations({
+      limit: 5,
+      seed_tracks: seedTrackIds,
+      seed_artists: [],
+      seed_genres: [],
+    });
+    return request.body.tracks;
+  } catch (error) {
+    logger.error("getRandomTracksAsync", error);
   }
 };

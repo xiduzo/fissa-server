@@ -1,14 +1,12 @@
 import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { Room } from "../../lib/interfaces/Room";
-import { mongoCollection } from "../../utils/database";
+import { getRoom, getRoomTracks } from "../../utils/database";
 import {
   getMyCurrentPlaybackState,
   startPlaylistFromTrack,
 } from "../../utils/spotify";
 import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
-import { Track } from "../../lib/interfaces/Track";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -29,8 +27,7 @@ const handler: VercelApiHandler = async (request, response) => {
       }
 
       try {
-        const rooms = await mongoCollection<Room>("room");
-        const room = await rooms.findOne({ pin });
+        const room = await getRoom(pin);
 
         logger.info("restart playlist");
 
@@ -39,23 +36,21 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        // TODO: check if room is already playing
         const { accessToken } = room;
 
         const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
         const { item, is_playing } = currentlyPlaying;
 
-        const tracks = await mongoCollection<Track>("track");
-        const roomTracks = await tracks.find({ pin }).toArray();
+        const tracks = await getRoomTracks(pin);
 
         if (
           !is_playing ||
-          !roomTracks.map((track) => track.id).includes(item?.id)
+          !tracks.map((track) => track.id).includes(item?.id)
         ) {
           await startPlaylistFromTrack(
             accessToken,
-            `spotify:track:${roomTracks[0].id}`
+            `spotify:track:${tracks[0].id}`
           );
         } else {
           logger.warn(`tried to restart ${pin} but it was already playing`);

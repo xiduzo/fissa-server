@@ -4,6 +4,7 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollection } from "../../utils/database";
+import { logger } from "../../utils/logger";
 import { getMe, disableShuffle } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -26,13 +27,14 @@ const handler: VercelApiHandler = async (request, response) => {
       const rooms = await mongoCollection<Room>("room");
       const accessToken = tokens.body.access_token;
 
-      const disableShuffle = disableShuffle(accessToken);
+      const disableShufflePromise = disableShuffle(accessToken);
 
       const me = await getMe(accessToken);
+      logger.info(`new access token: ${accessToken} for ${me.display_name}`);
 
       await rooms.updateMany({ createdBy: me?.id }, { $set: { accessToken } });
 
-      await disableShuffle;
+      await disableShufflePromise;
 
       response.status(StatusCodes.OK).json(tokens.body);
       break;

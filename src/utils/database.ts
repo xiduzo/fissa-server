@@ -8,9 +8,10 @@ import {
 } from "mongodb";
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
 import { Vote, VoteState } from "../lib/interfaces/Vote";
-import { getMe } from "./spotify";
+import { getMe, getTracks } from "./spotify";
 import { logger } from "./logger";
 import { Track } from "../lib/interfaces/Track";
+import { Room } from "../lib/interfaces/Room";
 
 const { user, password } = MONGO_CREDENTIALS;
 
@@ -98,12 +99,14 @@ export const vote = async (
 };
 
 export const addTracks = async (
-  spotifyTracks: SpotifyApi.TrackObjectFull[],
+  accessToken: string,
   pin: string,
   trackIdsToAdd: string[]
 ) => {
   const tracks = await mongoCollection<Track>("track");
   const roomTracks = await tracks.find({ pin }).toArray();
+
+  const spotifyTracks = await getTracks(accessToken, trackIdsToAdd);
 
   const roomTrackIds = roomTracks.map((track) => track.id);
   const tracksToAdd = trackIdsToAdd.filter(
@@ -125,4 +128,30 @@ export const addTracks = async (
   });
 
   await Promise.all(inserts);
+};
+
+export const getRoomVotes = async (pin: string) => {
+  const votes = await mongoCollection<Vote>("vote");
+
+  const roomVotes = await votes.find({ pin }).toArray();
+
+  return roomVotes;
+};
+
+/**
+ * @returns sorted room tracks based on their index
+ */
+export const getRoomTracks = async (pin: string) => {
+  const tracks = await mongoCollection<Track>("track");
+
+  const roomTracks = await tracks.find({ pin }).toArray();
+  const orderedTracks = roomTracks.sort((a, b) => a.index - b.index);
+  return orderedTracks;
+};
+
+export const getRoom = async (pin: string) => {
+  const rooms = await mongoCollection<Room>("room");
+
+  const room = await rooms.findOne({ pin });
+  return room;
 };

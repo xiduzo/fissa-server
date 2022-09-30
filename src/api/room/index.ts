@@ -1,11 +1,11 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 import { Room } from "../../lib/interfaces/Room";
 import { addTracks, mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { createPin } from "../../utils/pin";
 import {
-  createPlaylist,
   getMe,
   getMyTopTracks,
   getPlaylistTracks,
@@ -45,22 +45,25 @@ const handler: VercelApiHandler = async (request, response) => {
           accessToken,
           currentIndex: -1,
         };
-        const roomPromise = rooms.insertOne(room);
-
+        await rooms.insertOne(room);
+        logger.info(
+          `created room ${newPin} for ${me.display_name} with playlist ${playlistId}`
+        );
         const tracks = playlistId
           ? await getPlaylistTracks(accessToken, playlistId)
           : await getMyTopTracks(accessToken);
 
-        const trackUriToStartPlaying = tracks[0].uri;
+        logger.info(`got ${tracks.length} top tracks`);
         await addTracks(
-          tracks,
+          accessToken,
           newPin,
           tracks.map((track) => track.id)
         );
 
-        await startPlaylistFromTrack(accessToken, trackUriToStartPlaying);
+        await startPlaylistFromTrack(accessToken, tracks[0].uri);
 
-        await roomPromise;
+        await updateRoom(room);
+
         response.status(StatusCodes.OK).json(newPin);
       } catch (error) {
         logger.error(`room GET handler: ${error}`);
