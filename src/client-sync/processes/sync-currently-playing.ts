@@ -68,7 +68,6 @@ export const updateRoom = async (room: Room) => {
 
   const deleteVotesPromise = deleteVotesForTrack(pin, item.id);
 
-  logger.info("update room");
   const tracks = await getRoomTracks(pin);
 
   newState.currentIndex =
@@ -86,11 +85,10 @@ export const updateRoom = async (room: Room) => {
     `new index: ${newState.currentIndex}, current index: ${currentIndex}`
   );
 
-  if (newState.currentIndex > 0 && newState.currentIndex !== currentIndex) {
+  if (newState.currentIndex >= 0 && newState.currentIndex !== currentIndex) {
     const nextTrack = tracks[newState.currentIndex + 1];
 
     if (nextTrack) {
-      console.log(`Adding next track to queue: ${nextTrack.name}`);
       await addTackToQueue(accessToken, nextTrack.id);
     } else {
       const seedTrackIds = tracks.map((track) => track.id);
@@ -98,7 +96,7 @@ export const updateRoom = async (room: Room) => {
         accessToken,
         seedTrackIds
       );
-      logger.info(`adding ${recommendations.length} recommendations`);
+      logger.info(`adding ${recommendations.length} recommendations to room`);
 
       await addTackToQueue(accessToken, seedTrackIds[0]);
       await addTracks(

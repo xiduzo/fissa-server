@@ -313,7 +313,7 @@ export const addTackToQueue = async (
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
-  logger.info(`spotify:track:${trackId}`);
+  logger.info(`adding track spotify:track:${trackId} to queue`);
 
   try {
     await spotifyApi.addToQueue(`spotify:track:${trackId}`, {
