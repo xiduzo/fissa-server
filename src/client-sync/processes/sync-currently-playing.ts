@@ -5,45 +5,41 @@ import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { Track } from "../../lib/interfaces/Track";
 import { Vote } from "../../lib/interfaces/Vote";
-import { mongoCollectionAsync } from "../../utils/database";
+import { mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { publishAsync } from "../../utils/mqtt";
-import {
-  addTackToQueueAsync,
-  getMyCurrentPlaybackStateAsync,
-  getPlaylistTracksAsync,
-  poorMansTrackIndex,
-} from "../../utils/spotify";
+import { addTackToQueue, getMyCurrentPlaybackState } from "../../utils/spotify";
 
-const T_MINUS = 500;
+const T_MINUS = 250;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
 
-  const promises = rooms?.map(async (room): Promise<void> => {
-    // Whatever happens we need to return a resolved promise
-    // so all promises are resolved and we can loop again
-    return new Promise(async (resolve) => {
-      try {
-        const { accessToken, expectedEndTime, currentIndex } = room;
-        if (!accessToken) return;
-        if (currentIndex < 0) return;
+  const promises = rooms?.map(
+    async (room): Promise<void> =>
+      new Promise(async (resolve) => {
+        try {
+          const { accessToken, expectedEndTime, currentIndex } = room;
+          if (!accessToken) return;
+          if (currentIndex < 0) return;
 
-        const tMinus = DateTime.fromISO(expectedEndTime).diff(
-          DateTime.now()
-        ).milliseconds;
+          const tMinus = DateTime.fromISO(expectedEndTime).diff(
+            DateTime.now()
+          ).milliseconds;
 
-        logger.info(tMinus);
-        if (tMinus > T_MINUS) return;
+          if (tMinus > T_MINUS) return;
+          logger.info(tMinus);
 
-        await updateRoom(room);
-      } catch (error) {
-        await catchError(error, room);
-      } finally {
-        resolve();
-      }
-    });
-  });
+          await updateRoom(room);
+        } catch (error) {
+          await catchError(error, room);
+        } finally {
+          // Whatever happens we need to return a resolved promise
+          // so all promises are resolved and we can loop again
+          resolve();
+        }
+      })
+  );
 
   if (promises?.length) {
     await Promise.all(promises);
@@ -54,7 +50,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 
 export const updateRoom = async (room: Room) => {
   const { accessToken, pin, currentIndex } = room;
-  const currentlyPlaying = await getMyCurrentPlaybackStateAsync(accessToken);
+  const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
   const { is_playing, item, progress_ms } = currentlyPlaying;
   const newState = { currentIndex: -1, expectedEndTime: undefined };
@@ -67,13 +63,12 @@ export const updateRoom = async (room: Room) => {
   const deleteVotesPromise = deleteVotesForTrack(pin, item.id);
 
   logger.info("update room");
-  const tracks = await mongoCollectionAsync<Track>("track");
+  const tracks = await mongoCollection<Track>("track");
   const playlistTracks = await tracks.find({ pin }).toArray();
   const sortedTracks = playlistTracks.sort((a, b) => a.index - b.index);
 
-  newState.currentIndex = playlistTracks.find(
-    (track) => track.id === item.id
-  ).index;
+  newState.currentIndex =
+    playlistTracks.find((track) => track.id === item.id)?.index ?? -1;
 
   if (newState.currentIndex >= 0) {
     newState.expectedEndTime = DateTime.now()
@@ -88,17 +83,15 @@ export const updateRoom = async (room: Room) => {
   );
 
   if (newState.currentIndex >= currentIndex + 1) {
-    logger.info("Adding next track to queue");
     const nextTrack = sortedTracks[newState.currentIndex + 1];
 
     if (nextTrack) {
       console.log(`Adding next track to queue: ${nextTrack.name}`);
-      await addTackToQueueAsync(accessToken, nextTrack.id);
-      return;
+      await addTackToQueue(accessToken, nextTrack.id);
+    } else {
+      // TODO if index is tracks length - 1, add X new tracks based on previous tracks
+      logger.warn("playlist will finish if nothing is add");
     }
-
-    logger.warn("playlist will finish if nothing is add");
-    // TODO if index is tracks length - 1, add X new tracks based on previous tracks
   }
 
   await saveAndPublishRoom(room, newState);
@@ -106,7 +99,7 @@ export const updateRoom = async (room: Room) => {
 };
 
 const deleteVotesForTrack = async (pin: string, trackId: string) => {
-  const votes = await mongoCollectionAsync<Vote>("vote");
+  const votes = await mongoCollection<Vote>("vote");
 
   // We want to remove all votes for the current playing track
   await votes.deleteMany({
@@ -132,7 +125,7 @@ const catchHttpError = async (
     case StatusCodes.UNAUTHORIZED:
       logger.warn("UNAUTHORIZED", message);
       if (message.includes("Spotify's Web API")) {
-        const rooms = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollection<Room>("room");
 
         await rooms.updateOne(
           { pin },
@@ -156,7 +149,7 @@ const saveAndPublishRoom = async (
   room: Room,
   state: { currentIndex: number; expectedEndTime: string | undefined }
 ) => {
-  const rooms = await mongoCollectionAsync<Room>("room");
+  const rooms = await mongoCollection<Room>("room");
 
   const { pin } = room;
 

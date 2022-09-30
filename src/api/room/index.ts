@@ -1,15 +1,17 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
-import { mongoCollectionAsync } from "../../utils/database";
+import { addTracks, mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { createPin } from "../../utils/pin";
 import {
-  createPlaylistAsync,
-  startPlaylistFromTopAsync,
+  createPlaylist,
+  getMe,
+  getMyTopTracks,
+  getPlaylistTracks,
+  startPlaylistFromTrack,
 } from "../../utils/spotify";
 
-// TODO: dont give back the accessToken in response object
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
     case "GET":
@@ -18,13 +20,13 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { playlistId, accessToken } = request.body;
+      const { accessToken, playlistId } = request.body;
 
       let newPin: string;
       let blockedPins: string[] = [];
 
       try {
-        const rooms = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollection<Room>("room");
         do {
           newPin = createPin(blockedPins);
           const room = await rooms.findOne({ pin: newPin });
@@ -36,19 +38,29 @@ const handler: VercelApiHandler = async (request, response) => {
           }
         } while (newPin === undefined);
 
-        const { playlistId: createdPlaylistId, createdBy } =
-          await createPlaylistAsync(accessToken, playlistId);
-
+        const me = await getMe(accessToken);
         const room: Room = {
           pin: newPin,
-          createdBy,
+          createdBy: me.id,
           accessToken,
           currentIndex: -1,
         };
+        const roomPromise = rooms.insertOne(room);
 
-        await rooms.insertOne(room);
-        await startPlaylistFromTopAsync(accessToken);
+        const tracks = playlistId
+          ? await getPlaylistTracks(accessToken, playlistId)
+          : await getMyTopTracks(accessToken);
 
+        const trackUriToStartPlaying = tracks[0].uri;
+        await addTracks(
+          tracks,
+          newPin,
+          tracks.map((track) => track.id)
+        );
+
+        await startPlaylistFromTrack(accessToken, trackUriToStartPlaying);
+
+        await roomPromise;
         response.status(StatusCodes.OK).json(newPin);
       } catch (error) {
         logger.error(`room GET handler: ${error}`);

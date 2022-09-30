@@ -2,11 +2,10 @@ import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
-import { mongoCollectionAsync, voteAsync } from "../../utils/database";
+import { mongoCollection } from "../../utils/database";
 import {
-  addTackToQueueAsync,
-  getMyCurrentPlaybackStateAsync,
-  startPlaylistFromTopAsync,
+  getMyCurrentPlaybackState,
+  startPlaylistFromTrack,
 } from "../../utils/spotify";
 import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 import { Track } from "../../lib/interfaces/Track";
@@ -23,8 +22,14 @@ const handler: VercelApiHandler = async (request, response) => {
         pin: string;
       };
 
+      if (!pin) {
+        return response
+          .status(StatusCodes.BAD_REQUEST)
+          .json(ReasonPhrases.BAD_REQUEST);
+      }
+
       try {
-        const rooms = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollection<Room>("room");
         const room = await rooms.findOne({ pin });
 
         logger.info("restart playlist");
@@ -37,23 +42,25 @@ const handler: VercelApiHandler = async (request, response) => {
         // TODO: check if room is already playing
         const { accessToken } = room;
 
-        const currentlyPlaying = await getMyCurrentPlaybackStateAsync(
-          accessToken
-        );
+        const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
         const { item, is_playing } = currentlyPlaying;
 
-        const tracks = await mongoCollectionAsync<Track>("track");
+        const tracks = await mongoCollection<Track>("track");
         const roomTracks = await tracks.find({ pin }).toArray();
 
         if (
           !is_playing ||
           !roomTracks.map((track) => track.id).includes(item?.id)
         ) {
-          await startPlaylistFromTopAsync(accessToken, [roomTracks[0]]);
+          await startPlaylistFromTrack(
+            accessToken,
+            `spotify:track:${roomTracks[0].id}`
+          );
+        } else {
+          logger.warn(`tried to restart ${pin} but it was already playing`);
         }
 
-        // TODO make sure there is a track playing
         await updateRoom(room);
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);

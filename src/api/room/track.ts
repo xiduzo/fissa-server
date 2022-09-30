@@ -3,8 +3,8 @@ import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { VoteState } from "../../lib/interfaces/Vote";
-import { mongoCollectionAsync, voteAsync } from "../../utils/database";
-import { getTracksAsync } from "../../utils/spotify";
+import { addTracks, mongoCollection, vote } from "../../utils/database";
+import { getTracks } from "../../utils/spotify";
 import { publishAsync } from "../../utils/mqtt";
 import { Track } from "../../lib/interfaces/Track";
 
@@ -20,7 +20,7 @@ const handler: VercelApiHandler = async (request, response) => {
       }
 
       try {
-        const tracks = await mongoCollectionAsync<Track>("track");
+        const tracks = await mongoCollection<Track>("track");
         const roomTracks = await tracks.find({ pin }).toArray();
         const sortedTracks = roomTracks.sort((a, b) => a.index - b.index);
         response.status(StatusCodes.OK).json(sortedTracks);
@@ -45,7 +45,7 @@ const handler: VercelApiHandler = async (request, response) => {
       };
 
       try {
-        const rooms = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollection<Room>("room");
         const room = await rooms.findOne({ pin });
 
         if (!room) {
@@ -54,37 +54,17 @@ const handler: VercelApiHandler = async (request, response) => {
         }
 
         const { accessToken } = room;
-        const spotifyTracks = await getTracksAsync(accessToken, trackIds);
+        const spotifyTracks = await getTracks(accessToken, trackIds);
 
-        const tracks = await mongoCollectionAsync<Track>("track");
-        const roomTracks = await tracks.find({ pin }).toArray();
-
-        const roomTrackIds = roomTracks.map((track) => track.id);
-        const tracksToAdd = trackIds.filter(
-          (trackId) => !roomTrackIds.includes(trackId)
-        );
-
-        const inserts = tracksToAdd.map(async (trackId, index) => {
-          const track = spotifyTracks.find((track) => track.id === trackId);
-
-          return tracks.insertOne({
-            pin,
-            index: roomTracks.length + index,
-            artists: track.artists.map((artist) => artist.name).join(", "),
-            name: track.name,
-            id: track.id,
-            image: track.album.images[0]?.url,
-            duration_ms: track.duration_ms,
-          });
-        });
+        const addedTracksPromise = addTracks(spotifyTracks, pin, trackIds);
 
         const votes = trackIds.map(async (id) => {
-          return voteAsync(room.pin, userAccessToken, id, VoteState.Upvote);
+          return vote(room.pin, userAccessToken, id, VoteState.Upvote);
         });
 
         await publishAsync(`fissa/room/${pin}/tracks/added`, trackIds.length);
-        await Promise.all(inserts);
         await Promise.all(votes);
+        await addedTracksPromise;
 
         // const votes = await mongoCollectionAsync<Vote>("vote");
         // const roomVotes = await votes.find({ pin }).toArray();

@@ -8,19 +8,20 @@ import {
 } from "mongodb";
 import { MONGO_CREDENTIALS } from "../lib/constants/credentials";
 import { Vote, VoteState } from "../lib/interfaces/Vote";
-import { getMeAsync } from "./spotify";
+import { getMe } from "./spotify";
 import { logger } from "./logger";
+import { Track } from "../lib/interfaces/Track";
 
 const { user, password } = MONGO_CREDENTIALS;
 
-export const mongoClient = new MongoClient(
+const mongoClient = new MongoClient(
   `mongodb+srv://${user}:${password}@fissa.yp209.mongodb.net/?retryWrites=true&w=majority`,
   {
     serverApi: ServerApiVersion.v1,
   }
 );
 
-export const mongoDbAsync = async (): Promise<Db> => {
+const mongoDb = async (): Promise<Db> => {
   return new Promise(async (resolve, reject) => {
     try {
       const client = await mongoClient.connect();
@@ -33,12 +34,12 @@ export const mongoDbAsync = async (): Promise<Db> => {
   });
 };
 
-export const mongoCollectionAsync = async <T>(
+export const mongoCollection = async <T>(
   name: string,
   options?: CollectionOptions
 ): Promise<Collection<T & Document>> => {
   try {
-    const database = await mongoDbAsync();
+    const database = await mongoDb();
     return database.collection<T>(name, options);
   } catch (error) {
     logger.error("mongoCollectionAsync", error);
@@ -46,7 +47,7 @@ export const mongoCollectionAsync = async <T>(
 };
 
 const saveVote = async (vote: Vote) => {
-  const votes = await mongoCollectionAsync<Vote>("vote");
+  const votes = await mongoCollection<Vote>("vote");
 
   const _vote = await votes.findOne({
     pin: vote.pin,
@@ -72,14 +73,14 @@ const saveVote = async (vote: Vote) => {
   );
 };
 
-export const voteAsync = async (
+export const vote = async (
   pin: string,
   accessToken: string,
   trackId: string,
   state: VoteState
 ): Promise<Vote> => {
   try {
-    const me = await getMeAsync(accessToken);
+    const me = await getMe(accessToken);
 
     const vote: Vote = {
       pin,
@@ -94,4 +95,34 @@ export const voteAsync = async (
     logger.error("voteAsync", error);
     throw new Error("Unable to vote");
   }
+};
+
+export const addTracks = async (
+  spotifyTracks: SpotifyApi.TrackObjectFull[],
+  pin: string,
+  trackIdsToAdd: string[]
+) => {
+  const tracks = await mongoCollection<Track>("track");
+  const roomTracks = await tracks.find({ pin }).toArray();
+
+  const roomTrackIds = roomTracks.map((track) => track.id);
+  const tracksToAdd = trackIdsToAdd.filter(
+    (trackId) => !roomTrackIds.includes(trackId)
+  );
+
+  const inserts = tracksToAdd.map(async (trackId, index) => {
+    const track = spotifyTracks.find((track) => track.id === trackId);
+
+    return tracks.insertOne({
+      pin,
+      index: roomTracks.length + index,
+      artists: track.artists.map((artist) => artist.name).join(", "),
+      name: track.name,
+      id: track.id,
+      image: track.album.images[0]?.url,
+      duration_ms: track.duration_ms,
+    });
+  });
+
+  await Promise.all(inserts);
 };

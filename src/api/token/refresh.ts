@@ -3,8 +3,8 @@ import { StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
 import { Room } from "../../lib/interfaces/Room";
-import { mongoCollectionAsync } from "../../utils/database";
-import { getMeAsync, disableShuffleAsync } from "../../utils/spotify";
+import { mongoCollection } from "../../utils/database";
+import { getMe, disableShuffle } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -23,12 +23,12 @@ const handler: VercelApiHandler = async (request, response) => {
 
       const tokens = await spotifyApi.refreshAccessToken();
 
-      const rooms = await mongoCollectionAsync<Room>("room");
+      const rooms = await mongoCollection<Room>("room");
       const accessToken = tokens.body.access_token;
 
-      const disableShuffle = disableShuffleAsync(accessToken);
+      const disableShuffle = disableShuffle(accessToken);
 
-      const me = await getMeAsync(accessToken);
+      const me = await getMe(accessToken);
 
       await rooms.updateMany({ createdBy: me?.id }, { $set: { accessToken } });
 

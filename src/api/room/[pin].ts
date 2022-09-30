@@ -2,7 +2,7 @@ import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { Vote } from "../../lib/interfaces/Vote";
-import { mongoCollectionAsync } from "../../utils/database";
+import { mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -18,7 +18,7 @@ const handler: VercelApiHandler = async (request, response) => {
       }
 
       try {
-        const rooms = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollection<Room>("room");
 
         const room = await rooms.findOne({ pin });
 

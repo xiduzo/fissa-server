@@ -18,12 +18,13 @@ enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
 }
 
-type CreatePlaylistAsync = {
-  playlistId: string;
-  createdBy: string;
+const spotifyClient = (accessToken: string) => {
+  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  spotifyApi.setAccessToken(accessToken);
+  return spotifyApi;
 };
 
-export const addTracksToPlaylistAsync = async (
+export const addTracksToPlaylist = async (
   accessToken: string,
 
   playlistId: string,
@@ -31,8 +32,7 @@ export const addTracksToPlaylistAsync = async (
   trackUris: string[]
 ): Promise<number> => {
   try {
-    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-    spotifyApi.setAccessToken(accessToken);
+    const spotifyApi = spotifyClient(accessToken);
 
     let tracksAdded = 0;
 
@@ -55,35 +55,22 @@ export const addTracksToPlaylistAsync = async (
   }
 };
 
-export const getTracksAsync = async (
+export const getTracks = async (
   accessToken: string,
   trackIds: string[]
 ): Promise<SpotifyApi.TrackObjectFull[]> => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
+  const spotifyApi = spotifyClient(accessToken);
 
   const response = await spotifyApi.getTracks(trackIds);
   return response.body.tracks;
 };
 
-export const createPlaylistAsync = async (
+export const createPlaylist = async (
   accessToken: string,
-  playlistId?: string
-): Promise<CreatePlaylistAsync> => {
+  trackUris: string[]
+): Promise<string> => {
   try {
-    const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-    spotifyApi.setAccessToken(accessToken);
-
-    let trackUris: string[] = [];
-
-    if (playlistId) {
-      const trackObjects = await getPlaylistTracksAsync(
-        accessToken,
-        playlistId
-      );
-
-      trackUris = trackObjects.map((track) => track.uri);
-    }
+    const spotifyApi = spotifyClient(accessToken);
 
     const playlist = await spotifyApi.createPlaylist("🟣🔴🟢🔵🟠🟡", {
       public: true,
@@ -91,27 +78,19 @@ export const createPlaylistAsync = async (
       description: "Playlist created with FISSA",
     });
 
-    if (trackUris.length > 0) {
-      await addTracksToPlaylistAsync(accessToken, playlist.body.id, trackUris);
-    }
+    await addTracksToPlaylist(accessToken, playlist.body.id, trackUris);
 
-    await disableShuffleAsync(accessToken);
-
-    return {
-      playlistId: playlist.body.id,
-      createdBy: playlist.body.owner.id,
-    };
+    return playlist.body.id;
   } catch (error) {
     logger.error("createPlaylistAsync", error);
   }
 };
 
-export const getPlaylistTracksAsync = async (
+export const getPlaylistTracks = async (
   accessToken: string,
   playlistId: string
 ): Promise<SpotifyApi.TrackObjectFull[]> => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
+  const spotifyApi = spotifyClient(accessToken);
 
   try {
     let total = 0;
@@ -142,11 +121,10 @@ export const getPlaylistTracksAsync = async (
   }
 };
 
-export const getMyCurrentPlaybackStateAsync = async (
+export const getMyCurrentPlaybackState = async (
   accessToken: string
 ): Promise<SpotifyApi.CurrentlyPlayingResponse> => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
+  const spotifyApi = spotifyClient(accessToken);
 
   try {
     const response = await spotifyApi.getMyCurrentPlaybackState();
@@ -158,9 +136,8 @@ export const getMyCurrentPlaybackStateAsync = async (
   }
 };
 
-export const getMeAsync = async (accessToken: string) => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
+export const getMe = async (accessToken: string) => {
+  const spotifyApi = spotifyClient(accessToken);
 
   try {
     const response = await spotifyApi.getMe();
@@ -172,11 +149,8 @@ export const getMeAsync = async (accessToken: string) => {
   }
 };
 
-export const disableShuffleAsync = async (
-  accessToken: string
-): Promise<void> => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
+export const disableShuffle = async (accessToken: string): Promise<void> => {
+  const spotifyApi = spotifyClient(accessToken);
 
   try {
     await spotifyApi.setShuffle(false);
@@ -211,40 +185,6 @@ export const poorMansTrackIndex = (tracks: Track[], id?: string): number => {
   }
 };
 
-const updatePlaylistTrackIndexAsync = async (
-  playlistId: string,
-  accessToken: string,
-  options: {
-    trackIndex: number;
-    newTrackIndex: number;
-    snapshotId?: string;
-  }
-): Promise<string> => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
-
-  const { trackIndex, newTrackIndex, snapshotId } = options;
-
-  logger.warn(
-    `insert track on index ${trackIndex} on ${newTrackIndex} for snapshot ${snapshotId}`
-  );
-  try {
-    const response = await spotifyApi.reorderTracksInPlaylist(
-      playlistId,
-      trackIndex,
-      newTrackIndex,
-      {
-        range_length: 1,
-        snapshot_id: snapshotId,
-      }
-    );
-    return response.body.snapshot_id;
-  } catch (error) {
-    logger.error("updatePlaylistTrackIndexAsync", error);
-    return null;
-  }
-};
-
 type NewIndex = (props: {
   totalTracks: number;
   playlistIndex: number;
@@ -268,8 +208,7 @@ const negativeNewIndex: NewIndex = ({
 
 export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   const { accessToken } = room;
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
+  const spotifyApi = spotifyClient(accessToken);
 
   try {
     // const scores = getScores(votes).sort((a, b) =>
@@ -330,33 +269,36 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   }
 };
 
-export const startPlaylistFromTopAsync = async (
-  accessToken: string,
-  tracks?: Track[]
-) => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
-  spotifyApi.setAccessToken(accessToken);
+export const getMyTopTracks = async (accessToken: string) => {
+  const spotifyApi = spotifyClient(accessToken);
 
   try {
-    await disableShuffleAsync(accessToken);
-
-    const uris =
-      tracks?.map((track) => `spotify:track:${track.id}`) ??
-      (await spotifyApi.getMyTopTracks({ limit: 25 })).body.items.map(
-        (track) => track.uri
-      );
-
-    // const tracks = await spotifyApi.getMyTopTracks({ limit: 25 });
-    await spotifyApi.play({
-      uris,
-    });
-    await spotifyApi.play();
+    const tracks = await spotifyApi.getMyTopTracks({ limit: 10 });
+    return tracks.body.items;
   } catch (error) {
-    logger.error("startPlaylistFromTopAsync", error);
+    logger.error("getMyTopTracksAsync", error);
   }
 };
 
-export const addTackToQueueAsync = async (
+export const startPlaylistFromTrack = async (
+  accessToken: string,
+  uri: string
+) => {
+  const spotifyApi = spotifyClient(accessToken);
+
+  try {
+    await disableShuffle(accessToken);
+    await spotifyApi.play({
+      uris: [uri],
+    });
+    // 👆 does not seem to do the job properly, so just call play again
+    await spotifyApi.play();
+  } catch (error) {
+    logger.error("startPlaylistFromTrackAsync", error);
+  }
+};
+
+export const addTackToQueue = async (
   accessToken: string,
   trackId: string,
   deviceId?: string

@@ -1,7 +1,7 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { voteAsync } from "../../utils/database";
-import { mongoCollectionAsync } from "../../utils/database";
+import { vote } from "../../utils/database";
+import { mongoCollection } from "../../utils/database";
 import { Vote } from "../../lib/interfaces/Vote";
 import { publishAsync } from "../../utils/mqtt";
 import { logger } from "../../utils/logger";
@@ -21,7 +21,7 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        const votes = await mongoCollectionAsync<Vote>("vote");
+        const votes = await mongoCollection<Vote>("vote");
 
         const roomVotes = await votes.find({ pin }).toArray();
         response.status(StatusCodes.OK).json(roomVotes);
@@ -42,13 +42,13 @@ const handler: VercelApiHandler = async (request, response) => {
       if (!state) return;
 
       try {
-        await voteAsync(pin, accessToken, trackId, state);
-        const votes = await mongoCollectionAsync<Vote>("vote");
+        await vote(pin, accessToken, trackId, state);
+        const votes = await mongoCollection<Vote>("vote");
 
         const roomVotes = await votes.find({ pin }).toArray();
         await publishAsync(`fissa/room/${pin}/votes`, roomVotes);
 
-        const rooms = await mongoCollectionAsync<Room>("room");
+        const rooms = await mongoCollection<Room>("room");
         const room = await rooms.findOne({ pin });
         await reorderPlaylist(room, roomVotes);
         await publishAsync(`fissa/room/${room.pin}/tracks/reordered`);
