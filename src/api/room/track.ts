@@ -6,11 +6,11 @@ import {
   addTracks,
   getRoom,
   getRoomTracks,
-  mongoCollection,
+  getRoomVotes,
   vote,
 } from "../../utils/database";
 import { publish } from "../../utils/mqtt";
-import { Track } from "../../lib/interfaces/Track";
+import { reorderPlaylist } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -66,11 +66,10 @@ const handler: VercelApiHandler = async (request, response) => {
         await Promise.all(votes);
         await addedTracksPromise;
 
-        // const votes = await mongoCollectionAsync<Vote>("vote");
-        // const roomVotes = await votes.find({ pin }).toArray();
+        const roomVotes = await getRoomVotes(pin);
 
-        // await reorderPlaylist(room, roomVotes);
-        // await publishAsync(`fissa/room/${room.pin}/tracks/reordered`);
+        await reorderPlaylist(room, roomVotes);
+        await publish(`fissa/room/${room.pin}/tracks/reordered`);
 
         response.status(StatusCodes.OK).json(trackIds.length);
       } catch (error) {

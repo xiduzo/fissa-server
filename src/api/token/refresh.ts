@@ -15,28 +15,35 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const spotifyApi = new SpotifyWebApi({
-        ...SPOTIFY_CREDENTIALS,
-        redirectUri: request.body.redirect_uri,
-      });
-      spotifyApi.setAccessToken(request.body.access_token);
-      spotifyApi.setRefreshToken(request.body.refresh_token);
+      try {
+        const spotifyApi = new SpotifyWebApi({
+          ...SPOTIFY_CREDENTIALS,
+          redirectUri: request.body.redirect_uri,
+        });
+        spotifyApi.setAccessToken(request.body.access_token);
+        spotifyApi.setRefreshToken(request.body.refresh_token);
 
-      const tokens = await spotifyApi.refreshAccessToken();
+        const tokens = await spotifyApi.refreshAccessToken();
 
-      const rooms = await mongoCollection<Room>("room");
-      const accessToken = tokens.body.access_token;
+        const rooms = await mongoCollection<Room>("room");
+        const accessToken = tokens.body.access_token;
 
-      const disableShufflePromise = disableShuffle(accessToken);
+        const disableShufflePromise = disableShuffle(accessToken);
 
-      const me = await getMe(accessToken);
+        const me = await getMe(accessToken);
 
-      await rooms.updateMany({ createdBy: me?.id }, { $set: { accessToken } });
+        await rooms.updateMany(
+          { createdBy: me?.id },
+          { $set: { accessToken } }
+        );
 
-      await disableShufflePromise;
+        await disableShufflePromise;
 
-      response.status(StatusCodes.OK).json(tokens.body);
-      break;
+        response.status(StatusCodes.OK).json(tokens.body);
+        break;
+      } catch (error) {
+        logger.error(`Token refresh POST handler: ${error}`);
+      }
   }
 };
 

@@ -2,6 +2,7 @@ import { VercelApiHandler } from "@vercel/node";
 import { StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
+import { logger } from "../../utils/logger";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -11,17 +12,19 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { code, redirect_uri } = request.body;
-      const spotifyApi = new SpotifyWebApi({
-        ...SPOTIFY_CREDENTIALS,
-        redirectUri: redirect_uri,
-      });
-      const tokens = await spotifyApi.authorizationCodeGrant(code);
+      try {
+        const { code, redirect_uri } = request.body;
+        const spotifyApi = new SpotifyWebApi({
+          ...SPOTIFY_CREDENTIALS,
+          redirectUri: redirect_uri,
+        });
+        const tokens = await spotifyApi.authorizationCodeGrant(code);
 
-      // TODO: update the room?
-
-      response.status(StatusCodes.OK).json(tokens.body);
-      break;
+        response.status(StatusCodes.OK).json(tokens.body);
+        break;
+      } catch (error) {
+        logger.error(`Token POST handler: ${error}`);
+      }
   }
 };
 
