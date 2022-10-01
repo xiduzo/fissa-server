@@ -16,7 +16,7 @@ import {
   getRecommendedTracks,
 } from "../../utils/spotify";
 
-const T_MINUS = 1000;
+const T_MINUS = 250;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
