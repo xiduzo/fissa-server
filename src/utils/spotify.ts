@@ -211,7 +211,7 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
       if (originalIndex === index) return;
 
       logger.info(`${pin}: reorder ${track.name} ${originalIndex} -> ${index}`);
-      await roomTracks.updateOne({ pin }, { $set: { index } });
+      await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
     });
     // update room track indexes in DB
     await Promise.all(reorderUpdates);
