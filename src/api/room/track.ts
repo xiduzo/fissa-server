@@ -9,7 +9,7 @@ import {
   mongoCollection,
   vote,
 } from "../../utils/database";
-import { publishAsync } from "../../utils/mqtt";
+import { publish } from "../../utils/mqtt";
 import { Track } from "../../lib/interfaces/Track";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -62,7 +62,7 @@ const handler: VercelApiHandler = async (request, response) => {
           return vote(room.pin, userAccessToken, id, VoteState.Upvote);
         });
 
-        await publishAsync(`fissa/room/${pin}/tracks/added`, trackIds.length);
+        await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);
         await Promise.all(votes);
         await addedTracksPromise;
 

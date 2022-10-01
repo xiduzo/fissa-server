@@ -1,5 +1,6 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { DateTime } from "luxon";
 import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 import { Room } from "../../lib/interfaces/Room";
 import { addTracks, mongoCollection } from "../../utils/database";
@@ -44,6 +45,7 @@ const handler: VercelApiHandler = async (request, response) => {
           createdBy: me.id,
           accessToken,
           currentIndex: -1,
+          createdAt: DateTime.now().toISO(),
         };
         await rooms.insertOne(room);
         logger.info(

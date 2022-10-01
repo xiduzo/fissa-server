@@ -9,7 +9,7 @@ import {
   mongoCollection,
 } from "../../utils/database";
 import { logger } from "../../utils/logger";
-import { publishAsync } from "../../utils/mqtt";
+import { publish } from "../../utils/mqtt";
 import {
   addTackToQueue,
   getMyCurrentPlaybackState,
@@ -100,7 +100,7 @@ export const updateRoom = async (room: Room) => {
       logger.info(`adding ${recommendations.length} recommendations to room`);
 
       await addTracks(accessToken, pin, recommendedIds);
-      await publishAsync(`fissa/room/${pin}/tracks/added`, seedIds.length);
+      await publish(`fissa/room/${pin}/tracks/added`, seedIds.length);
       if (!nextTrack) {
         await addTackToQueue(accessToken, recommendedIds[0]);
       }
@@ -169,7 +169,7 @@ const saveAndPublishRoom = async (
   await rooms.updateOne({ pin }, { $set: state });
 
   delete room.accessToken;
-  await publishAsync(`fissa/room/${pin}`, {
+  await publish(`fissa/room/${pin}`, {
     ...room,
     ...state,
   });

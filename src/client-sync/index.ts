@@ -3,7 +3,7 @@ import "dotenv/config";
 import { createServer } from "http";
 import cache from "node-cache";
 import { syncCurrentlyPlaying } from "./processes/sync-currently-playing";
-import { syncRooms } from "./processes/sync-rooms";
+import { clearInactiveRooms, syncActiveRooms } from "./processes/sync-rooms";
 
 const appCache = new cache();
 appCache.set("rooms", []);
@@ -16,6 +16,7 @@ httpServer.listen(port, async () => {
   logger.info(`Server running on port ${port}`);
 
   // TODO spawn as child processes
-  syncRooms(appCache);
+  syncActiveRooms(appCache);
   syncCurrentlyPlaying(appCache);
+  clearInactiveRooms();
 });

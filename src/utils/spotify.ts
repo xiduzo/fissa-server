@@ -9,10 +9,12 @@ import {
   negativeScore,
   positiveScore,
   highToLow,
-  lowToHigh,
   Vote,
+  SortedVoteData,
 } from "../lib/interfaces/Vote";
+import { getRoomTracks, mongoCollection } from "./database";
 import { logger } from "./logger";
+import { publish } from "./mqtt";
 
 enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
@@ -206,60 +208,48 @@ const negativeNewIndex: NewIndex = ({
   voteIndex,
 }) => totalTracks - Number(trackIndex > playlistIndex) - voteIndex;
 
+const mapToTracks = <T extends { id: string }>(
+  tracks: T[],
+  votes: SortedVoteData[]
+) => {
+  return votes.map((vote) => tracks.find((track) => track.id === vote.trackId));
+};
+
 export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
-  const { accessToken } = room;
-  const spotifyApi = spotifyClient(accessToken);
-
   try {
-    // const scores = getScores(votes).sort((a, b) =>
-    //   a.trackUri.localeCompare(b.trackUri)
-    // );
+    const { pin, currentIndex } = room;
+    const sortedVotes = getScores(votes);
+    const tracks = await getRoomTracks(pin);
+    const tracksCollection = mongoCollection<Track>("track");
+    const voteIds = votes.map((vote) => vote.trackId);
 
-    // const positiveScores = scores.filter(positiveScore).sort(highToLow);
-    // const negativeScores = scores.filter(negativeScore).sort(lowToHigh);
+    // 1 remove voted tracks from playlist
+    let newTracksOrder = tracks.filter((track) => !voteIds.includes(track.id));
 
-    // logger.info(`positiveScores ${JSON.stringify(positiveScores)}`);
+    // 2 add positive tracks right after current index
+    const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
+    newTracksOrder = [
+      ...newTracksOrder.slice(0, currentIndex),
+      ...mapToTracks(tracks, positiveVotes),
+      ...newTracksOrder.slice(currentIndex),
+    ];
 
-    // const { item } = await getMyCurrentPlaybackStateAsync(accessToken);
-    // let snapshotId: string | undefined;
-    // const nextTrackOffset = 2; // 1 to insert after the current index, 1 to make sure the next track is locked
+    // 3 add negative tracks at the end of the playlist
+    const negativeVotes = sortedVotes.filter(negativeScore).sort(highToLow);
+    newTracksOrder = [...newTracksOrder, ...mapToTracks(tracks, negativeVotes)];
 
-    // for (let index = 0; index < positiveScores.length; index++) {
-    //   logger.info(">>>>>>>>>>>>>>");
-    //   const tracks = await getPlaylistTracksAsync(accessToken, playlistId);
-    //   let currentIndex = poorMansTrackIndex(tracks, item?.uri);
-    //   const score = positiveScores[index];
-    //   const trackIndex = poorMansTrackIndex(tracks, score.trackUri);
+    const roomTracks = await tracksCollection;
 
-    //   const expectedNewIndex = currentIndex + index + nextTrackOffset;
-    //   logger.info(
-    //     JSON.stringify({
-    //       total: score.total,
-    //       currentIndex,
-    //       trackIndex,
-    //       expectedNewIndex,
-    //     })
-    //   );
+    // 4 reorder playlist
+    const reorderUpdates = newTracksOrder.map(async (track, index) => {
+      const originalIndex = tracks.indexOf(track);
+      if (originalIndex === index) return;
 
-    //   if (trackIndex === expectedNewIndex) {
-    //     logger.info("track is already in the right place");
-    //     continue;
-    //   }
-
-    //   if (trackIndex < currentIndex) {
-    //     currentIndex -= 1; // We are going to move a track from above the playlistIndex, so we need to adjust the playlistIndex
-    //   }
-
-    //   snapshotId = await updatePlaylistTrackIndexAsync(
-    //     playlistId,
-    //     accessToken,
-    //     {
-    //       trackIndex: trackIndex,
-    //       newTrackIndex: expectedNewIndex,
-    //       snapshotId,
-    //     }
-    //   );
-    // }
+      logger.info(`reorder ${track.name} from ${originalIndex} to ${index}`);
+      await roomTracks.updateOne({ pin }, { $set: { index } });
+    });
+    // update room track indexes in DB
+    await Promise.all(reorderUpdates);
 
     logger.info(">>>>>>>>>>>>>>");
     logger.info("done sorting positive scores");
@@ -294,13 +284,12 @@ export const startPlaylistFromTrack = async (
     });
     await disableShuffle(accessToken);
 
-    if (tryIndex < 5) {
-      const { is_playing, item } = await getMyCurrentPlaybackState(accessToken);
-      if (is_playing) return;
-      if (item.uri === uri) return;
-      await startPlaylistFromTrack(accessToken, uri, tryIndex + 1);
-      return;
-    }
+    if (tryIndex > 5) return;
+
+    const { is_playing, item } = await getMyCurrentPlaybackState(accessToken);
+    if (is_playing) return;
+    if (item.uri === uri) return;
+    await startPlaylistFromTrack(accessToken, uri, tryIndex + 1);
   } catch (error) {
     logger.error("startPlaylistFromTrack", error);
   }

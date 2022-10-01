@@ -25,9 +25,6 @@ export const negativeScore = (score: SortedVoteData) => score.total < 0;
 export const highToLow = (a: SortedVoteData, b: SortedVoteData): number =>
   b.total - a.total;
 
-export const lowToHigh = (a: SortedVoteData, b: SortedVoteData): number =>
-  a.total - b.total;
-
 export const getScores = (votes: Vote[]): SortedVoteData[] => {
   return Object.values(
     votes.reduce((acc, vote) => {

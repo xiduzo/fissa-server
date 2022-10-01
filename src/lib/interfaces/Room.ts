@@ -4,5 +4,6 @@ export interface Room {
   accessToken: string;
   createdBy: string;
   currentIndex: number;
+  createdAt: string;
   expectedEndTime?: string;
 }
