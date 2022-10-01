@@ -87,8 +87,10 @@ export const updateRoom = async (room: Room) => {
   const realCurrentIndex = localNextState.get(pin) ?? currentIndex;
 
   if (realCurrentIndex !== currentIndex) {
-    logger.warn("TODO: fix yo shit");
+    logger.warn("TODO: prevent race condition");
   }
+
+  const saveRoomPromise = saveAndPublishRoom(room, newState);
 
   if (
     newState.currentIndex >= 0 &&
@@ -117,7 +119,7 @@ export const updateRoom = async (room: Room) => {
     }
   }
 
-  await saveAndPublishRoom(room, newState);
+  await saveRoomPromise;
   await deleteVotesPromise;
 };
 

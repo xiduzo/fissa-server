@@ -149,6 +149,16 @@ export const getMe = async (accessToken: string) => {
   }
 };
 
+export const getMyDevices = async (accessToken: string) => {
+  const spotifyApi = spotifyClient(accessToken);
+  try {
+    const response = await spotifyApi.getMyDevices();
+    return response.body.devices;
+  } catch (error) {
+    logger.error(`getMyDevices ${JSON.stringify(error)}`);
+  }
+};
+
 export const disableShuffle = async (accessToken: string): Promise<void> => {
   const spotifyApi = spotifyClient(accessToken);
 
@@ -156,14 +166,14 @@ export const disableShuffle = async (accessToken: string): Promise<void> => {
     await spotifyApi.setShuffle(false);
   } catch (error) {
     if (error.message?.includes("NO_ACTIVE_DEVICE")) {
-      const myDevices = await spotifyApi.getMyDevices();
+      const devices = await getMyDevices(accessToken);
 
-      if (myDevices.body.devices.length <= 0) {
+      if (devices.length <= 0) {
         logger.warn("no devices found for user");
         return;
       }
 
-      await spotifyApi.transferMyPlayback([myDevices.body.devices[0].id]);
+      await spotifyApi.transferMyPlayback([devices[0].id]);
       return;
     }
 
@@ -187,6 +197,7 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
     const tracks = await getRoomTracks(pin);
     const tracksCollection = mongoCollection<Track>("track");
     const voteIds = votes.map((vote) => vote.trackId);
+    const playlistOffset = 2; // 1 for the current track and 1 for the next track
 
     // 1 remove voted tracks from playlist
     let newTracksOrder = tracks.filter((track) => !voteIds.includes(track.id));
@@ -194,9 +205,9 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
     // 2 add positive tracks right after current index
     const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
     newTracksOrder = [
-      ...newTracksOrder.slice(0, currentIndex),
+      ...newTracksOrder.slice(0, currentIndex + playlistOffset),
       ...mapToTracks(tracks, positiveVotes),
-      ...newTracksOrder.slice(currentIndex),
+      ...newTracksOrder.slice(currentIndex + playlistOffset),
     ];
 
     // 3 add negative tracks at the end of the playlist
@@ -226,10 +237,26 @@ export const getMyTopTracks = async (accessToken: string) => {
 
   try {
     const response = await spotifyApi.getMyTopTracks({ limit: 20 });
-    logger.info(`got ${response.body.items.length} top tracks`);
     return response.body.items;
   } catch (error) {
     logger.error(`getMyTopTracks ${JSON.stringify(error)}`);
+  }
+};
+
+const clearQueue = async (accessToken: string) => {
+  const spotifyApi = spotifyClient(accessToken);
+
+  try {
+    const {
+      actions: { disallows },
+    } = await getMyCurrentPlaybackState(accessToken);
+
+    if (!Boolean(disallows.skipping_next)) {
+      await spotifyApi.skipToNext();
+      await clearQueue(accessToken);
+    }
+  } catch (error) {
+    logger.error(`clearQueue ${JSON.stringify(error)}`);
   }
 };
 
@@ -241,8 +268,11 @@ export const startPlaylistFromTrack = async (
   const spotifyApi = spotifyClient(accessToken);
 
   try {
+    // TODO: clear user queue
+    //await clearQueue(accessToken);
     await spotifyApi.play({
       uris: [uri],
+      device_id: await getMyDevices(accessToken)[0].id,
     });
     await disableShuffle(accessToken);
 
@@ -284,7 +314,7 @@ export const getRecommendedTracks = async (
 
   try {
     const request = await spotifyApi.getRecommendations({
-      limit: 5,
+      limit: 3,
       seed_tracks: seedTrackIds,
       seed_artists: [],
       seed_genres: [],
