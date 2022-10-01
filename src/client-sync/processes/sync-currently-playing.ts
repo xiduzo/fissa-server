@@ -101,6 +101,7 @@ export const updateRoom = async (room: Room) => {
 
     if (nextTrack) {
       await addTackToQueue(accessToken, nextTrack.id);
+      await deleteVotesForTrack(pin, nextTrack.id);
     }
 
     if (!trackAfterNext) {
