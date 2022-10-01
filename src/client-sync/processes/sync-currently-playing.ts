@@ -67,7 +67,7 @@ export const updateRoom = async (room: Room) => {
     return;
   }
 
-  const deleteVotesPromise = deleteVotesForTrack(pin, item.id);
+  await deleteVotesForTrack(pin, item.id);
 
   const tracks = await getRoomTracks(pin);
 
@@ -89,8 +89,6 @@ export const updateRoom = async (room: Room) => {
   if (realCurrentIndex !== currentIndex) {
     logger.warn("TODO: prevent race condition");
   }
-
-  const saveRoomPromise = saveAndPublishRoom(room, newState);
 
   if (
     newState.currentIndex >= 0 &&
@@ -119,8 +117,7 @@ export const updateRoom = async (room: Room) => {
     }
   }
 
-  await saveRoomPromise;
-  await deleteVotesPromise;
+  await saveAndPublishRoom(room, newState);
 };
 
 const deleteVotesForTrack = async (pin: string, trackId: string) => {
