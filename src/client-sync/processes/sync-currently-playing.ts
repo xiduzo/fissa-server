@@ -34,7 +34,6 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           ).milliseconds;
 
           if (tMinus > T_MINUS) return;
-          logger.info(tMinus);
 
           await updateRoom(room);
         } catch (error) {
@@ -81,9 +80,7 @@ export const updateRoom = async (room: Room) => {
       .toISO();
   }
 
-  logger.info(
-    `new index: ${newState.currentIndex}, current index: ${currentIndex}`
-  );
+  logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
 
   if (newState.currentIndex >= 0 && newState.currentIndex !== currentIndex) {
     const nextTrack = tracks[newState.currentIndex + 1];
@@ -97,7 +94,7 @@ export const updateRoom = async (room: Room) => {
       const seedIds = tracks.slice(-5).map((track) => track.id);
       const recommendations = await getRecommendedTracks(accessToken, seedIds);
       const recommendedIds = recommendations.map((track) => track.id);
-      logger.info(`adding ${recommendations.length} recommendations to room`);
+      logger.info(`${pin}: adding recommendations to room`);
 
       await addTracks(accessToken, pin, recommendedIds);
       await publish(`fissa/room/${pin}/tracks/added`, seedIds.length);

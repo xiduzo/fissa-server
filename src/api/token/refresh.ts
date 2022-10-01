@@ -30,7 +30,6 @@ const handler: VercelApiHandler = async (request, response) => {
       const disableShufflePromise = disableShuffle(accessToken);
 
       const me = await getMe(accessToken);
-      logger.info(`new access token: ${accessToken} for ${me.display_name}`);
 
       await rooms.updateMany({ createdBy: me?.id }, { $set: { accessToken } });
 

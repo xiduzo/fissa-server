@@ -29,8 +29,6 @@ const handler: VercelApiHandler = async (request, response) => {
       try {
         const room = await getRoom(pin);
 
-        logger.info("restart playlist");
-
         if (!room) {
           response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
           return;

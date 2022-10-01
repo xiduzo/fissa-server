@@ -245,14 +245,11 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
       const originalIndex = tracks.indexOf(track);
       if (originalIndex === index) return;
 
-      logger.info(`reorder ${track.name} from ${originalIndex} to ${index}`);
+      logger.info(`${pin}: reorder ${track.name} ${originalIndex} -> ${index}`);
       await roomTracks.updateOne({ pin }, { $set: { index } });
     });
     // update room track indexes in DB
     await Promise.all(reorderUpdates);
-
-    logger.info(">>>>>>>>>>>>>>");
-    logger.info("done sorting positive scores");
     await updateRoom(room);
   } catch (error) {
     logger.error("reorderPlaylist", error);
@@ -303,7 +300,7 @@ export const addTackToQueue = async (
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
-  logger.info(`adding track spotify:track:${trackId} to queue`);
+  logger.info(`adding spotify:track:${trackId} to queue`);
 
   try {
     await spotifyApi.addToQueue(`spotify:track:${trackId}`, {

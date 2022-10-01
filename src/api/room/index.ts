@@ -48,14 +48,12 @@ const handler: VercelApiHandler = async (request, response) => {
           createdAt: DateTime.now().toISO(),
         };
         await rooms.insertOne(room);
-        logger.info(
-          `created room ${newPin} for ${me.display_name} with playlist ${playlistId}`
-        );
+
         const tracks = playlistId
           ? await getPlaylistTracks(accessToken, playlistId)
           : await getMyTopTracks(accessToken);
 
-        logger.info(`adding ${tracks.length} tracks to room ${newPin}`);
+        logger.info(`${newPin}: adding ${tracks.length} tracks to room`);
         await addTracks(
           accessToken,
           newPin,
