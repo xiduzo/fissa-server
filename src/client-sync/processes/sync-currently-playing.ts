@@ -18,6 +18,8 @@ import {
 
 const T_MINUS = 250;
 
+const localNextState = new Map<string, number>();
+
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
 
@@ -82,7 +84,18 @@ export const updateRoom = async (room: Room) => {
 
   logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
 
-  if (newState.currentIndex >= 0 && newState.currentIndex !== currentIndex) {
+  const realCurrentIndex = localNextState.get(pin) ?? currentIndex;
+
+  if (realCurrentIndex !== currentIndex) {
+    logger.warn("TODO: fix yo shit");
+  }
+
+  if (
+    newState.currentIndex >= 0 &&
+    newState.currentIndex !== realCurrentIndex
+  ) {
+    // Try and prevent double updates
+    localNextState.set(pin, newState.currentIndex);
     const nextTrack = tracks[newState.currentIndex + 1];
     const trackAfterNext = tracks[newState.currentIndex + 2];
 

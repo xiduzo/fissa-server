@@ -1,4 +1,3 @@
-import { access } from "fs";
 import SpotifyWebApi from "spotify-web-api-node";
 import { updateRoom } from "../client-sync/processes/sync-currently-playing";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
@@ -14,7 +13,6 @@ import {
 } from "../lib/interfaces/Vote";
 import { getRoomTracks, mongoCollection } from "./database";
 import { logger } from "./logger";
-import { publish } from "./mqtt";
 
 enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
@@ -52,7 +50,7 @@ export const addTracksToPlaylist = async (
 
     return tracksAdded;
   } catch (error) {
-    logger.error("addTracksToPlaylist", error);
+    logger.error(`addTracksToPlaylist ${JSON.stringify(error)}`);
     return 0;
   }
 };
@@ -84,7 +82,7 @@ export const createPlaylist = async (
 
     return playlist.body.id;
   } catch (error) {
-    logger.error("createPlaylist", error);
+    logger.error(`createPlaylist ${JSON.stringify(error)}`);
   }
 };
 
@@ -119,7 +117,7 @@ export const getPlaylistTracks = async (
 
     return tracks;
   } catch (error) {
-    logger.error("getPlaylistTracks", error);
+    logger.error(`getPlaylistTracks ${JSON.stringify(error)}`);
   }
 };
 
@@ -133,7 +131,7 @@ export const getMyCurrentPlaybackState = async (
 
     return response.body;
   } catch (error) {
-    logger.error("getMyCurrentPlaybackState", error);
+    logger.error(`getMyCurrentPlaybackState ${JSON.stringify(error)}`);
     throw error;
   }
 };
@@ -146,7 +144,7 @@ export const getMe = async (accessToken: string) => {
 
     return response.body;
   } catch (error) {
-    logger.error("getMe", error);
+    logger.error(`getMe ${JSON.stringify(error)}`);
     throw error;
   }
 };
@@ -169,44 +167,11 @@ export const disableShuffle = async (accessToken: string): Promise<void> => {
       return;
     }
 
-    logger.error("disableShuffle", error);
+    logger.error(`disableShuffle ${JSON.stringify(error)}`);
   } finally {
     return Promise.resolve();
   }
 };
-
-export const poorMansTrackIndex = (tracks: Track[], id?: string): number => {
-  try {
-    const trackIDs = tracks?.map((track) => track.id) ?? [];
-
-    const index = trackIDs.indexOf(id);
-    return index;
-  } catch (error) {
-    logger.error("poorMansTrackIndex", error);
-    return -1;
-  }
-};
-
-type NewIndex = (props: {
-  totalTracks: number;
-  playlistIndex: number;
-  trackIndex: number;
-  sortedItems: number;
-  voteIndex: number;
-}) => number;
-
-const positiveNewIndex: NewIndex = ({
-  playlistIndex,
-  sortedItems,
-  trackIndex,
-}) => playlistIndex + sortedItems + Number(trackIndex > playlistIndex);
-
-const negativeNewIndex: NewIndex = ({
-  totalTracks,
-  trackIndex,
-  playlistIndex,
-  voteIndex,
-}) => totalTracks - Number(trackIndex > playlistIndex) - voteIndex;
 
 const mapToTracks = <T extends { id: string }>(
   tracks: T[],
@@ -252,7 +217,7 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
     await Promise.all(reorderUpdates);
     await updateRoom(room);
   } catch (error) {
-    logger.error("reorderPlaylist", error);
+    logger.error(`reorderPlaylist ${JSON.stringify(error)}`);
   }
 };
 
@@ -288,7 +253,7 @@ export const startPlaylistFromTrack = async (
     if (item.uri === uri) return;
     await startPlaylistFromTrack(accessToken, uri, tryIndex + 1);
   } catch (error) {
-    logger.error("startPlaylistFromTrack", error);
+    logger.error(`startPlaylistFromTrack ${JSON.stringify(error)}`);
   }
 };
 
@@ -307,7 +272,7 @@ export const addTackToQueue = async (
       device_id: deviceId,
     });
   } catch (error) {
-    logger.error("addTackToQueue", error);
+    logger.error(`addTackToQueue ${JSON.stringify(error)}`);
   }
 };
 
@@ -326,6 +291,6 @@ export const getRecommendedTracks = async (
     });
     return request.body.tracks;
   } catch (error) {
-    logger.error("getRecommendedTracks", error);
+    logger.error(`getRecommendedTracks ${JSON.stringify(error)}`);
   }
 };
