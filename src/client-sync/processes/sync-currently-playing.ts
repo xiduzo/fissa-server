@@ -16,7 +16,7 @@ import {
   getRecommendedTracks,
 } from "../../utils/spotify";
 
-const T_MINUS = 250;
+const T_MINUS = 1000;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -87,18 +87,23 @@ export const updateRoom = async (room: Room) => {
 
   if (newState.currentIndex >= 0 && newState.currentIndex !== currentIndex) {
     const nextTrack = tracks[newState.currentIndex + 1];
+    const trackAfterNext = tracks[newState.currentIndex + 2];
 
     if (nextTrack) {
       await addTackToQueue(accessToken, nextTrack.id);
-    } else {
-      const seedIds = tracks.map((track) => track.id);
+    }
+
+    if (!trackAfterNext) {
+      const seedIds = tracks.slice(-5).map((track) => track.id);
       const recommendations = await getRecommendedTracks(accessToken, seedIds);
       const recommendedIds = recommendations.map((track) => track.id);
       logger.info(`adding ${recommendations.length} recommendations to room`);
 
-      await addTackToQueue(accessToken, recommendedIds[0]);
       await addTracks(accessToken, pin, recommendedIds);
       await publishAsync(`fissa/room/${pin}/tracks/added`, seedIds.length);
+      if (!nextTrack) {
+        await addTackToQueue(accessToken, recommendedIds[0]);
+      }
     }
   }
 
