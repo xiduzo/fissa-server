@@ -57,13 +57,16 @@ const saveVote = async (vote: Vote) => {
   });
 
   if (!_vote) {
+    logger.info(`Inserting vote ${JSON.stringify(vote)}`);
     return await votes.insertOne(vote);
   }
 
   if (vote.state === _vote.state) {
+    logger.info(`Deleting vote ${JSON.stringify(vote)}`);
     return await votes.deleteOne({ _id: _vote._id });
   }
 
+  logger.info(`Updating vote ${JSON.stringify(vote)}`);
   return await votes.updateOne(
     { _id: _vote._id },
     {

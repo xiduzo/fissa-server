@@ -37,7 +37,10 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 
           if (tMinus > T_MINUS) return;
 
-          await updateRoom(room);
+          const nextTrackId = await updateRoom(room);
+          if (!nextTrackId) return;
+
+          await addTackToQueue(accessToken, nextTrackId);
         } catch (error) {
           await catchError(error, room);
         } finally {
@@ -48,14 +51,12 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
       })
   );
 
-  if (promises?.length) {
-    await Promise.all(promises);
-  }
+  if (promises?.length) await Promise.all(promises);
 
   setTimeout(() => syncCurrentlyPlaying(appCache), T_MINUS);
 };
 
-export const updateRoom = async (room: Room) => {
+export const updateRoom = async (room: Room): Promise<string | undefined> => {
   const { accessToken, pin, currentIndex } = room;
   const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
@@ -63,11 +64,10 @@ export const updateRoom = async (room: Room) => {
   const newState = { currentIndex: -1, expectedEndTime: undefined };
 
   if (!is_playing) {
+    logger.info(`${pin}: not playing anymore`);
     await saveAndPublishRoom(room, newState);
     return;
   }
-
-  await deleteVotesForTrack(pin, item.id);
 
   const tracks = await getRoomTracks(pin);
 
@@ -89,6 +89,7 @@ export const updateRoom = async (room: Room) => {
   if (realCurrentIndex !== currentIndex) {
     logger.warn("TODO: prevent race condition");
   }
+  let nextTrackId: string | undefined;
 
   if (
     newState.currentIndex >= 0 &&
@@ -100,7 +101,7 @@ export const updateRoom = async (room: Room) => {
     const trackAfterNext = tracks[newState.currentIndex + 2];
 
     if (nextTrack) {
-      await addTackToQueue(accessToken, nextTrack.id);
+      nextTrackId = nextTrack.id;
       await deleteVotesForTrack(pin, nextTrack.id);
     }
 
@@ -113,16 +114,19 @@ export const updateRoom = async (room: Room) => {
       await addTracks(accessToken, pin, recommendedIds);
       await publish(`fissa/room/${pin}/tracks/added`, seedIds.length);
       if (!nextTrack) {
-        await addTackToQueue(accessToken, recommendedIds[0]);
+        nextTrackId = recommendedIds[0];
       }
     }
   }
 
   await saveAndPublishRoom(room, newState);
+  return nextTrackId;
 };
 
 const deleteVotesForTrack = async (pin: string, trackId: string) => {
   const votes = await mongoCollection<Vote>("vote");
+
+  logger.info(`clear votes for ${pin} - ${trackId}`);
 
   // We want to remove all votes for the current playing track
   await votes.deleteMany({

@@ -3,6 +3,7 @@ import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { getRoom, getRoomTracks } from "../../utils/database";
 import {
+  addTackToQueue,
   getMyCurrentPlaybackState,
   startPlaylistFromTrack,
 } from "../../utils/spotify";
@@ -54,7 +55,10 @@ const handler: VercelApiHandler = async (request, response) => {
           logger.warn(`tried to restart ${pin} but it was already playing`);
         }
 
-        await updateRoom(room);
+        const nextTrackId = await updateRoom(room);
+        if (nextTrackId) {
+          await addTackToQueue(accessToken, nextTrackId);
+        }
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {

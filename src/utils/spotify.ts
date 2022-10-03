@@ -183,12 +183,8 @@ export const disableShuffle = async (accessToken: string): Promise<void> => {
   }
 };
 
-const mapToTracks = <T extends { id: string }>(
-  tracks: T[],
-  votes: SortedVoteData[]
-) => {
-  return votes.map((vote) => tracks.find((track) => track.id === vote.trackId));
-};
+const mapTo = <T extends { id: string }>(arr: T[], mapFrom: SortedVoteData[]) =>
+  mapFrom.map((from) => arr.find((item) => item.id === from.trackId));
 
 export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
   try {
@@ -197,33 +193,36 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
     const tracks = await getRoomTracks(pin);
     const tracksCollection = mongoCollection<Track>("track");
     const voteIds = votes.map((vote) => vote.trackId);
-    const playlistOffset = 2; // 1 for the current track and 1 for the next track
+    const playlistOffset = 2; // 1 for the current track + 1 for the next track
 
-    // 1 remove voted tracks from playlist
+    // 1 remove voted tracks from new order
     let newTracksOrder = tracks.filter((track) => !voteIds.includes(track.id));
 
-    // 2 add positive tracks right after current index
+    // 2 add positive tracks
     const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
     newTracksOrder = [
       ...newTracksOrder.slice(0, currentIndex + playlistOffset),
-      ...mapToTracks(tracks, positiveVotes),
+      ...mapTo(tracks, positiveVotes),
       ...newTracksOrder.slice(currentIndex + playlistOffset),
     ];
 
     // 3 add negative tracks at the end of the playlist
     const negativeVotes = sortedVotes.filter(negativeScore).sort(highToLow);
-    newTracksOrder = [...newTracksOrder, ...mapToTracks(tracks, negativeVotes)];
+    newTracksOrder = [...newTracksOrder, ...mapTo(tracks, negativeVotes)];
 
     const roomTracks = await tracksCollection;
 
     // 4 reorder playlist
     const reorderUpdates = newTracksOrder.map(async (track, index) => {
-      const originalIndex = tracks.indexOf(track);
+      const originalIndex = tracks.findIndex(
+        (original) => original.id === track.id
+      );
+      logger.info(`reorder ${track.name} ${originalIndex} -> ${index}`);
       if (originalIndex === index) return;
 
-      logger.info(`${pin}: reorder ${track.name} ${originalIndex} -> ${index}`);
       await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
     });
+
     // update room track indexes in DB
     await Promise.all(reorderUpdates);
     await updateRoom(room);
@@ -272,16 +271,8 @@ export const startPlaylistFromTrack = async (
     //await clearQueue(accessToken);
     await spotifyApi.play({
       uris: [uri],
-      device_id: await getMyDevices(accessToken)[0].id,
     });
     await disableShuffle(accessToken);
-
-    if (tryIndex > 5) return;
-
-    const { is_playing, item } = await getMyCurrentPlaybackState(accessToken);
-    if (is_playing) return;
-    if (item.uri === uri) return;
-    await startPlaylistFromTrack(accessToken, uri, tryIndex + 1);
   } catch (error) {
     logger.error(`startPlaylistFromTrack ${JSON.stringify(error)}`);
   }

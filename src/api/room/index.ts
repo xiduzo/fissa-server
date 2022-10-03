@@ -7,6 +7,7 @@ import { addTracks, mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { createPin } from "../../utils/pin";
 import {
+  addTackToQueue,
   getMe,
   getMyTopTracks,
   getPlaylistTracks,
@@ -62,7 +63,10 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await startPlaylistFromTrack(accessToken, tracks[0].uri);
 
-        await updateRoom(room);
+        const nextTrackId = await updateRoom(room);
+        if (nextTrackId) {
+          await addTackToQueue(accessToken, nextTrackId);
+        }
 
         response.status(StatusCodes.OK).json(newPin);
       } catch (error) {

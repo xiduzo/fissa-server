@@ -50,25 +50,26 @@ const handler: VercelApiHandler = async (request, response) => {
         const room = await getRoom(pin);
 
         if (!room) {
-          response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
-          return;
+          return response
+            .status(StatusCodes.NOT_FOUND)
+            .json(ReasonPhrases.NOT_FOUND);
         }
 
         const { accessToken } = room;
 
-        const addedTracksPromise = addTracks(accessToken, pin, trackIds);
-
-        const votes = trackIds.map(async (id) => {
-          return vote(room.pin, userAccessToken, id, VoteState.Upvote);
-        });
-
+        await addTracks(accessToken, pin, trackIds);
         await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);
-        await Promise.all(votes);
-        await addedTracksPromise;
 
-        const roomVotes = await getRoomVotes(pin);
+        const votePromises = trackIds.map(async (id) =>
+          vote(room.pin, userAccessToken, id, VoteState.Upvote)
+        );
 
-        await reorderPlaylist(room, roomVotes);
+        await Promise.all(votePromises);
+
+        const votes = await getRoomVotes(pin);
+        await publish(`fissa/room/${pin}/votes`, votes);
+
+        await reorderPlaylist(room, votes);
         await publish(`fissa/room/${room.pin}/tracks/reordered`);
 
         response.status(StatusCodes.OK).json(trackIds.length);
