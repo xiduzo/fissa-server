@@ -19,6 +19,12 @@ const mongoClient = new MongoClient(
   `mongodb+srv://${user}:${password}@fissa.yp209.mongodb.net/?retryWrites=true&w=majority`,
   {
     serverApi: ServerApiVersion.v1,
+    waitQueueTimeoutMS: 30_000,
+    socketTimeoutMS: 30_000,
+    connectTimeoutMS: 30_000,
+    serverSelectionTimeoutMS: 30_000,
+    maxIdleTimeMS: 5_000,
+    appName: "fissa",
   }
 );
 
@@ -26,7 +32,12 @@ const mongoDb = async (): Promise<Db> => {
   return new Promise(async (resolve, reject) => {
     try {
       const client = await mongoClient.connect();
-      resolve(client.db("fissa"));
+      resolve(
+        client.db("fissa", {
+          logger: logger.info,
+          retryWrites: true,
+        })
+      );
     } catch (error) {
       logger.error("mongoDbAsync", error);
       await mongoClient.close();
