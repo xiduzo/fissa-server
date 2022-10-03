@@ -196,7 +196,13 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
     const playlistOffset = 2; // 1 for the current track + 1 for the next track
 
     // 1 remove voted tracks from new order
-    let newTracksOrder = tracks.filter((track) => !voteIds.includes(track.id));
+    let newTracksOrder = tracks.filter((track) => {
+      // Keep the current track and the next track
+      if (track.index === currentIndex) return true;
+      if (track.index === currentIndex + 1) return true;
+      // Remove all other tracks
+      return !voteIds.includes(track.id);
+    });
 
     // 2 add positive tracks
     const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
