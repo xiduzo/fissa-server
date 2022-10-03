@@ -218,11 +218,13 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
 
     const roomTracks = await tracksCollection;
 
+    // TODO: tak into account when the a track moved from before the current index
     // 4 reorder playlist
     const reorderUpdates = newTracksOrder.map(async (track, index) => {
       const originalIndex = tracks.findIndex(
         (original) => original.id === track.id
       );
+
       logger.info(`reorder ${track.name} ${originalIndex} -> ${index}`);
       if (originalIndex === index) return;
 
