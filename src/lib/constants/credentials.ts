@@ -8,7 +8,4 @@ export const MQTT_CREDENTIALS = {
   password: process.env.MQTT_PASSWORD,
 };
 
-export const MONGO_CREDENTIALS = {
-  user: process.env.MONGO_DB_USER,
-  password: process.env.MONGO_DB_PASSWORD,
-};
+export const MONGODB_URI = process.env.MONGODB_URI;
