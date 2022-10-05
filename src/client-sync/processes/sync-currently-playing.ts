@@ -77,7 +77,7 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
   };
 
   if (!is_playing) {
-    logger.info(`${pin}: not playing anymore`);
+    logger.warn(`${pin}: not playing anymore`);
     await saveAndPublishRoom({ ...room, ...newState });
     return;
   }
@@ -97,9 +97,6 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
 const deleteVotesForTrack = async (pin: string, trackId: string) => {
   const votes = await mongoCollection<Vote>("vote");
 
-  logger.info(`clear votes for ${pin} - ${trackId}`);
-
-  // We want to remove all votes for the current playing track
   await votes.deleteMany({
     pin,
     trackId,
@@ -183,7 +180,6 @@ const getNextState = (
       .toISO();
   }
 
-  logger.info(`next state: ${JSON.stringify(newState)}`);
   return newState;
 };
 
@@ -216,6 +212,5 @@ const getNextTrackId = async (
     }
   }
 
-  logger.info(`${pin}: next track ${nextTrackId}`);
   return nextTrackId;
 };

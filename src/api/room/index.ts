@@ -54,8 +54,6 @@ const handler: VercelApiHandler = async (request, response) => {
           ? await getPlaylistTracks(accessToken, playlistId)
           : await getMyTopTracks(accessToken);
 
-        logger.info(`${newPin}: adding ${tracks.length} tracks to room`);
-
         await addTracks(
           accessToken,
           newPin,

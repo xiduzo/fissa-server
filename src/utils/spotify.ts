@@ -194,7 +194,7 @@ export const reorderPlaylist = async (room: Room): Promise<number> => {
       );
 
       if (originalIndex === index) return;
-      logger.info(`reorder ${track.name} ${originalIndex} -> ${index}`);
+      logger.info(`${pin}: reorder ${track.name} ${originalIndex} -> ${index}`);
 
       reorders++;
       await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
@@ -252,20 +252,14 @@ export const startPlayingTrack = async (accessToken: string, uri: string) => {
   }
 };
 
-export const addTackToQueue = async (
-  accessToken: string,
-  trackId: string,
-  deviceId?: string
-) => {
+export const addTackToQueue = async (accessToken: string, trackId: string) => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
   logger.info(`adding spotify:track:${trackId} to queue`);
 
   try {
-    await spotifyApi.addToQueue(`spotify:track:${trackId}`, {
-      device_id: deviceId,
-    });
+    await spotifyApi.addToQueue(`spotify:track:${trackId}`);
   } catch (error) {
     logger.error(`addTackToQueue ${JSON.stringify(error)}`);
   }
