@@ -4,6 +4,7 @@ import { createServer } from "http";
 import cache from "node-cache";
 import { syncCurrentlyPlaying } from "./processes/sync-currently-playing";
 import { clearInactiveRooms, syncActiveRooms } from "./processes/sync-rooms";
+import { syncTrackOrder } from "./processes/sync-track-order";
 
 const appCache = new cache();
 appCache.set("rooms", []);
@@ -18,5 +19,6 @@ httpServer.listen(port, async () => {
   // TODO spawn as child processes
   syncActiveRooms(appCache);
   syncCurrentlyPlaying(appCache);
+  syncTrackOrder(appCache);
   clearInactiveRooms();
 });

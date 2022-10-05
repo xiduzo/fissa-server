@@ -5,7 +5,7 @@ import { getRoom, getRoomTracks } from "../../utils/database";
 import {
   addTackToQueue,
   getMyCurrentPlaybackState,
-  startPlaylistFromTrack,
+  startPlayingTrack,
 } from "../../utils/spotify";
 import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 
@@ -47,10 +47,7 @@ const handler: VercelApiHandler = async (request, response) => {
           !is_playing ||
           !tracks.map((track) => track.id).includes(item?.id)
         ) {
-          await startPlaylistFromTrack(
-            accessToken,
-            `spotify:track:${tracks[0].id}`
-          );
+          await startPlayingTrack(accessToken, `spotify:track:${tracks[0].id}`);
         } else {
           logger.warn(`tried to restart ${pin} but it was already playing`);
         }

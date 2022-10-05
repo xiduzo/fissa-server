@@ -11,7 +11,7 @@ import {
   Vote,
   SortedVoteData,
 } from "../lib/interfaces/Vote";
-import { getRoomTracks, mongoCollection } from "./database";
+import { getRoomTracks, getRoomVotes, mongoCollection } from "./database";
 import { logger } from "./logger";
 
 enum SpotifyLimits {
@@ -149,46 +149,13 @@ export const getMe = async (accessToken: string) => {
   }
 };
 
-export const getMyDevices = async (accessToken: string) => {
-  const spotifyApi = spotifyClient(accessToken);
-  try {
-    const response = await spotifyApi.getMyDevices();
-    return response.body.devices;
-  } catch (error) {
-    logger.error(`getMyDevices ${JSON.stringify(error)}`);
-  }
-};
-
-export const disableShuffle = async (accessToken: string): Promise<void> => {
-  const spotifyApi = spotifyClient(accessToken);
-
-  try {
-    await spotifyApi.setShuffle(false);
-  } catch (error) {
-    if (error.message?.includes("NO_ACTIVE_DEVICE")) {
-      const devices = await getMyDevices(accessToken);
-
-      if (devices.length <= 0) {
-        logger.warn("no devices found for user");
-        return;
-      }
-
-      await spotifyApi.transferMyPlayback([devices[0].id]);
-      return;
-    }
-
-    logger.error(`disableShuffle ${JSON.stringify(error)}`);
-  } finally {
-    return Promise.resolve();
-  }
-};
-
 const mapTo = <T extends { id: string }>(arr: T[], mapFrom: SortedVoteData[]) =>
   mapFrom.map((from) => arr.find((item) => item.id === from.trackId));
 
-export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
+export const reorderPlaylist = async (room: Room) => {
   try {
     const { pin, currentIndex } = room;
+    const votes = await getRoomVotes(pin);
     const sortedVotes = getScores(votes);
     const tracks = await getRoomTracks(pin);
     const tracksCollection = mongoCollection<Track>("track");
@@ -225,8 +192,8 @@ export const reorderPlaylist = async (room: Room, votes: Vote[]) => {
         (original) => original.id === track.id
       );
 
-      logger.info(`reorder ${track.name} ${originalIndex} -> ${index}`);
       if (originalIndex === index) return;
+      logger.info(`reorder ${track.name} ${originalIndex} -> ${index}`);
 
       await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
     });
@@ -267,11 +234,7 @@ const clearQueue = async (accessToken: string) => {
   }
 };
 
-export const startPlaylistFromTrack = async (
-  accessToken: string,
-  uri: string,
-  tryIndex: number = 0
-) => {
+export const startPlayingTrack = async (accessToken: string, uri: string) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
@@ -280,9 +243,8 @@ export const startPlaylistFromTrack = async (
     await spotifyApi.play({
       uris: [uri],
     });
-    await disableShuffle(accessToken);
   } catch (error) {
-    logger.error(`startPlaylistFromTrack ${JSON.stringify(error)}`);
+    logger.error(`startPlayingTrack ${JSON.stringify(error)}`);
   }
 };
 

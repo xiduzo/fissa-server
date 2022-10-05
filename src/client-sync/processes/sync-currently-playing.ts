@@ -2,10 +2,12 @@ import { StatusCodes } from "http-status-codes";
 import { DateTime } from "luxon";
 import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
+import { Track } from "../../lib/interfaces/Track";
 import { Vote } from "../../lib/interfaces/Vote";
 import {
   addTracks,
   getRoomTracks,
+  getRoomVotes,
   mongoCollection,
 } from "../../utils/database";
 import { logger } from "../../utils/logger";
@@ -60,27 +62,21 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
   const { accessToken, pin, currentIndex } = room;
   const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
-  const { is_playing, item, progress_ms } = currentlyPlaying;
-  const newState = { currentIndex: -1, expectedEndTime: undefined };
+  const { is_playing } = currentlyPlaying;
+
+  let newState: Partial<Room> = {
+    currentIndex: -1,
+    expectedEndTime: undefined,
+  };
 
   if (!is_playing) {
     logger.info(`${pin}: not playing anymore`);
-    await saveAndPublishRoom(room, newState);
+    await saveAndPublishRoom({ ...room, ...newState });
     return;
   }
 
   const tracks = await getRoomTracks(pin);
-
-  newState.currentIndex =
-    tracks.find((track) => track.id === item.id)?.index ?? -1;
-
-  if (newState.currentIndex >= 0) {
-    newState.expectedEndTime = DateTime.now()
-      .plus({
-        milliseconds: item.duration_ms - progress_ms,
-      })
-      .toISO();
-  }
+  newState = getNextState(tracks, currentlyPlaying);
 
   logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
 
@@ -89,37 +85,11 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
   if (realCurrentIndex !== currentIndex) {
     logger.warn("TODO: prevent race condition");
   }
-  let nextTrackId: string | undefined;
 
-  if (
-    newState.currentIndex >= 0 &&
-    newState.currentIndex !== realCurrentIndex
-  ) {
-    // Try and prevent double updates
-    localNextState.set(pin, newState.currentIndex);
-    const nextTrack = tracks[newState.currentIndex + 1];
-    const trackAfterNext = tracks[newState.currentIndex + 2];
+  const newRoom = { ...room, ...newState };
+  const nextTrackId = await getNextTrackId(newRoom, tracks);
 
-    if (nextTrack) {
-      nextTrackId = nextTrack.id;
-      await deleteVotesForTrack(pin, nextTrack.id);
-    }
-
-    if (!trackAfterNext) {
-      const seedIds = tracks.slice(-5).map((track) => track.id);
-      const recommendations = await getRecommendedTracks(accessToken, seedIds);
-      const recommendedIds = recommendations.map((track) => track.id);
-      logger.info(`${pin}: adding recommendations to room`);
-
-      await addTracks(accessToken, pin, recommendedIds);
-      await publish(`fissa/room/${pin}/tracks/added`, seedIds.length);
-      if (!nextTrack) {
-        nextTrackId = recommendedIds[0];
-      }
-    }
-  }
-
-  await saveAndPublishRoom(room, newState);
+  await saveAndPublishRoom(newRoom);
   return nextTrackId;
 };
 
@@ -133,6 +103,9 @@ const deleteVotesForTrack = async (pin: string, trackId: string) => {
     pin,
     trackId,
   });
+
+  const roomVotes = getRoomVotes(pin);
+  await publish(`fissa/room/${pin}/votes`, roomVotes);
 };
 
 const catchError = async (error: any, room: Room) => {
@@ -172,19 +145,78 @@ const catchHttpError = async (
   }
 };
 
-const saveAndPublishRoom = async (
-  room: Room,
-  state: { currentIndex: number; expectedEndTime: string | undefined }
-) => {
+const saveAndPublishRoom = async (room: Room) => {
   const rooms = await mongoCollection<Room>("room");
 
   const { pin } = room;
 
-  await rooms.updateOne({ pin }, { $set: state });
+  await rooms.updateOne(
+    { pin },
+    {
+      $set: {
+        currentIndex: room.currentIndex,
+        expectedEndTime: room.expectedEndTime,
+      },
+    }
+  );
 
   delete room.accessToken;
-  await publish(`fissa/room/${pin}`, {
-    ...room,
-    ...state,
-  });
+  await publish(`fissa/room/${pin}`, room);
+};
+
+const getNextState = (
+  tracks: Track[],
+  currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
+): Partial<Room> => {
+  const newState = { currentIndex: -1, expectedEndTime: undefined };
+  const { item, progress_ms } = currentlyPlaying;
+
+  newState.currentIndex =
+    tracks.find((track) => track.id === item.id)?.index ?? -1;
+
+  if (newState.currentIndex >= 0) {
+    newState.expectedEndTime = DateTime.now()
+      .plus({
+        milliseconds: item.duration_ms - progress_ms,
+      })
+      .toISO();
+  }
+
+  return newState;
+};
+
+const getNextTrackId = async (
+  newState: Room,
+  tracks: Track[]
+): Promise<string | undefined> => {
+  let nextTrackId: string | undefined;
+  const { currentIndex, pin, accessToken } = newState;
+
+  const realCurrentIndex = localNextState.get(pin) ?? currentIndex;
+
+  if (currentIndex >= 0 && currentIndex !== realCurrentIndex) {
+    // Try and prevent double updates
+    localNextState.set(pin, newState.currentIndex);
+    const nextTrack = tracks[newState.currentIndex + 1];
+    const trackAfterNext = tracks[newState.currentIndex + 2];
+
+    if (nextTrack) {
+      nextTrackId = nextTrack.id;
+      await deleteVotesForTrack(pin, nextTrack.id);
+    }
+
+    if (!trackAfterNext) {
+      const seedIds = tracks.slice(-5).map((track) => track.id);
+      const recommendations = await getRecommendedTracks(accessToken, seedIds);
+      const recommendedIds = recommendations.map((track) => track.id);
+
+      await addTracks(accessToken, pin, recommendedIds);
+      await publish(`fissa/room/${pin}/tracks/added`, seedIds.length);
+      if (!nextTrack) {
+        nextTrackId = recommendedIds[0];
+      }
+    }
+  }
+
+  return nextTrackId;
 };

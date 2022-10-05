@@ -5,7 +5,7 @@ import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
-import { getMe, disableShuffle } from "../../utils/spotify";
+import { getMe } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -28,16 +28,12 @@ const handler: VercelApiHandler = async (request, response) => {
         const rooms = await mongoCollection<Room>("room");
         const accessToken = tokens.body.access_token;
 
-        const disableShufflePromise = disableShuffle(accessToken);
-
         const me = await getMe(accessToken);
 
         await rooms.updateMany(
           { createdBy: me?.id },
           { $set: { accessToken } }
         );
-
-        await disableShufflePromise;
 
         response.status(StatusCodes.OK).json(tokens.body);
         break;

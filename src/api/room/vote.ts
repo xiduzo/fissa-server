@@ -43,10 +43,6 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await publish(`fissa/room/${pin}/votes`, votes);
 
-        const room = await getRoom(pin);
-        await reorderPlaylist(room, votes);
-        await publish(`fissa/room/${room.pin}/tracks/reordered`);
-
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
         logger.error(`Votes POST handler: ${error}`);

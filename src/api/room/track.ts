@@ -10,7 +10,6 @@ import {
   vote,
 } from "../../utils/database";
 import { publish } from "../../utils/mqtt";
-import { reorderPlaylist } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -68,9 +67,6 @@ const handler: VercelApiHandler = async (request, response) => {
 
         const votes = await getRoomVotes(pin);
         await publish(`fissa/room/${pin}/votes`, votes);
-
-        await reorderPlaylist(room, votes);
-        await publish(`fissa/room/${room.pin}/tracks/reordered`);
 
         response.status(StatusCodes.OK).json(trackIds.length);
       } catch (error) {

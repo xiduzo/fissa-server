@@ -11,7 +11,7 @@ import {
   getMe,
   getMyTopTracks,
   getPlaylistTracks,
-  startPlaylistFromTrack,
+  startPlayingTrack,
 } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -61,7 +61,7 @@ const handler: VercelApiHandler = async (request, response) => {
           tracks.map((track) => track.id)
         );
 
-        await startPlaylistFromTrack(accessToken, tracks[0].uri);
+        await startPlayingTrack(accessToken, tracks[0].uri);
 
         const nextTrackId = await updateRoom(room);
         if (nextTrackId) {
