@@ -18,7 +18,7 @@ import {
   getRecommendedTracks,
 } from "../../utils/spotify";
 
-const T_MINUS = 250;
+const CURRENTLY_PLAYING_SYNC_TIME = 250;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -35,7 +35,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
             DateTime.now()
           ).milliseconds;
 
-          if (tMinus > T_MINUS) return;
+          if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
 
           logger.info(`${room.pin}: updating...`);
           const lastAddedTrack = appCache.get(pin);
@@ -62,7 +62,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 
   if (promises?.length) await Promise.all(promises);
 
-  setTimeout(() => syncCurrentlyPlaying(appCache), T_MINUS);
+  setTimeout(() => syncCurrentlyPlaying(appCache), CURRENTLY_PLAYING_SYNC_TIME);
 };
 
 export const updateRoom = async (room: Room): Promise<string | undefined> => {

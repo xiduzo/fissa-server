@@ -1,17 +1,5 @@
 import SpotifyWebApi from "spotify-web-api-node";
-import { updateRoom } from "../client-sync/processes/sync-currently-playing";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
-import { Room } from "../lib/interfaces/Room";
-import { Track } from "../lib/interfaces/Track";
-import {
-  getScores,
-  negativeScore,
-  positiveScore,
-  highToLow,
-  Vote,
-  SortedVoteData,
-} from "../lib/interfaces/Vote";
-import { getRoomTracks, getRoomVotes, mongoCollection } from "./database";
 import { logger } from "./logger";
 
 enum SpotifyLimits {
@@ -146,67 +134,6 @@ export const getMe = async (accessToken: string) => {
   } catch (error) {
     logger.error(`getMe ${JSON.stringify(error)}`);
     throw error;
-  }
-};
-
-const mapTo = <T extends { id: string }>(arr: T[], mapFrom: SortedVoteData[]) =>
-  mapFrom.map((from) => arr.find((item) => item.id === from.trackId));
-
-export const reorderPlaylist = async (room: Room): Promise<number> => {
-  try {
-    const { pin, currentIndex } = room;
-    const votes = await getRoomVotes(pin);
-    const sortedVotes = getScores(votes);
-    const tracks = await getRoomTracks(pin);
-    const tracksCollection = mongoCollection<Track>("track");
-    const voteIds = votes.map((vote) => vote.trackId);
-    const playlistOffset = 2; // 1 for the current track + 1 for the next track
-
-    // 1 remove voted tracks from new order
-    let newTracksOrder = tracks.filter((track) => {
-      // Keep the current track and the next track
-      if (track.index === currentIndex) return true;
-      if (track.index === currentIndex + 1) return true;
-      // Remove all other tracks
-      return !voteIds.includes(track.id);
-    });
-
-    // 2 add positive tracks
-    const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
-    newTracksOrder = [
-      ...newTracksOrder.slice(0, currentIndex + playlistOffset),
-      ...mapTo(tracks, positiveVotes),
-      ...newTracksOrder.slice(currentIndex + playlistOffset),
-    ];
-
-    // 3 add negative tracks at the end of the playlist
-    const negativeVotes = sortedVotes.filter(negativeScore).sort(highToLow);
-    newTracksOrder = [...newTracksOrder, ...mapTo(tracks, negativeVotes)];
-
-    const roomTracks = await tracksCollection;
-
-    // TODO: tak into account when the a track moved from before the current index
-    // 4 reorder playlist
-    let reorders = 0;
-    const reorderUpdates = newTracksOrder.map(async (track, index) => {
-      const originalIndex = tracks.findIndex(
-        (original) => original.id === track.id
-      );
-
-      if (originalIndex === index) return;
-      logger.info(`${pin}: reorder ${track.name} ${originalIndex} -> ${index}`);
-
-      reorders++;
-      await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
-    });
-
-    // update room track indexes in DB
-    await Promise.all(reorderUpdates);
-    if (reorders > 0) await updateRoom(room);
-
-    return reorders;
-  } catch (error) {
-    logger.error(`reorderPlaylist ${JSON.stringify(error)}`);
   }
 };
 
