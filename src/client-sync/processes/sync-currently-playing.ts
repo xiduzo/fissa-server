@@ -47,7 +47,10 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
             return;
           }
 
-          if (lastAddedTrack == nextTrackId) return;
+          if (lastAddedTrack == nextTrackId) {
+            logger.warn(`${room.pin}: trying to add same track to the queue`);
+            return;
+          }
 
           await addTackToQueue(accessToken, nextTrackId);
         } catch (error) {
