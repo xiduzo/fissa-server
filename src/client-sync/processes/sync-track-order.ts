@@ -39,7 +39,8 @@ export const syncTrackOrder = async (appCache: cache) => {
           if (tMinus <= NO_SYNC_MARGIN) return;
 
           const reorders = await reorderPlaylist(room);
-          if (reorders) await publish(`/fissa/room/${pin}/tracks/reordered`);
+          logger.info(`${pin}: ${reorders} reorders`);
+          if (reorders) await publish(`fissa/room/${pin}/tracks/reordered`);
         } catch (error) {
           logger.error(`syncTrackOrder ${JSON.stringify(error)}`);
         } finally {
@@ -62,6 +63,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     const votes = await getRoomVotes(pin);
     const sortedVotes = getScores(votes);
     const tracks = await getRoomTracks(pin);
+    const currentTrackId = tracks[currentIndex].id;
     const tracksCollection = mongoCollection<Track>("track");
     const voteIds = votes.map((vote) => vote.trackId);
     const playlistOffset = 2; // 1 for the current track + 1 for the next track
@@ -106,8 +108,12 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
 
     // update room track indexes in DB
     await Promise.all(reorderUpdates);
-    if (reorders > 0) await updateRoom(room);
 
+    const newCurrentTrackIndex = newTracksOrder.findIndex(
+      (track) => track.id === currentTrackId
+    );
+
+    if (newCurrentTrackIndex !== currentIndex) await updateRoom(room);
     return reorders;
   } catch (error) {
     logger.error(`reorderPlaylist ${JSON.stringify(error)}`);
