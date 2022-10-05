@@ -39,7 +39,6 @@ export const syncTrackOrder = async (appCache: cache) => {
           if (tMinus <= NO_SYNC_MARGIN) return;
 
           const reorders = await reorderPlaylist(room);
-          logger.info(`${pin}: ${reorders} reorders`);
           if (reorders) await publish(`fissa/room/${pin}/tracks/reordered`);
         } catch (error) {
           logger.error(`syncTrackOrder ${JSON.stringify(error)}`);
