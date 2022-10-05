@@ -18,7 +18,7 @@ import { logger } from "../../utils/logger";
 import { publish } from "../../utils/mqtt";
 import { updateRoom } from "./sync-currently-playing";
 
-const TRACK_ORDER_SYNC_TIME = 15_000;
+const TRACK_ORDER_SYNC_TIME = 10_000;
 const NO_SYNC_MARGIN = 5_000;
 
 export const syncTrackOrder = async (appCache: cache) => {
