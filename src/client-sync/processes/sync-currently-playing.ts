@@ -20,7 +20,7 @@ import {
 
 const T_MINUS = 250;
 
-const localNextState = new Map<string, number>();
+let updatingRooms = new Map<string, boolean>();
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -38,9 +38,16 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           ).milliseconds;
 
           if (tMinus > T_MINUS) return;
+          if (updatingRooms.get(room.pin)) return;
 
+          updatingRooms.set(room.pin, true);
+          logger.info(`${room.pin}: updating...`);
           const nextTrackId = await updateRoom(room);
-          if (!nextTrackId) return;
+          updatingRooms.set(room.pin, false);
+          if (!nextTrackId) {
+            logger.warn(`${room.pin}: no next track`);
+            return;
+          }
 
           await addTackToQueue(accessToken, nextTrackId);
         } catch (error) {
@@ -80,12 +87,6 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
 
   logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
 
-  const realCurrentIndex = localNextState.get(pin) ?? currentIndex;
-
-  if (realCurrentIndex !== currentIndex) {
-    logger.warn("TODO: prevent race condition");
-  }
-
   const newRoom = { ...room, ...newState };
   const nextTrackId = await getNextTrackId(newRoom, tracks);
 
@@ -104,7 +105,7 @@ const deleteVotesForTrack = async (pin: string, trackId: string) => {
     trackId,
   });
 
-  const roomVotes = getRoomVotes(pin);
+  const roomVotes = await getRoomVotes(pin);
   await publish(`fissa/room/${pin}/votes`, roomVotes);
 };
 
@@ -182,6 +183,7 @@ const getNextState = (
       .toISO();
   }
 
+  logger.info(`next state: ${JSON.stringify(newState)}`);
   return newState;
 };
 
@@ -192,11 +194,7 @@ const getNextTrackId = async (
   let nextTrackId: string | undefined;
   const { currentIndex, pin, accessToken } = newState;
 
-  const realCurrentIndex = localNextState.get(pin) ?? currentIndex;
-
-  if (currentIndex >= 0 && currentIndex !== realCurrentIndex) {
-    // Try and prevent double updates
-    localNextState.set(pin, newState.currentIndex);
+  if (currentIndex >= 0) {
     const nextTrack = tracks[newState.currentIndex + 1];
     const trackAfterNext = tracks[newState.currentIndex + 2];
 
@@ -218,5 +216,6 @@ const getNextTrackId = async (
     }
   }
 
+  logger.info(`${pin}: next track ${nextTrackId}`);
   return nextTrackId;
 };

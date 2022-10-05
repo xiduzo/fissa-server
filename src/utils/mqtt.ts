@@ -4,10 +4,13 @@ import { logger } from "./logger";
 
 const connection = mqtt.connect("mqtt://mqtt.mdd-tardis.net", MQTT_CREDENTIALS);
 
-export const publish = async (topic: string, message?: any): Promise<void> => {
-  return new Promise((resolve, reject) => {
+export const publish = async <T>(
+  topic: string,
+  message?: T extends Promise<unknown> ? never : T // Make sure T can never be a promise
+): Promise<T> => {
+  return new Promise(async (resolve, reject) => {
     try {
-      connection.publish(topic, JSON.stringify(message ?? "{}"), (error) => {
+      connection.publish(topic, JSON.stringify(message ?? ""), (error) => {
         if (error) {
           logger.warn("publishAsync", error);
           reject(error);
@@ -16,7 +19,7 @@ export const publish = async (topic: string, message?: any): Promise<void> => {
         resolve(message);
       });
     } catch (error) {
-      logger.warn("publishAsync", error);
+      logger.error(`publishAsync: ${JSON.stringify(error)}`);
       reject(error);
     }
   });

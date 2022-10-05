@@ -187,6 +187,7 @@ export const reorderPlaylist = async (room: Room) => {
 
     // TODO: tak into account when the a track moved from before the current index
     // 4 reorder playlist
+    let reorders = 0;
     const reorderUpdates = newTracksOrder.map(async (track, index) => {
       const originalIndex = tracks.findIndex(
         (original) => original.id === track.id
@@ -195,12 +196,13 @@ export const reorderPlaylist = async (room: Room) => {
       if (originalIndex === index) return;
       logger.info(`reorder ${track.name} ${originalIndex} -> ${index}`);
 
+      reorders++;
       await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
     });
 
     // update room track indexes in DB
     await Promise.all(reorderUpdates);
-    await updateRoom(room);
+    if (reorders > 0) await updateRoom(room);
   } catch (error) {
     logger.error(`reorderPlaylist ${JSON.stringify(error)}`);
   }

@@ -1,9 +1,8 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { getRoom, getRoomVotes, vote } from "../../utils/database";
+import { getRoomVotes, vote } from "../../utils/database";
 import { publish } from "../../utils/mqtt";
 import { logger } from "../../utils/logger";
-import { reorderPlaylist } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -42,7 +41,6 @@ const handler: VercelApiHandler = async (request, response) => {
         const votes = await getRoomVotes(pin);
 
         await publish(`fissa/room/${pin}/votes`, votes);
-
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
         logger.error(`Votes POST handler: ${error}`);
