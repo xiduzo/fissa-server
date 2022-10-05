@@ -88,9 +88,16 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
   const tracks = await getRoomTracks(pin);
   newState = getNextState(tracks, currentlyPlaying);
 
-  logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
-
   const newRoom = { ...room, ...newState };
+
+  logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
+  if (currentIndex === newState.currentIndex) {
+    logger.warn(`${pin}: same index, update new end time`);
+    await saveAndPublishRoom(newRoom);
+
+    return undefined;
+  }
+
   const nextTrackId = await getNextTrackId(newRoom, tracks);
 
   await saveAndPublishRoom(newRoom);
