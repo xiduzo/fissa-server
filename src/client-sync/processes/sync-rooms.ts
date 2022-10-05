@@ -10,17 +10,7 @@ export const syncActiveRooms = async (appCache: cache) => {
 
   const allRooms = await rooms.find({ accessToken: { $ne: null } }).toArray();
 
-  if (allRooms.length > 0) appCache.set("rooms", allRooms);
-
-  allRooms.forEach(async (room) => {
-    const { createdAt, pin } = room;
-
-    const maxLifetime = DateTime.now().minus({ days: 3 }).toISO();
-
-    if (createdAt < maxLifetime) {
-      await rooms.deleteOne({ pin });
-    }
-  });
+  appCache.set("rooms", allRooms);
 
   rooms.watch().on("change", () => {
     syncActiveRooms(appCache);

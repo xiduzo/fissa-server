@@ -5,8 +5,8 @@ import { logger } from "../../utils/logger";
 import { publish } from "../../utils/mqtt";
 import { reorderPlaylist } from "../../utils/spotify";
 
-const TRACK_ORDER_SYNC_TIME = 10_000;
-const NO_SYNC_MARGIN = 1_000;
+const TRACK_ORDER_SYNC_TIME = 15_000;
+const NO_SYNC_MARGIN = 5_000;
 
 export const syncTrackOrder = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -23,11 +23,10 @@ export const syncTrackOrder = async (appCache: cache) => {
             DateTime.now()
           ).milliseconds;
 
-          logger.info(`${pin}: tMinus: ${tMinus}`);
           if (tMinus <= NO_SYNC_MARGIN) return;
 
-          await reorderPlaylist(room);
-          await publish(`/fissa/room/${pin}/tracks/reordered`);
+          const reorders = await reorderPlaylist(room);
+          if (reorders) await publish(`/fissa/room/${pin}/tracks/reordered`);
         } catch (error) {
           logger.error(`syncTrackOrder ${JSON.stringify(error)}`);
         } finally {

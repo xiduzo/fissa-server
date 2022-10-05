@@ -152,7 +152,7 @@ export const getMe = async (accessToken: string) => {
 const mapTo = <T extends { id: string }>(arr: T[], mapFrom: SortedVoteData[]) =>
   mapFrom.map((from) => arr.find((item) => item.id === from.trackId));
 
-export const reorderPlaylist = async (room: Room) => {
+export const reorderPlaylist = async (room: Room): Promise<number> => {
   try {
     const { pin, currentIndex } = room;
     const votes = await getRoomVotes(pin);
@@ -203,6 +203,8 @@ export const reorderPlaylist = async (room: Room) => {
     // update room track indexes in DB
     await Promise.all(reorderUpdates);
     if (reorders > 0) await updateRoom(room);
+
+    return reorders;
   } catch (error) {
     logger.error(`reorderPlaylist ${JSON.stringify(error)}`);
   }

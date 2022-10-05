@@ -20,8 +20,6 @@ import {
 
 const T_MINUS = 250;
 
-let updatingRooms = new Map<string, boolean>();
-
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
 
@@ -29,7 +27,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
     async (room): Promise<void> =>
       new Promise(async (resolve) => {
         try {
-          const { accessToken, expectedEndTime, currentIndex } = room;
+          const { accessToken, expectedEndTime, currentIndex, pin } = room;
           if (!accessToken) return;
           if (currentIndex < 0) return;
 
@@ -38,16 +36,18 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           ).milliseconds;
 
           if (tMinus > T_MINUS) return;
-          if (updatingRooms.get(room.pin)) return;
 
-          updatingRooms.set(room.pin, true);
           logger.info(`${room.pin}: updating...`);
+          const lastAddedTrack = appCache.get(pin);
           const nextTrackId = await updateRoom(room);
-          updatingRooms.set(room.pin, false);
+          appCache.set(pin, nextTrackId);
+
           if (!nextTrackId) {
-            logger.warn(`${room.pin}: no next track`);
+            logger.error(`${room.pin}: no next track`);
             return;
           }
+
+          if (lastAddedTrack == nextTrackId) return;
 
           await addTackToQueue(accessToken, nextTrackId);
         } catch (error) {
