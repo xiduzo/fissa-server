@@ -37,15 +37,11 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 
           if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
 
-          logger.info(`${room.pin}: updating...`);
           const lastAddedTrack = appCache.get(pin);
           const nextTrackId = await updateRoom(room);
           appCache.set(pin, nextTrackId);
 
-          if (!nextTrackId) {
-            logger.error(`${room.pin}: no next track`);
-            return;
-          }
+          if (!nextTrackId) return;
 
           if (lastAddedTrack == nextTrackId) {
             logger.warn(`${room.pin}: trying to add same track to the queue`);
