@@ -21,10 +21,11 @@ const mongoClient = new MongoClient(MONGODB_URI, {
 
 let client: MongoClient;
 
-const resetClient = () => {
+export const cleanupDbClient = () => {
   client.close();
   client = undefined;
 };
+
 const options: DbOptions = {
   logger: logger.info,
   retryWrites: true,
@@ -42,11 +43,11 @@ const mongoDb = async (): Promise<Db> => {
       client = await mongoClient.connect();
       const db = client.db("fissa", options);
       client
-        .on("close", resetClient)
-        .on("error", resetClient)
-        .on("connectionClosed", resetClient)
-        .on("serverClosed", resetClient)
-        .on("connectionPoolClosed", resetClient);
+        .on("close", cleanupDbClient)
+        .on("error", cleanupDbClient)
+        .on("connectionClosed", cleanupDbClient)
+        .on("serverClosed", cleanupDbClient)
+        .on("connectionPoolClosed", cleanupDbClient);
       resolve(db);
     } catch (error) {
       logger.error("mongoDbAsync", error);
