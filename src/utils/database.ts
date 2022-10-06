@@ -2,6 +2,7 @@ import {
   Collection,
   CollectionOptions,
   Db,
+  DbOptions,
   Document,
   MongoClient,
   ServerApiVersion,
@@ -18,32 +19,35 @@ const mongoClient = new MongoClient(MONGODB_URI, {
   appName: "fissa",
 });
 
-let client: Db;
+let client: MongoClient;
 
 const resetClient = () => {
+  client.close();
   client = undefined;
+};
+const options: DbOptions = {
+  logger: logger.info,
+  retryWrites: true,
 };
 
 // TODO: refactor so we dont create a new connection for each request
 const mongoDb = async (): Promise<Db> => {
   if (client) {
     logger.info("Reusing existing mongo client");
-    return Promise.resolve(client);
+    return Promise.resolve(client.db("fissa", options));
   }
 
   return new Promise(async (resolve, reject) => {
     try {
-      const mongo = await mongoClient.connect();
-      client = mongo.db("fissa", {
-        logger: logger.info,
-        retryWrites: true,
-      });
-      mongo.on("close", resetClient);
-      mongo.on("error", resetClient);
-      mongo.on("connectionClosed", resetClient);
-      mongo.on("serverClosed", resetClient);
-      mongo.on("connectionPoolClosed", resetClient);
-      resolve(client);
+      client = await mongoClient.connect();
+      const db = client.db("fissa", options);
+      client
+        .on("close", resetClient)
+        .on("error", resetClient)
+        .on("connectionClosed", resetClient)
+        .on("serverClosed", resetClient)
+        .on("connectionPoolClosed", resetClient);
+      resolve(db);
     } catch (error) {
       logger.error("mongoDbAsync", error);
       await mongoClient.close();
