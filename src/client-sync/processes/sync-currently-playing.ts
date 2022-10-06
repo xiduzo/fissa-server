@@ -188,26 +188,33 @@ const getNextTrackId = async (
   let nextTrackId: string | undefined;
   const { currentIndex, pin, accessToken } = newState;
 
-  if (currentIndex >= 0) {
-    const nextTrack = tracks[newState.currentIndex + 1];
-    const trackAfterNext = tracks[newState.currentIndex + 2];
+  try {
+    if (currentIndex >= 0) {
+      const nextTrack = tracks[newState.currentIndex + 1];
+      const trackAfterNext = tracks[newState.currentIndex + 2];
 
-    if (nextTrack) {
-      nextTrackId = nextTrack.id;
-      await deleteVotesForTrack(pin, nextTrack.id);
-    }
+      if (nextTrack) {
+        nextTrackId = nextTrack.id;
+        await deleteVotesForTrack(pin, nextTrack.id);
+      }
 
-    if (!trackAfterNext) {
-      const seedIds = tracks.slice(-10).map((track) => track.id);
-      const recommendations = await getRecommendedTracks(accessToken, seedIds);
-      const recommendedIds = recommendations.map((track) => track.id);
+      if (!trackAfterNext) {
+        const seedIds = tracks.slice(-10).map((track) => track.id);
+        const recommendations = await getRecommendedTracks(
+          accessToken,
+          seedIds
+        );
+        const recommendedIds = recommendations?.map((track) => track.id);
 
-      await addTracks(accessToken, pin, recommendedIds);
-      await publish(`fissa/room/${pin}/tracks/added`, seedIds.length);
-      if (!nextTrack) {
-        nextTrackId = recommendedIds[0];
+        await addTracks(accessToken, pin, recommendedIds);
+        await publish(`fissa/room/${pin}/tracks/added`, seedIds.length);
+        if (!nextTrack) {
+          nextTrackId = recommendedIds[0];
+        }
       }
     }
+  } catch (error) {
+    logger.warn(`${pin}: getNextTrackId ${error}`);
   }
 
   return nextTrackId;
