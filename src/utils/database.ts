@@ -22,8 +22,8 @@ const mongoClient = new MongoClient(MONGODB_URI, {
 let client: MongoClient | undefined;
 let db: Db | undefined;
 
-export const cleanupDbClient = () => {
-  client?.close();
+export const cleanupDbClient = async () => {
+  await client?.close();
   client = undefined;
   db = undefined;
 };

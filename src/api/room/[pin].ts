@@ -34,7 +34,7 @@ const handler: VercelApiHandler = async (request, response) => {
       break;
   }
 
-  cleanupDbClient();
+  await cleanupDbClient();
 };
 
 export default handler;

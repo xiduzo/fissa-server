@@ -26,9 +26,9 @@ httpServer.listen(port, async () => {
   clearInactiveRooms();
 });
 
-const cleanup = (event) => {
+const cleanup = async (event) => {
   // SIGINT is sent for example when you Ctrl+C a running process from the command line.
-  cleanupDbClient(); // Close MongodDB Connection when Process ends
+  await cleanupDbClient(); // Close MongodDB Connection when Process ends
   process.exit(); // Exit with default success-code '0'.
 };
 
