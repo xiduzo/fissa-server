@@ -25,10 +25,10 @@ const handler: VercelApiHandler = async (request, response) => {
         break;
       } catch (error) {
         logger.error(`Token POST handler: ${error}`);
+      } finally {
+        await cleanupDbClient();
       }
   }
-
-  await cleanupDbClient();
 };
 
 export default handler;

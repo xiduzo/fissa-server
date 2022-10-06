@@ -31,6 +31,8 @@ const handler: VercelApiHandler = async (request, response) => {
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+      } finally {
+        await cleanupDbClient();
       }
       break;
     }
@@ -75,12 +77,12 @@ const handler: VercelApiHandler = async (request, response) => {
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+      } finally {
+        await cleanupDbClient();
       }
       break;
     }
   }
-
-  await cleanupDbClient();
 };
 
 export default handler;

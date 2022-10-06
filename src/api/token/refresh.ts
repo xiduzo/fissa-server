@@ -36,13 +36,13 @@ const handler: VercelApiHandler = async (request, response) => {
         );
 
         response.status(StatusCodes.OK).json(tokens.body);
-        break;
       } catch (error) {
         logger.error(`Token refresh POST handler: ${error}`);
+      } finally {
+        await cleanupDbClient();
       }
+      break;
   }
-
-  await cleanupDbClient();
 };
 
 export default handler;
