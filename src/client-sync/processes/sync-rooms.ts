@@ -5,15 +5,19 @@ import { Track } from "../../lib/interfaces/Track";
 import { Vote } from "../../lib/interfaces/Vote";
 import { mongoCollection } from "../../utils/database";
 
-export const syncActiveRooms = async (appCache: cache) => {
+const setRoomsCache = async (appCache: cache) => {
   const rooms = await mongoCollection<Room>("room");
 
   const allRooms = await rooms.find({ accessToken: { $ne: null } }).toArray();
 
   appCache.set("rooms", allRooms);
+};
+
+export const syncActiveRooms = async (appCache: cache) => {
+  const rooms = await mongoCollection<Room>("room");
 
   rooms.watch().on("change", () => {
-    syncActiveRooms(appCache);
+    setRoomsCache(appCache);
   });
 };
 
