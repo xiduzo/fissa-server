@@ -15,6 +15,7 @@ const setRoomsCache = async (appCache: cache) => {
 
 export const syncActiveRooms = async (appCache: cache) => {
   const rooms = await mongoCollection<Room>("room");
+  setRoomsCache(appCache);
 
   rooms.watch().on("change", () => {
     setRoomsCache(appCache);
