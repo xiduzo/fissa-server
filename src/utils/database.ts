@@ -19,29 +19,27 @@ const mongoClient = new MongoClient(MONGODB_URI, {
   appName: "fissa",
 });
 
-let client: MongoClient;
+let client: MongoClient | undefined;
+let db: Db | undefined;
 
 export const cleanupDbClient = () => {
   client.close();
   client = undefined;
-};
-
-const options: DbOptions = {
-  logger: logger.info,
-  retryWrites: true,
+  db = undefined;
 };
 
 const mongoDb = async (): Promise<Db> => {
-  if (client) {
-    return Promise.resolve(client.db("fissa", options));
-  }
+  if (client && db) return Promise.resolve(db);
 
   // TODO: refactor so we don't create new instances on race conditions
   logger.info("Creating new database connection");
   return new Promise(async (resolve, reject) => {
     try {
       client = await mongoClient.connect();
-      const db = client.db("fissa", options);
+      db = client.db("fissa", {
+        logger: logger.info,
+        retryWrites: true,
+      });
       client
         .on("close", cleanupDbClient)
         .on("error", cleanupDbClient)
