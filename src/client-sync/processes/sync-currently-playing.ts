@@ -152,20 +152,12 @@ const catchHttpError = async (
 const saveAndPublishRoom = async (room: Room) => {
   const rooms = await mongoCollection<Room>("room");
 
-  const { pin } = room;
-
-  await rooms.updateOne(
-    { pin },
-    {
-      $set: {
-        currentIndex: room.currentIndex,
-        expectedEndTime: room.expectedEndTime,
-      },
-    }
-  );
+  const { pin, currentIndex, expectedEndTime } = room;
 
   delete room.accessToken;
   await publish(`fissa/room/${pin}`, room);
+
+  await rooms.updateOne({ pin }, { $set: { currentIndex, expectedEndTime } });
 };
 
 const getNextState = (
