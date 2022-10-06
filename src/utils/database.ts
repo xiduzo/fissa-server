@@ -30,13 +30,13 @@ const options: DbOptions = {
   retryWrites: true,
 };
 
-// TODO: refactor so we dont create a new connection for each request
 const mongoDb = async (): Promise<Db> => {
   if (client) {
-    logger.info("Reusing existing mongo client");
     return Promise.resolve(client.db("fissa", options));
   }
 
+  // TODO: refactor so we don't create new instances on race conditions
+  logger.info(`Creating new connection to MongoDB`);
   return new Promise(async (resolve, reject) => {
     try {
       client = await mongoClient.connect();
