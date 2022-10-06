@@ -4,6 +4,7 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { VoteState } from "../../lib/interfaces/Vote";
 import {
   addTracks,
+  cleanupDbClient,
   getRoom,
   getRoomTracks,
   getRoomVotes,
@@ -78,6 +79,8 @@ const handler: VercelApiHandler = async (request, response) => {
       break;
     }
   }
+
+  cleanupDbClient();
 };
 
 export default handler;

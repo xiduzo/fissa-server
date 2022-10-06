@@ -1,6 +1,6 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { getRoomVotes, vote } from "../../utils/database";
+import { cleanupDbClient, getRoomVotes, vote } from "../../utils/database";
 import { publish } from "../../utils/mqtt";
 import { logger } from "../../utils/logger";
 
@@ -51,6 +51,8 @@ const handler: VercelApiHandler = async (request, response) => {
       break;
     }
   }
+
+  cleanupDbClient();
 };
 
 export default handler;

@@ -3,7 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
 import { Room } from "../../lib/interfaces/Room";
-import { mongoCollection } from "../../utils/database";
+import { cleanupDbClient, mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { getMe } from "../../utils/spotify";
 
@@ -41,6 +41,8 @@ const handler: VercelApiHandler = async (request, response) => {
         logger.error(`Token refresh POST handler: ${error}`);
       }
   }
+
+  cleanupDbClient();
 };
 
 export default handler;

@@ -1,7 +1,7 @@
 import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { getRoom, getRoomTracks } from "../../utils/database";
+import { cleanupDbClient, getRoom, getRoomTracks } from "../../utils/database";
 import {
   addTackToQueue,
   getMyCurrentPlaybackState,
@@ -66,6 +66,8 @@ const handler: VercelApiHandler = async (request, response) => {
       }
       break;
   }
+
+  cleanupDbClient();
 };
 
 export default handler;

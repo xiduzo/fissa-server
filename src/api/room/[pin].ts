@@ -1,6 +1,6 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { getRoom } from "../../utils/database";
+import { cleanupDbClient, getRoom } from "../../utils/database";
 import { logger } from "../../utils/logger";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -33,6 +33,8 @@ const handler: VercelApiHandler = async (request, response) => {
       }
       break;
   }
+
+  cleanupDbClient();
 };
 
 export default handler;

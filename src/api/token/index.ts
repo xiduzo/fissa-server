@@ -2,6 +2,7 @@ import { VercelApiHandler } from "@vercel/node";
 import { StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
+import { cleanupDbClient } from "../../utils/database";
 import { logger } from "../../utils/logger";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -26,6 +27,8 @@ const handler: VercelApiHandler = async (request, response) => {
         logger.error(`Token POST handler: ${error}`);
       }
   }
+
+  cleanupDbClient();
 };
 
 export default handler;

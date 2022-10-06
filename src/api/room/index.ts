@@ -3,7 +3,11 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { DateTime } from "luxon";
 import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 import { Room } from "../../lib/interfaces/Room";
-import { addTracks, mongoCollection } from "../../utils/database";
+import {
+  addTracks,
+  cleanupDbClient,
+  mongoCollection,
+} from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { createPin } from "../../utils/pin";
 import {
@@ -76,6 +80,8 @@ const handler: VercelApiHandler = async (request, response) => {
       }
       break;
   }
+
+  cleanupDbClient();
 };
 
 export default handler;
