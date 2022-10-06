@@ -18,16 +18,32 @@ const mongoClient = new MongoClient(MONGODB_URI, {
   appName: "fissa",
 });
 
+let client: Db;
+
+const resetClient = () => {
+  client = undefined;
+};
+
+// TODO: refactor so we dont create a new connection for each request
 const mongoDb = async (): Promise<Db> => {
+  if (client) {
+    logger.info("Reusing existing mongo client");
+    return Promise.resolve(client);
+  }
+
   return new Promise(async (resolve, reject) => {
     try {
-      const client = await mongoClient.connect();
-      resolve(
-        client.db("fissa", {
-          logger: logger.info,
-          retryWrites: true,
-        })
-      );
+      const mongo = await mongoClient.connect();
+      client = mongo.db("fissa", {
+        logger: logger.info,
+        retryWrites: true,
+      });
+      mongo.on("close", resetClient);
+      mongo.on("error", resetClient);
+      mongo.on("connectionClosed", resetClient);
+      mongo.on("serverClosed", resetClient);
+      mongo.on("connectionPoolClosed", resetClient);
+      resolve(client);
     } catch (error) {
       logger.error("mongoDbAsync", error);
       await mongoClient.close();
