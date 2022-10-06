@@ -37,7 +37,7 @@ const mongoDb = async (): Promise<Db> => {
   }
 
   // TODO: refactor so we don't create new instances on race conditions
-  logger.info(`Creating new connection to MongoDB`);
+  logger.info("Creating new database connection");
   return new Promise(async (resolve, reject) => {
     try {
       client = await mongoClient.connect();
@@ -55,6 +55,11 @@ const mongoDb = async (): Promise<Db> => {
       reject(error);
     }
   });
+};
+
+export const initDb = async () => {
+  logger.info("Initializing database");
+  await mongoDb();
 };
 
 export const mongoCollection = async <T>(
