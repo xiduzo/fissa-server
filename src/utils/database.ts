@@ -23,7 +23,7 @@ let client: MongoClient | undefined;
 let db: Db | undefined;
 
 export const cleanupDbClient = () => {
-  client.close();
+  client?.close();
   client = undefined;
   db = undefined;
 };
