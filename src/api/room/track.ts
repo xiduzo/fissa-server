@@ -57,14 +57,31 @@ const handler: VercelApiHandler = async (request, response) => {
             .json(ReasonPhrases.NOT_FOUND);
         }
 
-        const { accessToken } = room;
+        const { accessToken, currentIndex } = room;
 
         await addTracks(accessToken, pin, trackIds);
         await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);
 
-        const votePromises = trackIds.map(async (id) =>
-          vote(room.pin, userAccessToken, id, VoteState.Upvote)
-        );
+        const roomTracks = await getRoomTracks(pin);
+        const votePromises = trackIds
+          .filter((trackId) => {
+            const currentTrack = roomTracks.find(
+              (track) => track.index === currentIndex
+            );
+            // Don't vote on currently playing track
+            if (currentTrack?.id === trackId) return;
+
+            const nextTrack = roomTracks.find(
+              (track) => track.index === currentIndex + 1
+            );
+            // Don't vote on next track
+            if (nextTrack?.id === trackId) return;
+
+            return trackId;
+          })
+          .map(async (id) =>
+            vote(room.pin, userAccessToken, id, VoteState.Upvote)
+          );
 
         await Promise.all(votePromises);
 
