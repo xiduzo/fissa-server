@@ -199,7 +199,7 @@ const getNextTrackId = async (
       }
 
       if (!trackAfterNext) {
-        const seedIds = tracks.slice(-10).map((track) => track.id);
+        const seedIds = tracks.slice(-5).map((track) => track.id);
         const recommendations = await getRecommendedTracks(
           accessToken,
           seedIds
