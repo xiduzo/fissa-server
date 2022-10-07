@@ -214,7 +214,7 @@ const getNextTrackId = async (
       }
     }
   } catch (error) {
-    logger.warn(`${pin}: getNextTrackId ${error}`);
+    logger.error(`${pin}: getNextTrackId ${error}`);
   }
 
   return nextTrackId;

@@ -31,8 +31,6 @@ export const cleanupDbClient = async () => {
 const mongoDb = async (): Promise<Db> => {
   if (client && db) return Promise.resolve(db);
 
-  // TODO: refactor so we don't create new instances on race conditions
-  logger.info("Creating new database connection");
   return new Promise(async (resolve, reject) => {
     try {
       client = await mongoClient.connect();
@@ -140,6 +138,8 @@ export const addTracks = async (
 
   const inserts = tracksToAdd.map(async (trackId, index) => {
     const track = spotifyTracks.find((track) => track.id === trackId);
+
+    if (!track) return;
 
     return tracks.insertOne({
       pin,
