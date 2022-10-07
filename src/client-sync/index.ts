@@ -6,6 +6,7 @@ import { syncCurrentlyPlaying } from "./processes/sync-currently-playing";
 import { clearInactiveRooms, syncActiveRooms } from "./processes/sync-rooms";
 import { syncTrackOrder } from "./processes/sync-track-order";
 import { cleanupDbClient, initDb } from "../utils/database";
+import { updateAccessTokens } from "./processes/update-access-tokens";
 
 const appCache = new cache();
 appCache.set("rooms", []);
@@ -24,6 +25,7 @@ httpServer.listen(port, async () => {
   syncCurrentlyPlaying(appCache);
   syncTrackOrder(appCache);
   clearInactiveRooms();
+  updateAccessTokens(appCache);
 });
 
 const cleanup = async (event) => {

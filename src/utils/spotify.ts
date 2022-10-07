@@ -12,6 +12,29 @@ const spotifyClient = (accessToken: string) => {
   return spotifyApi;
 };
 
+export const updateTokens = async (
+  accessToken: string,
+  refreshToken: string,
+  attempt = 0
+) => {
+  const spotifyApi = spotifyClient(accessToken);
+  spotifyApi.setRefreshToken(refreshToken);
+
+  try {
+    const { body } = await spotifyApi.refreshAccessToken();
+    return body;
+  } catch (error) {
+    await generalCatchHandler(
+      error,
+      updateTokens,
+      0,
+      accessToken,
+      refreshToken,
+      attempt
+    );
+  }
+};
+
 export const addTracksToPlaylist = async (
   accessToken: string,
 
