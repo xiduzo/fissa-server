@@ -179,7 +179,7 @@ export const startPlayingTrack = async (
       uris: [uri],
     });
   } catch (error) {
-    if (error.message.includes(/No active device/)) {
+    if (error.message.includes("active device")) {
       const {
         body: { devices },
       } = await spotifyApi.getMyDevices();
