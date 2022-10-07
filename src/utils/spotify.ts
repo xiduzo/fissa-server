@@ -42,9 +42,9 @@ export const addTracksToPlaylist = async (
     await generalCatchHandler(
       error,
       addTracksToPlaylist,
+      attempt,
       accessToken,
-      playlistId,
-      attempt
+      playlistId
     );
     return 0;
   }
@@ -61,7 +61,7 @@ export const getTracks = async (
     const response = await spotifyApi.getTracks(trackIds);
     return response.body.tracks;
   } catch (error) {
-    await generalCatchHandler(error, getTracks, accessToken, trackIds, attempt);
+    await generalCatchHandler(error, getTracks, attempt, accessToken, trackIds);
   }
 };
 
@@ -86,9 +86,9 @@ export const createPlaylist = async (
     await generalCatchHandler(
       error,
       createPlaylist,
+      attempt,
       accessToken,
-      trackUris,
-      attempt
+      trackUris
     );
   }
 };
@@ -128,9 +128,9 @@ export const getPlaylistTracks = async (
     await generalCatchHandler(
       error,
       getPlaylistTracks,
+      attempt,
       accessToken,
-      playlistId,
-      attempt
+      playlistId
     );
   }
 };
@@ -149,8 +149,8 @@ export const getMyCurrentPlaybackState = async (
     await generalCatchHandler(
       error,
       getMyCurrentPlaybackState,
-      accessToken,
-      attempt
+      attempt,
+      accessToken
     );
   }
 };
@@ -163,7 +163,7 @@ export const getMe = async (accessToken: string, attempt = 0) => {
 
     return response.body;
   } catch (error) {
-    await generalCatchHandler(error, getMe, accessToken, attempt);
+    await generalCatchHandler(error, getMe, attempt, accessToken);
   }
 };
 
@@ -174,7 +174,7 @@ export const getMyTopTracks = async (accessToken: string, attempt = 0) => {
     const response = await spotifyApi.getMyTopTracks({ limit: 20 });
     return response.body.items;
   } catch (error) {
-    await generalCatchHandler(error, getMyTopTracks, accessToken, attempt);
+    await generalCatchHandler(error, getMyTopTracks, attempt, accessToken);
   }
 };
 
@@ -212,9 +212,9 @@ export const startPlayingTrack = async (
     await generalCatchHandler(
       error,
       startPlayingTrack,
+      attempt,
       accessToken,
-      uri,
-      attempt
+      uri
     );
   }
 };
@@ -232,7 +232,13 @@ export const addTackToQueue = async (
   try {
     await spotifyApi.addToQueue(`spotify:track:${trackId}`);
   } catch (error) {
-    await generalCatchHandler(error, addTackToQueue, accessToken, trackId);
+    await generalCatchHandler(
+      error,
+      addTackToQueue,
+      attempt,
+      accessToken,
+      trackId
+    );
   }
 };
 
@@ -255,6 +261,7 @@ export const getRecommendedTracks = async (
     await generalCatchHandler(
       error,
       getRecommendedTracks,
+      attempt,
       accessToken,
       seedTrackIds
     );
@@ -264,6 +271,7 @@ export const getRecommendedTracks = async (
 const generalCatchHandler = async (
   error: any,
   originalMethod: Function,
+  attempt: number,
   ...args: any
 ) => {
   const accessToken = args["accessToken"];
@@ -274,7 +282,6 @@ const generalCatchHandler = async (
         `${originalMethod.name}: no active device, trying to connect to a device`
       );
 
-      const attempt = args["attempt"] || 0;
       const {
         body: { devices },
       } = await spotifyApi.getMyDevices();
@@ -283,8 +290,7 @@ const generalCatchHandler = async (
       }
 
       if (attempt < devices.length) {
-        args["attempt"] = attempt + 1;
-        originalMethod(...args);
+        originalMethod(...args, attempt + 1);
       }
       return;
     }
