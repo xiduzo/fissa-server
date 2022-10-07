@@ -318,7 +318,9 @@ const generalCatchHandler = async (
       return;
     }
 
-    logger.error(`${originalMethod.name}: ${JSON.stringify(error)}`);
+    logger.error(
+      `${originalMethod.name}: ${JSON.stringify(error)}. args: ${args}`
+    );
   } catch (error) {
     logger.error(`generalCatchHandler ${JSON.stringify(error)}`);
   }
