@@ -165,7 +165,11 @@ const clearQueue = async (accessToken: string) => {
   }
 };
 
-export const startPlayingTrack = async (accessToken: string, uri: string) => {
+export const startPlayingTrack = async (
+  accessToken: string,
+  uri: string,
+  attempt = 0
+) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
@@ -175,6 +179,19 @@ export const startPlayingTrack = async (accessToken: string, uri: string) => {
       uris: [uri],
     });
   } catch (error) {
+    if (error.message.includes(/No active device/)) {
+      const {
+        body: { devices },
+      } = await spotifyApi.getMyDevices();
+      if (devices.length >= attempt) {
+        await spotifyApi.transferMyPlayback([devices[attempt].id]);
+      }
+
+      if (attempt < devices.length) {
+        startPlayingTrack(accessToken, uri, attempt + 1);
+      }
+      return;
+    }
     logger.error(`startPlayingTrack ${JSON.stringify(error)}`);
   }
 };

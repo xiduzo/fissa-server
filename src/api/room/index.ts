@@ -26,10 +26,17 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { accessToken, playlistId } = request.body;
+      const { accessToken, refreshToken, playlistId } = request.body;
 
       let newPin: string;
       let blockedPins: string[] = [];
+
+      // TODO: add || !refreshToken when new version is in app store
+      if (!accessToken) {
+        return response
+          .status(StatusCodes.BAD_REQUEST)
+          .json(ReasonPhrases.BAD_REQUEST);
+      }
 
       try {
         const rooms = await mongoCollection<Room>("room");
@@ -49,6 +56,7 @@ const handler: VercelApiHandler = async (request, response) => {
           pin: newPin,
           createdBy: me.id,
           accessToken,
+          refreshToken,
           currentIndex: -1,
           createdAt: DateTime.now().toISO(),
         };
