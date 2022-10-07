@@ -17,7 +17,8 @@ export const addTracksToPlaylist = async (
 
   playlistId: string,
 
-  trackUris: string[]
+  trackUris: string[],
+  attempt = 0
 ): Promise<number> => {
   try {
     const spotifyApi = spotifyClient(accessToken);
@@ -38,24 +39,36 @@ export const addTracksToPlaylist = async (
 
     return tracksAdded;
   } catch (error) {
-    logger.error(`addTracksToPlaylist ${JSON.stringify(error)}`);
+    await generalCatchHandler(
+      error,
+      addTracksToPlaylist,
+      accessToken,
+      playlistId,
+      attempt
+    );
     return 0;
   }
 };
 
 export const getTracks = async (
   accessToken: string,
-  trackIds: string[]
+  trackIds: string[],
+  attempt = 0
 ): Promise<SpotifyApi.TrackObjectFull[]> => {
   const spotifyApi = spotifyClient(accessToken);
 
-  const response = await spotifyApi.getTracks(trackIds);
-  return response.body.tracks;
+  try {
+    const response = await spotifyApi.getTracks(trackIds);
+    return response.body.tracks;
+  } catch (error) {
+    await generalCatchHandler(error, getTracks, accessToken, trackIds, attempt);
+  }
 };
 
 export const createPlaylist = async (
   accessToken: string,
-  trackUris: string[]
+  trackUris: string[],
+  attempt = 0
 ): Promise<string> => {
   try {
     const spotifyApi = spotifyClient(accessToken);
@@ -70,13 +83,20 @@ export const createPlaylist = async (
 
     return playlist.body.id;
   } catch (error) {
-    logger.error(`createPlaylist ${JSON.stringify(error)}`);
+    await generalCatchHandler(
+      error,
+      createPlaylist,
+      accessToken,
+      trackUris,
+      attempt
+    );
   }
 };
 
 export const getPlaylistTracks = async (
   accessToken: string,
-  playlistId: string
+  playlistId: string,
+  attempt = 0
 ): Promise<SpotifyApi.TrackObjectFull[]> => {
   const spotifyApi = spotifyClient(accessToken);
 
@@ -105,12 +125,19 @@ export const getPlaylistTracks = async (
 
     return tracks;
   } catch (error) {
-    logger.error(`getPlaylistTracks ${JSON.stringify(error)}`);
+    await generalCatchHandler(
+      error,
+      getPlaylistTracks,
+      accessToken,
+      playlistId,
+      attempt
+    );
   }
 };
 
 export const getMyCurrentPlaybackState = async (
-  accessToken: string
+  accessToken: string,
+  attempt = 0
 ): Promise<SpotifyApi.CurrentlyPlayingResponse> => {
   const spotifyApi = spotifyClient(accessToken);
 
@@ -119,12 +146,16 @@ export const getMyCurrentPlaybackState = async (
 
     return response.body;
   } catch (error) {
-    logger.error(`getMyCurrentPlaybackState ${JSON.stringify(error)}`);
-    throw error;
+    await generalCatchHandler(
+      error,
+      getMyCurrentPlaybackState,
+      accessToken,
+      attempt
+    );
   }
 };
 
-export const getMe = async (accessToken: string) => {
+export const getMe = async (accessToken: string, attempt = 0) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
@@ -132,19 +163,18 @@ export const getMe = async (accessToken: string) => {
 
     return response.body;
   } catch (error) {
-    logger.error(`getMe ${JSON.stringify(error)}`);
-    throw error;
+    await generalCatchHandler(error, getMe, accessToken, attempt);
   }
 };
 
-export const getMyTopTracks = async (accessToken: string) => {
+export const getMyTopTracks = async (accessToken: string, attempt = 0) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
     const response = await spotifyApi.getMyTopTracks({ limit: 20 });
     return response.body.items;
   } catch (error) {
-    logger.error(`getMyTopTracks ${JSON.stringify(error)}`);
+    await generalCatchHandler(error, getMyTopTracks, accessToken, attempt);
   }
 };
 
@@ -179,24 +209,21 @@ export const startPlayingTrack = async (
       uris: [uri],
     });
   } catch (error) {
-    if (error.message.includes("active device")) {
-      const {
-        body: { devices },
-      } = await spotifyApi.getMyDevices();
-      if (devices.length >= attempt) {
-        await spotifyApi.transferMyPlayback([devices[attempt].id]);
-      }
-
-      if (attempt < devices.length) {
-        startPlayingTrack(accessToken, uri, attempt + 1);
-      }
-      return;
-    }
-    logger.error(`startPlayingTrack ${JSON.stringify(error)}`);
+    await generalCatchHandler(
+      error,
+      startPlayingTrack,
+      accessToken,
+      uri,
+      attempt
+    );
   }
 };
 
-export const addTackToQueue = async (accessToken: string, trackId: string) => {
+export const addTackToQueue = async (
+  accessToken: string,
+  trackId: string,
+  attempt = 0
+) => {
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 
@@ -205,13 +232,14 @@ export const addTackToQueue = async (accessToken: string, trackId: string) => {
   try {
     await spotifyApi.addToQueue(`spotify:track:${trackId}`);
   } catch (error) {
-    logger.error(`addTackToQueue ${JSON.stringify(error)}`);
+    await generalCatchHandler(error, addTackToQueue, accessToken, trackId);
   }
 };
 
 export const getRecommendedTracks = async (
   accessToken: string,
-  seedTrackIds: string[]
+  seedTrackIds: string[],
+  attempt = 0
 ) => {
   const spotifyApi = spotifyClient(accessToken);
 
@@ -224,6 +252,45 @@ export const getRecommendedTracks = async (
     });
     return request.body.tracks;
   } catch (error) {
-    logger.error(`getRecommendedTracks ${JSON.stringify(error)}`);
+    await generalCatchHandler(
+      error,
+      getRecommendedTracks,
+      accessToken,
+      seedTrackIds
+    );
+  }
+};
+
+const generalCatchHandler = async (
+  error: any,
+  originalMethod: Function,
+  ...args: any
+) => {
+  const accessToken = args["accessToken"];
+  try {
+    if (error.message.includes("active device")) {
+      const spotifyApi = spotifyClient(accessToken);
+      logger.warn(
+        `${originalMethod.name}: no active device, trying to connect to a device`
+      );
+
+      const attempt = args["attempt"] || 0;
+      const {
+        body: { devices },
+      } = await spotifyApi.getMyDevices();
+      if (devices.length >= attempt) {
+        await spotifyApi.transferMyPlayback([devices[attempt].id]);
+      }
+
+      if (attempt < devices.length) {
+        args["attempt"] = attempt + 1;
+        originalMethod(...args);
+      }
+      return;
+    }
+
+    logger.error(`${originalMethod.name}: ${JSON.stringify(error)}`);
+  } catch (error) {
+    logger.error(`generalCatchHandler ${JSON.stringify(error)}`);
   }
 };
