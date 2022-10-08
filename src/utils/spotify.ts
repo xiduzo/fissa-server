@@ -355,8 +355,7 @@ const generalCatchHandler = async (
   error: any,
   accessToken: string,
   attempt: number,
-  originalMethod: Function,
-  otherParams?: object
+  originalMethod: Function
 ): Promise<boolean> => {
   logger.warn(`${originalMethod.name}(${attempt}): ${JSON.stringify(error)}`);
   const spotifyApi = spotifyClient(accessToken);
@@ -383,10 +382,10 @@ const generalCatchHandler = async (
       );
 
       if (attempt > 5) return false;
-      const refreshToken = otherParams["refreshToken"];
+      const rooms = await mongoCollection<Room>("room");
+      const { refreshToken } = await rooms.findOne({ accessToken });
       if (!refreshToken) throw new Error("refresh token is not provided");
       spotifyApi.setRefreshToken(refreshToken);
-      const rooms = await mongoCollection<Room>("room");
       const response = await spotifyApi.refreshAccessToken();
       const me = await getMe(response.body.access_token);
 
