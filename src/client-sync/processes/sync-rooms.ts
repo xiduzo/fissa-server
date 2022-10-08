@@ -22,6 +22,9 @@ export const syncActiveRooms = async (appCache: cache) => {
   });
 };
 
+const CLEAR_INACTIVE_ROOMS_DAYS = 3;
+const CLEAR_INACTIVE_ROOMS_SYNC_TIME = 1000 * 60 * 60;
+
 export const clearInactiveRooms = async () => {
   const rooms = await mongoCollection<Room>("room");
 
@@ -30,7 +33,9 @@ export const clearInactiveRooms = async () => {
   const deletes = allRooms.map(async (room) => {
     const { createdAt, pin } = room;
 
-    const maxLifetime = DateTime.now().minus({ days: 3 }).toISO();
+    const maxLifetime = DateTime.now()
+      .minus({ days: CLEAR_INACTIVE_ROOMS_DAYS })
+      .toISO();
 
     if (createdAt < maxLifetime) {
       const votes = await mongoCollection<Vote>("vote");
@@ -43,5 +48,5 @@ export const clearInactiveRooms = async () => {
 
   await Promise.all(deletes);
 
-  setTimeout(clearInactiveRooms, 1000 * 60 * 60);
+  setTimeout(clearInactiveRooms, CLEAR_INACTIVE_ROOMS_SYNC_TIME);
 };

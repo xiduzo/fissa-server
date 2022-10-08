@@ -6,6 +6,7 @@ import { Room } from "../../lib/interfaces/Room";
 import {
   addTracks,
   cleanupDbClient,
+  deleteMyOtherRooms,
   mongoCollection,
 } from "../../utils/database";
 import { logger } from "../../utils/logger";
@@ -28,9 +29,6 @@ const handler: VercelApiHandler = async (request, response) => {
     case "POST":
       const { accessToken, refreshToken, playlistId } = request.body;
 
-      let newPin: string;
-      let blockedPins: string[] = [];
-
       logger.info(JSON.stringify(request.body));
       // TODO: add || !refreshToken when new version is in app store
       if (!accessToken) {
@@ -39,22 +37,27 @@ const handler: VercelApiHandler = async (request, response) => {
           .json(ReasonPhrases.BAD_REQUEST);
       }
 
+      let pin: string;
+      let blockedPins: string[] = [];
       try {
         const rooms = await mongoCollection<Room>("room");
         do {
-          newPin = createPin(blockedPins);
-          const room = await rooms.findOne({ pin: newPin });
+          pin = createPin(blockedPins);
+          const room = await rooms.findOne({ pin });
 
           if (room) {
-            blockedPins.push(newPin);
-            newPin = undefined;
+            blockedPins.push(pin);
+            pin = undefined;
             return;
           }
-        } while (newPin === undefined);
+        } while (pin === undefined);
 
         const me = await getMe(accessToken);
+
+        await deleteMyOtherRooms(me.id);
+
         const room: Room = {
-          pin: newPin,
+          pin,
           createdBy: me.id,
           accessToken,
           refreshToken,
@@ -69,18 +72,18 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await addTracks(
           accessToken,
-          newPin,
+          pin,
           tracks.map((track) => track.id)
         );
 
         await startPlayingTrack(accessToken, tracks[0].uri);
 
-        const nextTrackId = await updateRoom(accessToken);
+        const nextTrackId = await updateRoom(room);
         if (nextTrackId) {
           await addTackToQueue(accessToken, nextTrackId);
         }
 
-        response.status(StatusCodes.OK).json(newPin);
+        response.status(StatusCodes.OK).json(pin);
       } catch (error) {
         logger.error(`room GET handler: ${error}`);
         response

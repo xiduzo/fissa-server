@@ -1,6 +1,8 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { updateRoom } from "../client-sync/processes/sync-currently-playing";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
+import { Room } from "../lib/interfaces/Room";
+import { mongoCollection } from "./database";
 import { logger } from "./logger";
 
 enum SpotifyLimits {
@@ -233,7 +235,9 @@ export const startPlayingTrack = async (
         if (devices.length >= attempt) {
           await spotifyApi.transferMyPlayback([devices[attempt].id]);
           await startPlayingTrack(accessToken, uri, attempt + 1);
-          await updateRoom(accessToken);
+          const rooms = await mongoCollection<Room>("room");
+          const room = await rooms.findOne({ accessToken });
+          await updateRoom(room);
         }
       } catch {
         logger.error(

@@ -180,3 +180,19 @@ export const getRoom = async (pin: string) => {
   const room = await rooms.findOne({ pin });
   return room;
 };
+
+export const deleteMyOtherRooms = async (createdBy: string) => {
+  const rooms = await mongoCollection<Room>("room");
+  const tracks = await mongoCollection<Track>("track");
+  const votes = await mongoCollection<Vote>("vote");
+
+  const myRooms = await rooms.find({ createdBy }).toArray();
+
+  const promises = myRooms.map(async (room) => {
+    await rooms.deleteOne({ pin: room.pin });
+    await votes.deleteMany({ pin: room.pin });
+    await tracks.deleteMany({ pin: room.pin });
+  });
+
+  await Promise.all(promises);
+};

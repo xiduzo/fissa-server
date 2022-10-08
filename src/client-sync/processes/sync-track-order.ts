@@ -18,8 +18,8 @@ import { logger } from "../../utils/logger";
 import { publish } from "../../utils/mqtt";
 import { updateRoom } from "./sync-currently-playing";
 
-const TRACK_ORDER_SYNC_TIME = 5_000;
-const NO_SYNC_MARGIN = 10_000;
+const TRACK_ORDER_SYNC_TIME = 1000 * 5;
+const NO_SYNC_MARGIN = 1000 * 10;
 
 export const syncTrackOrder = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -119,8 +119,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       (track) => track.id === currentTrackId
     );
 
-    if (newCurrentTrackIndex !== currentIndex)
-      await updateRoom(room.accessToken);
+    if (newCurrentTrackIndex !== currentIndex) await updateRoom(room);
     return reorders;
   } catch (error) {
     logger.error(
