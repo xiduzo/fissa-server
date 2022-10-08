@@ -2,7 +2,6 @@ import {
   Collection,
   CollectionOptions,
   Db,
-  DbOptions,
   Document,
   MongoClient,
   ServerApiVersion,

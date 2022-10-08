@@ -29,7 +29,7 @@ export const updateAccessTokens = async (appCache: cache) => {
 
           const me = await getMe(tokens.access_token);
 
-          logger.info(`Updating access token for ${me?.id}`);
+          logger.info(`${pin}: Updating access token`);
 
           await rooms.updateMany(
             { createdBy: me?.id },
