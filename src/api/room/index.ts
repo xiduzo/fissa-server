@@ -31,6 +31,7 @@ const handler: VercelApiHandler = async (request, response) => {
       let newPin: string;
       let blockedPins: string[] = [];
 
+      logger.info(JSON.stringify(request.body));
       // TODO: add || !refreshToken when new version is in app store
       if (!accessToken) {
         return response
