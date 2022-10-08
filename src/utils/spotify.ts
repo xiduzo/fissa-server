@@ -188,6 +188,28 @@ export const getMyTopTracks = async (
   }
 };
 
+export const skipTrack = async (
+  accessToken: string,
+  attempt = 0
+): Promise<boolean> => {
+  const spotifyApi = spotifyClient(accessToken);
+
+  try {
+    const {
+      actions: { disallows },
+    } = await getMyCurrentPlaybackState(accessToken);
+
+    if (!Boolean(disallows.skipping_next)) {
+      await spotifyApi.skipToNext();
+    }
+
+    return true;
+  } catch (error) {
+    logger.warn(`${skipTrack.name}(${attempt}): ${JSON.stringify(error)}`);
+    return false;
+  }
+};
+
 const clearQueue = async (accessToken: string, attempt = 0) => {
   const spotifyApi = spotifyClient(accessToken);
 
@@ -214,7 +236,8 @@ export const startPlayingTrack = async (
 
   try {
     // TODO: clear user queue
-    //await clearQueue(accessToken);
+    // await clearQueue(accessToken);
+
     await spotifyApi.play({
       uris: [uri],
     });
