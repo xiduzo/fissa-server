@@ -360,8 +360,8 @@ const generalCatchHandler = async (
   try {
     if (error.message.includes("active device")) {
       const spotifyApi = spotifyClient(accessToken);
-      logger.warn(
-        `${originalMethod.name}: no active device, trying to connect to a device`
+      logger.info(
+        `${originalMethod.name}(${attempt}): trying to connect to a device`
       );
 
       const {
