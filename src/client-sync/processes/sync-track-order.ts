@@ -103,6 +103,11 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
 
       if (originalIndex === index) return;
 
+      logger.info(
+        `${pin}: ${track.name} votes: ${
+          track.sortedVotes.find((vote) => vote.trackId === track.id)?.score
+        }`
+      );
       if (originalIndex < currentIndex) movedFromAboveCurrentIndex++;
       logger.info(`${pin}: reorder ${track.name} ${originalIndex} -> ${index}`);
       reorders++;
