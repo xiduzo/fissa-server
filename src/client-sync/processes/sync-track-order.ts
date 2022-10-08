@@ -38,7 +38,6 @@ export const syncTrackOrder = async (appCache: cache) => {
 
           if (tMinus <= NO_SYNC_MARGIN) return;
 
-          logger.info(`${pin}: reorder playlist`);
           const reorders = await reorderPlaylist(room);
           if (reorders) await publish(`fissa/room/${pin}/tracks/reordered`);
         } catch (error) {
@@ -113,12 +112,12 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
     }
 
-    logger.info(`${pin}: reorders: ${reorders}`);
     const newCurrentTrackIndex = newTracksOrder.findIndex(
       (track) => track.id === currentTrackId
     );
 
     if (newCurrentTrackIndex !== currentIndex) await updateRoom(room);
+    if (reorders) logger.info(`${pin}: reorders: ${reorders}`);
     return reorders;
   } catch (error) {
     logger.info(error);
