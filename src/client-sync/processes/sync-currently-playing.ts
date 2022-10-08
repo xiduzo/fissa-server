@@ -68,14 +68,12 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
   const { accessToken, pin, currentIndex } = room;
   const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
-  const { is_playing } = currentlyPlaying;
-
   let newState: Partial<Room> = {
     currentIndex: -1,
     expectedEndTime: undefined,
   };
 
-  if (!is_playing) {
+  if (!currentlyPlaying?.is_playing) {
     logger.warn(`${pin}: not playing anymore`);
     await saveAndPublishRoom({ ...room, ...newState });
     return;
