@@ -12,17 +12,16 @@ export const updateAccessTokens = async (appCache: cache) => {
   const promises = rooms?.map(
     async (room): Promise<void> =>
       new Promise(async (resolve) => {
-        const { accessToken, refreshToken, currentIndex, pin } = room;
-
-        if (!accessToken || !refreshToken) return;
-
-        if (currentIndex < 0) {
-          logger.info(
-            `${pin}: not updating token as the room does not seem to be playing`
-          );
-          return;
-        }
         try {
+          const { accessToken, refreshToken, currentIndex, pin } = room;
+          if (!accessToken || !refreshToken) return;
+
+          if (currentIndex < 0) {
+            logger.info(
+              `${pin}: not updating token as the room does not seem to be playing`
+            );
+            return;
+          }
           const tokens = await updateTokens(accessToken, refreshToken);
 
           const rooms = await mongoCollection<Room>("room");
