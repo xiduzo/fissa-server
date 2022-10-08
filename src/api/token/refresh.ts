@@ -1,7 +1,5 @@
 import { VercelApiHandler } from "@vercel/node";
 import { StatusCodes } from "http-status-codes";
-import SpotifyWebApi from "spotify-web-api-node";
-import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
 import { Room } from "../../lib/interfaces/Room";
 import { cleanupDbClient, mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
@@ -24,6 +22,8 @@ const handler: VercelApiHandler = async (request, response) => {
 
         const me = await getMe(tokens.access_token);
 
+        // TODO: temporary add refresh token of user in DB via this route
+        // It should be added when creating the room
         await rooms.updateMany(
           { createdBy: me?.id },
           {
