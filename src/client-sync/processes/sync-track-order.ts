@@ -19,7 +19,7 @@ import { publish } from "../../utils/mqtt";
 import { updateRoom } from "./sync-currently-playing";
 
 const TRACK_ORDER_SYNC_TIME = 1000 * 2;
-const NO_SYNC_MARGIN = 1000 * 10;
+const NO_SYNC_MARGIN = 1000 * 5;
 
 export const syncTrackOrder = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
