@@ -18,7 +18,7 @@ import { logger } from "../../utils/logger";
 import { publish } from "../../utils/mqtt";
 import { updateRoom } from "./sync-currently-playing";
 
-const TRACK_ORDER_SYNC_TIME = 1000 * 5;
+const TRACK_ORDER_SYNC_TIME = 1000 * 2;
 const NO_SYNC_MARGIN = 1000 * 10;
 
 export const syncTrackOrder = async (appCache: cache) => {
@@ -101,23 +101,37 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     // TODO: take into account when the a track moved from before the current index
     // 4 reorder playlist
     let reorders = 0;
-    const reorderUpdates = newTracksOrder.map(async (track, index) => {
+    for (let index = 0; index < newTracksOrder.length; index++) {
+      const track = newTracksOrder[index];
       const originalIndex = tracks.findIndex(
         (original) => original.id === track.id
       );
+      if (originalIndex === index) return;
 
-      if (originalIndex !== index) {
-        reorders++;
-        logger.info(
-          `${pin}: ${track.name} (${track.id}) ${originalIndex} -> ${index}`
-        );
-      }
+      reorders++;
+      logger.info(
+        `${pin}: ${track.name} (${track.id}) ${originalIndex} -> ${index}`
+      );
 
       await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
-    });
+    }
+    // const reorderUpdates = newTracksOrder.map(async (track, index) => {
+    //   const originalIndex = tracks.findIndex(
+    //     (original) => original.id === track.id
+    //   );
 
-    // update room track indexes in DB
-    await Promise.all(reorderUpdates);
+    //   if (originalIndex !== index) {
+    //     reorders++;
+    //     logger.info(
+    //       `${pin}: ${track.name} (${track.id}) ${originalIndex} -> ${index}`
+    //     );
+    //   }
+
+    //   return roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
+    // });
+
+    // // update room track indexes in DB
+    // await Promise.all(reorderUpdates);
 
     logger.info(`${pin}: reorders: ${reorders}`);
     const newCurrentTrackIndex = newTracksOrder.findIndex(

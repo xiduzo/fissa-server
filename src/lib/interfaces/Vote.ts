@@ -19,7 +19,7 @@ export type SortedVoteData = {
 
 export type SortedVotes = { [trackId: string]: SortedVoteData };
 
-export const positiveScore = (score: SortedVoteData) => score.total > 0;
+export const positiveScore = (score: SortedVoteData) => score.total >= 0;
 export const negativeScore = (score: SortedVoteData) => score.total < 0;
 
 export const highToLow = (a: SortedVoteData, b: SortedVoteData): number =>
