@@ -68,37 +68,42 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 };
 
 export const updateRoom = async (room: Room): Promise<string | undefined> => {
-  const { pin, currentIndex, accessToken } = room;
-  const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
+  try {
+    const { pin, currentIndex, accessToken } = room;
+    const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
-  let newState: Partial<Room> = {
-    currentIndex: -1,
-    expectedEndTime: undefined,
-  };
+    let newState: Partial<Room> = {
+      currentIndex: -1,
+      expectedEndTime: undefined,
+    };
 
-  if (!currentlyPlaying?.is_playing) {
-    logger.warn(`${pin}: not playing anymore`);
-    await saveAndPublishRoom({ ...room, ...newState });
-    return;
-  }
+    if (!currentlyPlaying?.is_playing) {
+      logger.warn(`${pin}: not playing anymore`);
+      await saveAndPublishRoom({ ...room, ...newState });
+      return;
+    }
 
-  const tracks = await getRoomTracks(pin);
-  newState = getNextState(tracks, currentlyPlaying);
+    const tracks = await getRoomTracks(pin);
+    newState = getNextState(tracks, currentlyPlaying);
 
-  const newRoom = { ...room, ...newState };
+    const newRoom = { ...room, ...newState };
 
-  logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
-  if (currentIndex === newState.currentIndex) {
-    logger.warn(`${pin}: same index, update new end time`);
+    logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
+    if (currentIndex === newState.currentIndex) {
+      logger.warn(`${pin}: same index, update new end time`);
+      await saveAndPublishRoom(newRoom);
+
+      return undefined;
+    }
+
+    const nextTrackId = await getNextTrackId(newRoom, tracks);
+
     await saveAndPublishRoom(newRoom);
-
+    return nextTrackId;
+  } catch (error) {
+    logger.error(`${updateRoom.name}: ${JSON.stringify(error)}`);
     return undefined;
   }
-
-  const nextTrackId = await getNextTrackId(newRoom, tracks);
-
-  await saveAndPublishRoom(newRoom);
-  return nextTrackId;
 };
 
 const deleteVotesForTrack = async (pin: string, trackId: string) => {
