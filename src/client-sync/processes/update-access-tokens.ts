@@ -38,7 +38,7 @@ export const updateAccessTokens = async (appCache: cache) => {
             }
           );
         } catch (error) {
-          logger.error(`updateAccessTokens ${JSON.stringify(error)}`);
+          logger.error(`${updateAccessTokens.name}: ${JSON.stringify(error)}`);
         } finally {
           resolve();
         }

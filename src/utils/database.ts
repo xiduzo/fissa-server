@@ -46,7 +46,7 @@ const mongoDb = async (): Promise<Db> => {
         .on("connectionPoolClosed", cleanupDbClient);
       resolve(db);
     } catch (error) {
-      logger.error("mongoDbAsync", error);
+      logger.error(`${mongoDb.name}: ${JSON.stringify(error)}`);
       await mongoClient.close();
       reject(error);
     }
@@ -66,7 +66,7 @@ export const mongoCollection = async <T>(
     const database = await mongoDb();
     return database.collection<T>(name, options);
   } catch (error) {
-    logger.error("mongoCollectionAsync", error);
+    logger.error(`${mongoCollection.name}(${name}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -116,7 +116,7 @@ export const vote = async (
     await saveVote(vote);
     return vote;
   } catch (error) {
-    logger.error("voteAsync", error);
+    logger.error(`${vote.name}: ${error}`);
     throw new Error("Unable to vote");
   }
 };

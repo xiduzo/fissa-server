@@ -27,8 +27,8 @@ export const syncTrackOrder = async (appCache: cache) => {
   const promises = rooms?.map(
     async (room): Promise<void> =>
       new Promise(async (resolve) => {
+        const { accessToken, expectedEndTime, currentIndex, pin } = room;
         try {
-          const { accessToken, expectedEndTime, currentIndex, pin } = room;
           if (!accessToken) return;
           if (currentIndex < 0) return;
 
@@ -41,7 +41,9 @@ export const syncTrackOrder = async (appCache: cache) => {
           const reorders = await reorderPlaylist(room);
           if (reorders) await publish(`fissa/room/${pin}/tracks/reordered`);
         } catch (error) {
-          logger.error(`syncTrackOrder ${JSON.stringify(error)}`);
+          logger.error(
+            `${syncTrackOrder.name}(${pin}): ${JSON.stringify(error)}`
+          );
         } finally {
           resolve();
         }
@@ -120,6 +122,8 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     if (newCurrentTrackIndex !== currentIndex) await updateRoom(room);
     return reorders;
   } catch (error) {
-    logger.error(`reorderPlaylist ${JSON.stringify(error)}`);
+    logger.error(
+      `${reorderPlaylist.name}(${room.pin}): ${JSON.stringify(error)}`
+    );
   }
 };

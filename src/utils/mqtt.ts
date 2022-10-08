@@ -19,7 +19,11 @@ export const publish = async <T>(
         resolve(message);
       });
     } catch (error) {
-      logger.error(`publishAsync: ${JSON.stringify(error)}`);
+      logger.error(
+        `${publish.name}(${topic}): ${JSON.stringify(
+          message
+        )} -> ${JSON.stringify(error)}`
+      );
       reject(error);
     }
   });

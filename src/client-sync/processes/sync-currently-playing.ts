@@ -50,7 +50,11 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 
           await addTackToQueue(accessToken, nextTrackId);
         } catch (error) {
-          await catchError(error, room);
+          logger.error(
+            `${syncCurrentlyPlaying.name}(${room.pin}): ${JSON.stringify(
+              error
+            )}`
+          );
         } finally {
           // Whatever happens we need to return a resolved promise
           // so all promises are resolved and we can loop again
@@ -108,43 +112,6 @@ const deleteVotesForTrack = async (pin: string, trackId: string) => {
 
   const roomVotes = await getRoomVotes(pin);
   await publish(`fissa/room/${pin}/votes`, roomVotes);
-};
-
-const catchError = async (error: any, room: Room) => {
-  if (error.statusCode) return await catchHttpError(error, room);
-
-  logger.warn(`${room.pin}: ${error}`);
-};
-
-const catchHttpError = async (
-  error: { statusCode: number; message: string },
-  room: Room
-) => {
-  const { statusCode, message } = error;
-  const { pin } = room;
-
-  switch (statusCode) {
-    case StatusCodes.UNAUTHORIZED:
-      logger.warn("UNAUTHORIZED", message);
-      if (message.includes("Spotify's Web API")) {
-        const rooms = await mongoCollection<Room>("room");
-
-        await rooms.updateOne(
-          { pin },
-          { $set: { accessToken: undefined, currentIndex: -1 } }
-        );
-      }
-      break;
-    case StatusCodes.INTERNAL_SERVER_ERROR:
-      logger.warn("INTERNAL_SERVER_ERROR", message);
-      break;
-    case StatusCodes.NOT_FOUND:
-      if (message.includes("NO_ACTIVE_DEVICE")) return;
-      logger.warn("NOT_FOUND", message);
-    default:
-      logger.warn("UNKOWN ERROR", message);
-      break;
-  }
 };
 
 const saveAndPublishRoom = async (room: Room) => {
@@ -212,7 +179,7 @@ const getNextTrackId = async (
       }
     }
   } catch (error) {
-    logger.error(`${pin}: getNextTrackId ${error}`);
+    logger.error(`${getNextTrackId.name}(${pin}): ${error}`);
   }
 
   return nextTrackId;
