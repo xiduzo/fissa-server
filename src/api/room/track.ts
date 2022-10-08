@@ -63,6 +63,7 @@ const handler: VercelApiHandler = async (request, response) => {
         await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);
 
         const roomTracks = await getRoomTracks(pin);
+        // TODO: don't vote on tracks you've already voted on
         const votePromises = trackIds
           .filter((trackId) => {
             const currentTrack = roomTracks.find(
