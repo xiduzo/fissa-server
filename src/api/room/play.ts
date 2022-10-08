@@ -45,7 +45,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         if (is_playing && tracks.map((track) => track.id).includes(item.id)) {
           logger.warn(`tried to restart ${pin} but it was already playing`);
-          await updateRoom(room);
+          await updateRoom(accessToken);
           return response
             .status(StatusCodes.CONFLICT)
             .json(ReasonPhrases.CONFLICT);
@@ -53,7 +53,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await startPlayingTrack(accessToken, `spotify:track:${tracks[0].id}`);
 
-        const nextTrackId = await updateRoom(room);
+        const nextTrackId = await updateRoom(accessToken);
         if (nextTrackId) {
           await addTackToQueue(accessToken, nextTrackId);
         }

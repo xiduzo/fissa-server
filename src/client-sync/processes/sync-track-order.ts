@@ -119,7 +119,8 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       (track) => track.id === currentTrackId
     );
 
-    if (newCurrentTrackIndex !== currentIndex) await updateRoom(room);
+    if (newCurrentTrackIndex !== currentIndex)
+      await updateRoom(room.accessToken);
     return reorders;
   } catch (error) {
     logger.error(

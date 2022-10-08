@@ -75,7 +75,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
         await startPlayingTrack(accessToken, tracks[0].uri);
 
-        const nextTrackId = await updateRoom(room);
+        const nextTrackId = await updateRoom(accessToken);
         if (nextTrackId) {
           await addTackToQueue(accessToken, nextTrackId);
         }

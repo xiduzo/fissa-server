@@ -1,7 +1,6 @@
 import SpotifyWebApi from "spotify-web-api-node";
+import { updateRoom } from "../client-sync/processes/sync-currently-playing";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
-import { Room } from "../lib/interfaces/Room";
-import { mongoCollection } from "./database";
 import { logger } from "./logger";
 
 enum SpotifyLimits {
@@ -26,7 +25,7 @@ export const updateTokens = async (
     const { body } = await spotifyApi.refreshAccessToken();
     return body;
   } catch (error) {
-    logger.error(`${updateTokens.name}(${attempt}): ${JSON.stringify(error)}`);
+    logger.warn(`${updateTokens.name}(${attempt}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -57,7 +56,7 @@ export const addTracksToPlaylist = async (
 
     return tracksAdded;
   } catch (error) {
-    logger.error(
+    logger.warn(
       `${addTracksToPlaylist.name}(${attempt}): ${JSON.stringify(error)}`
     );
   }
@@ -76,7 +75,7 @@ export const getTracks = async (
     } = await spotifyApi.getTracks(trackIds);
     return tracks;
   } catch (error) {
-    logger.error(`${getTracks.name}(${attempt}): ${JSON.stringify(error)}`);
+    logger.warn(`${getTracks.name}(${attempt}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -100,9 +99,7 @@ export const createPlaylist = async (
 
     return id;
   } catch (error) {
-    logger.error(
-      `${createPlaylist.name}(${attempt}): ${JSON.stringify(error)}`
-    );
+    logger.warn(`${createPlaylist.name}(${attempt}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -138,7 +135,7 @@ export const getPlaylistTracks = async (
 
     return tracks;
   } catch (error) {
-    logger.error(
+    logger.warn(
       `${getPlaylistTracks.name}(${attempt}): ${JSON.stringify(error)}`
     );
   }
@@ -155,7 +152,7 @@ export const getMyCurrentPlaybackState = async (
 
     return body;
   } catch (error) {
-    logger.error(
+    logger.warn(
       `${getMyCurrentPlaybackState.name}(${attempt}): ${JSON.stringify(error)}`
     );
   }
@@ -169,7 +166,7 @@ export const getMe = async (accessToken: string, attempt = 0) => {
 
     return body;
   } catch (error) {
-    logger.error(`${getMe.name}(${attempt}): ${JSON.stringify(error)}`);
+    logger.warn(`${getMe.name}(${attempt}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -185,9 +182,7 @@ export const getMyTopTracks = async (
     } = await spotifyApi.getMyTopTracks({ limit: 20 });
     return items;
   } catch (error) {
-    logger.error(
-      `${getMyTopTracks.name}(${attempt}): ${JSON.stringify(error)}`
-    );
+    logger.warn(`${getMyTopTracks.name}(${attempt}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -204,7 +199,7 @@ const clearQueue = async (accessToken: string, attempt = 0) => {
       await clearQueue(accessToken);
     }
   } catch (error) {
-    logger.error(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
+    logger.warn(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -222,9 +217,30 @@ export const startPlayingTrack = async (
       uris: [uri],
     });
   } catch (error) {
-    logger.error(
+    logger.warn(
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
     );
+
+    if (error.body.error.reason === "NO_ACTIVE_DEVICE") {
+      logger.info(
+        `${startPlayingTrack.name}(${attempt}): Setting active device`
+      );
+      try {
+        const {
+          body: { devices },
+        } = await spotifyApi.getMyDevices();
+
+        if (devices.length >= attempt) {
+          await spotifyApi.transferMyPlayback([devices[attempt].id]);
+          await startPlayingTrack(accessToken, uri, attempt + 1);
+          await updateRoom(accessToken);
+        }
+      } catch {
+        logger.error(
+          `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
+        );
+      }
+    }
   }
 };
 
@@ -241,9 +257,7 @@ export const addTackToQueue = async (
   try {
     await spotifyApi.addToQueue(`spotify:track:${trackId}`);
   } catch (error) {
-    logger.error(
-      `${addTackToQueue.name}(${attempt}): ${JSON.stringify(error)}`
-    );
+    logger.warn(`${addTackToQueue.name}(${attempt}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -265,7 +279,7 @@ export const getRecommendedTracks = async (
     });
     return tracks;
   } catch (error) {
-    logger.error(
+    logger.warn(
       `${getRecommendedTracks.name}(${attempt}): ${JSON.stringify(error)}`
     );
   }

@@ -38,7 +38,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
 
           const lastAddedTrack = appCache.get(pin);
-          const nextTrackId = await updateRoom(room);
+          const nextTrackId = await updateRoom(accessToken);
           appCache.set(pin, nextTrackId);
 
           if (!nextTrackId) return;
@@ -68,8 +68,14 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
   setTimeout(() => syncCurrentlyPlaying(appCache), CURRENTLY_PLAYING_SYNC_TIME);
 };
 
-export const updateRoom = async (room: Room): Promise<string | undefined> => {
-  const { accessToken, pin, currentIndex } = room;
+export const updateRoom = async (
+  accessToken: string
+): Promise<string | undefined> => {
+  const rooms = await mongoCollection<Room>("room");
+  const room = await rooms.findOne({ accessToken });
+  if (!room) return undefined;
+
+  const { pin, currentIndex } = room;
   const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
   let newState: Partial<Room> = {
