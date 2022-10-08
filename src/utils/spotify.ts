@@ -1,5 +1,7 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
+import { Room } from "../lib/interfaces/Room";
+import { mongoCollection } from "./database";
 import { logger } from "./logger";
 
 enum SpotifyLimits {
@@ -353,13 +355,14 @@ const generalCatchHandler = async (
   error: any,
   accessToken: string,
   attempt: number,
-  originalMethod: Function
+  originalMethod: Function,
+  otherParams?: object
 ): Promise<boolean> => {
   logger.warn(`${originalMethod.name}(${attempt}): ${JSON.stringify(error)}`);
+  const spotifyApi = spotifyClient(accessToken);
 
   try {
     if (error.message.includes("active device")) {
-      const spotifyApi = spotifyClient(accessToken);
       logger.info(
         `${originalMethod.name}(${attempt}): trying to connect to a device`
       );
@@ -374,6 +377,30 @@ const generalCatchHandler = async (
       if (attempt < devices.length) return true;
     }
 
+    if (error.message.includes("access token expired")) {
+      logger.info(
+        `${originalMethod.name}(${attempt}): trying to update access token`
+      );
+
+      if (attempt > 5) return false;
+      const refreshToken = otherParams["refreshToken"];
+      if (!refreshToken) throw new Error("refresh token is not provided");
+      spotifyApi.setRefreshToken(refreshToken);
+      const rooms = await mongoCollection<Room>("room");
+      const response = await spotifyApi.refreshAccessToken();
+      const me = await getMe(response.body.access_token);
+
+      logger.info(`Updating access token for ${me?.id}`);
+
+      await rooms.updateMany(
+        { createdBy: me?.id },
+        {
+          $set: { accessToken: response.body.access_token },
+        }
+      );
+
+      return true;
+    }
     logger.error(
       `${originalMethod.name}(${attempt}): ${JSON.stringify(error)}`
     );
