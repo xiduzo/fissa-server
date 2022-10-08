@@ -90,7 +90,8 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
 
     const roomTracks = await tracksCollection;
 
-    // TODO: tak into account when the a track moved from before the current index
+    // TODO: take into account when the a track moved from before the current index
+    let movedFromAboveCurrentIndex = 0;
     // 4 reorder playlist
     let reorders = 0;
     const reorderUpdates = newTracksOrder.map(async (track, index) => {
@@ -99,10 +100,14 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       );
 
       if (originalIndex === index) return;
-      logger.info(`${pin}: reorder ${track.name} ${originalIndex} -> ${index}`);
 
+      if (originalIndex < currentIndex) movedFromAboveCurrentIndex++;
+      logger.info(`${pin}: reorder ${track.name} ${originalIndex} -> ${index}`);
       reorders++;
-      await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
+      await roomTracks.updateOne(
+        { pin, id: track.id },
+        { $set: { index: index - movedFromAboveCurrentIndex } }
+      );
     });
 
     // update room track indexes in DB
