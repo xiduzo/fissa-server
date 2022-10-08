@@ -78,12 +78,10 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       // Remove all other tracks
       return !voteIds.includes(track.id);
     });
-    logger.info(`${pin}: newTracksOrder: ${newTracksOrder.length}`);
 
     // 2 add positive tracks
     const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
     if (positiveVotes.length) {
-      logger.info(`${pin}: positiveVotes: ${positiveVotes.length}`);
       newTracksOrder = [
         ...newTracksOrder.slice(0, currentIndex + playlistOffset),
         ...mapTo(tracks, positiveVotes),
@@ -94,7 +92,6 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     // 3 add negative tracks at the end of the playlist
     const negativeVotes = sortedVotes.filter(negativeScore).sort(highToLow);
     if (negativeVotes.length) {
-      logger.info(`${pin}: negativeVotes: ${negativeVotes.length}`);
       newTracksOrder = [...newTracksOrder, ...mapTo(tracks, negativeVotes)];
     }
 
@@ -106,7 +103,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       const originalIndex = tracks.findIndex(
         (original) => original.id === track.id
       );
-      if (originalIndex === index) return;
+      if (originalIndex === index) continue;
 
       reorders++;
       logger.info(
@@ -115,23 +112,6 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
 
       await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
     }
-    // const reorderUpdates = newTracksOrder.map(async (track, index) => {
-    //   const originalIndex = tracks.findIndex(
-    //     (original) => original.id === track.id
-    //   );
-
-    //   if (originalIndex !== index) {
-    //     reorders++;
-    //     logger.info(
-    //       `${pin}: ${track.name} (${track.id}) ${originalIndex} -> ${index}`
-    //     );
-    //   }
-
-    //   return roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
-    // });
-
-    // // update room track indexes in DB
-    // await Promise.all(reorderUpdates);
 
     logger.info(`${pin}: reorders: ${reorders}`);
     const newCurrentTrackIndex = newTracksOrder.findIndex(
