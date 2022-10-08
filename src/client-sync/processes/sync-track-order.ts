@@ -18,7 +18,7 @@ import { logger } from "../../utils/logger";
 import { publish } from "../../utils/mqtt";
 import { updateRoom } from "./sync-currently-playing";
 
-const TRACK_ORDER_SYNC_TIME = 1000 * 5;
+const TRACK_ORDER_SYNC_TIME = 1000;
 const NO_SYNC_MARGIN = 1000 * 10;
 
 export const syncTrackOrder = async (appCache: cache) => {
@@ -38,6 +38,7 @@ export const syncTrackOrder = async (appCache: cache) => {
 
           if (tMinus <= NO_SYNC_MARGIN) return;
 
+          logger.info(`${pin}: reorder playlist`);
           const reorders = await reorderPlaylist(room);
           if (reorders) await publish(`fissa/room/${pin}/tracks/reordered`);
         } catch (error) {
@@ -65,7 +66,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     const sortedVotes = getScores(votes);
     const tracks = await getRoomTracks(pin);
     const currentTrackId = tracks[currentIndex].id;
-    const tracksCollection = mongoCollection<Track>("track");
+    const roomTracks = await mongoCollection<Track>("track");
     const voteIds = votes.map((vote) => vote.trackId);
     const playlistOffset = 2; // 1 for the current track + 1 for the next track
 
@@ -77,6 +78,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       // Remove all other tracks
       return !voteIds.includes(track.id);
     });
+    logger.info(`${pin}: newTracksOrder: ${newTracksOrder.length}`);
 
     // 2 add positive tracks
     const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
@@ -86,11 +88,13 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       ...newTracksOrder.slice(currentIndex + playlistOffset),
     ];
 
+    logger.info(`${pin}: positiveVotes: ${positiveVotes.length}`);
+
     // 3 add negative tracks at the end of the playlist
     const negativeVotes = sortedVotes.filter(negativeScore).sort(highToLow);
     newTracksOrder = [...newTracksOrder, ...mapTo(tracks, negativeVotes)];
 
-    const roomTracks = await tracksCollection;
+    logger.info(`${pin}: negativeVotes: ${negativeVotes.length}`);
 
     // TODO: take into account when the a track moved from before the current index
     let movedFromAboveCurrentIndex = 0;
@@ -101,6 +105,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
         (original) => original.id === track.id
       );
 
+      logger.info(`${pin}: ${track.name} ${originalIndex} -> ${index}`);
       if (originalIndex === index) return;
 
       logger.info(
