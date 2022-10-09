@@ -272,9 +272,12 @@ export const startPlayingTrack = async (
 
 export const addTackToQueue = async (
   accessToken: string,
-  trackId: string,
+  /** When no trackId has been given no track will be added to the queue */
+  trackId?: string,
   attempt = 0
 ) => {
+  if (!trackId) return;
+
   const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
   spotifyApi.setAccessToken(accessToken);
 

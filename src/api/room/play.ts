@@ -54,9 +54,7 @@ const handler: VercelApiHandler = async (request, response) => {
         await startPlayingTrack(accessToken, `spotify:track:${tracks[0].id}`);
 
         const nextTrackId = await updateRoom(room);
-        if (nextTrackId) {
-          await addTackToQueue(accessToken, nextTrackId);
-        }
+        await addTackToQueue(accessToken, nextTrackId);
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
