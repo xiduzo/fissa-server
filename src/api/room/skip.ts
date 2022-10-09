@@ -2,7 +2,7 @@ import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { cleanupDbClient, getRoom } from "../../utils/database";
-import { skipTrack } from "../../utils/spotify";
+import { addTackToQueue, skipTrack } from "../../utils/spotify";
 import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -50,7 +50,10 @@ const handler: VercelApiHandler = async (request, response) => {
             .json(ReasonPhrases.UNPROCESSABLE_ENTITY);
         }
 
-        await updateRoom(room);
+        const nextTrackId = await updateRoom(room);
+        if (nextTrackId) {
+          await addTackToQueue(accessToken, nextTrackId);
+        }
 
         response.status(StatusCodes.OK).json(ReasonPhrases.OK);
       } catch (error) {
