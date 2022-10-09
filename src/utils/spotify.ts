@@ -199,10 +199,9 @@ export const skipTrack = async (
       actions: { disallows },
     } = await getMyCurrentPlaybackState(accessToken);
 
-    if (!Boolean(disallows.skipping_next)) {
-      await spotifyApi.skipToNext();
-    }
+    if (Boolean(disallows.skipping_next)) return false;
 
+    await spotifyApi.skipToNext();
     return true;
   } catch (error) {
     logger.warn(`${skipTrack.name}(${attempt}): ${JSON.stringify(error)}`);

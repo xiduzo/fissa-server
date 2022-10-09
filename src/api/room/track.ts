@@ -38,14 +38,10 @@ const handler: VercelApiHandler = async (request, response) => {
     }
 
     case "POST": {
-      const {
-        pin,
-        trackIds,
-        accessToken: userAccessToken,
-      } = request.body as {
+      const { pin, trackIds, createdBy } = request.body as {
         pin: string;
         trackIds: string[];
-        accessToken: string;
+        createdBy: string;
       };
 
       try {
@@ -80,9 +76,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
             return trackId;
           })
-          .map(async (id) =>
-            vote(room.pin, userAccessToken, id, VoteState.Upvote)
-          );
+          .map(async (id) => vote(room.pin, createdBy, id, VoteState.Upvote));
 
         await Promise.all(votePromises);
 

@@ -13,7 +13,6 @@ import { logger } from "../../utils/logger";
 import { createPin } from "../../utils/pin";
 import {
   addTackToQueue,
-  getMe,
   getMyTopTracks,
   getPlaylistTracks,
   startPlayingTrack,
@@ -27,11 +26,9 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { accessToken, refreshToken, playlistId } = request.body;
+      const { accessToken, refreshToken, playlistId, createdBy } = request.body;
 
-      logger.info(JSON.stringify(request.body));
-      // TODO: add || !refreshToken when new version is in app store
-      if (!accessToken) {
+      if (!accessToken || !refreshToken || !createdBy) {
         return response
           .status(StatusCodes.BAD_REQUEST)
           .json(ReasonPhrases.BAD_REQUEST);
@@ -52,13 +49,11 @@ const handler: VercelApiHandler = async (request, response) => {
           }
         } while (pin === undefined);
 
-        const me = await getMe(accessToken);
-
-        await deleteMyOtherRooms(me.id);
+        await deleteMyOtherRooms(createdBy);
 
         const room: Room = {
           pin,
-          createdBy: me.id,
+          createdBy,
           accessToken,
           refreshToken,
           currentIndex: -1,

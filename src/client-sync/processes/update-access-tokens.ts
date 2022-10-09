@@ -2,7 +2,7 @@ import cache from "node-cache";
 import { Room } from "../../lib/interfaces/Room";
 import { mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
-import { getMe, updateTokens } from "../../utils/spotify";
+import { updateTokens } from "../../utils/spotify";
 
 const UPDATE_ACCESS_TOKEN_TIME = 1000 * 60 * 20;
 
@@ -13,7 +13,8 @@ export const updateAccessTokens = async (appCache: cache) => {
     async (room): Promise<void> =>
       new Promise(async (resolve) => {
         try {
-          const { accessToken, refreshToken, currentIndex, pin } = room;
+          const { createdBy, accessToken, refreshToken, currentIndex, pin } =
+            room;
           if (!accessToken || !refreshToken) return;
 
           if (currentIndex < 0) {
@@ -26,12 +27,10 @@ export const updateAccessTokens = async (appCache: cache) => {
 
           const rooms = await mongoCollection<Room>("room");
 
-          const me = await getMe(tokens.access_token);
-
           logger.info(`${pin}: Updating access token`);
 
           await rooms.updateMany(
-            { createdBy: me?.id },
+            { createdBy },
             {
               $set: { accessToken: tokens.access_token },
             }

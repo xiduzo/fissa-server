@@ -1,13 +1,8 @@
 import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { cleanupDbClient, getRoom, getRoomTracks } from "../../utils/database";
-import {
-  addTackToQueue,
-  getMyCurrentPlaybackState,
-  skipTrack,
-  startPlayingTrack,
-} from "../../utils/spotify";
+import { cleanupDbClient, getRoom } from "../../utils/database";
+import { skipTrack } from "../../utils/spotify";
 import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -18,8 +13,9 @@ const handler: VercelApiHandler = async (request, response) => {
       });
       break;
     case "POST":
-      const { pin } = request.body as {
+      const { pin, createdBy } = request.body as {
         pin: string;
+        createdBy: string;
       };
 
       if (!pin) {
@@ -32,14 +28,22 @@ const handler: VercelApiHandler = async (request, response) => {
         const room = await getRoom(pin);
 
         if (!room) {
-          response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
-          return;
+          return response
+            .status(StatusCodes.NOT_FOUND)
+            .json(ReasonPhrases.NOT_FOUND);
+        }
+
+        if (room.createdBy !== createdBy) {
+          return response
+            .status(StatusCodes.METHOD_NOT_ALLOWED)
+            .json(ReasonPhrases.METHOD_NOT_ALLOWED);
         }
 
         const { accessToken } = room;
 
         const skipped = await skipTrack(accessToken);
 
+        logger.info(`${pin}: skipped track: ${skipped}`);
         if (!skipped) {
           return response
             .status(StatusCodes.UNPROCESSABLE_ENTITY)

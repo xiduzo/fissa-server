@@ -8,7 +8,7 @@ import {
 } from "mongodb";
 import { MONGODB_URI } from "../lib/constants/credentials";
 import { Vote, VoteState } from "../lib/interfaces/Vote";
-import { getMe, getTracks } from "./spotify";
+import { getTracks } from "./spotify";
 import { logger } from "./logger";
 import { Track } from "../lib/interfaces/Track";
 import { Room } from "../lib/interfaces/Room";
@@ -98,16 +98,14 @@ const saveVote = async (vote: Vote) => {
 
 export const vote = async (
   pin: string,
-  accessToken: string,
+  createdBy: string,
   trackId: string,
   state: VoteState
 ): Promise<Vote> => {
   try {
-    const me = await getMe(accessToken);
-
     const vote: Vote = {
       pin,
-      createdBy: me.id,
+      createdBy,
       trackId,
       state,
     };

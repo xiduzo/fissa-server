@@ -31,15 +31,16 @@ const handler: VercelApiHandler = async (request, response) => {
       break;
     }
     case "POST": {
-      const { pin, accessToken, trackId, state } = request.body;
+      const { pin, accessToken, trackId, state, createdBy } = request.body;
 
-      if (!accessToken) return;
-      if (!pin) return;
-      if (!trackId) return;
-      if (!state) return;
+      if (!createdBy || !state || !trackId || !pin || !accessToken) {
+        return response
+          .status(StatusCodes.BAD_REQUEST)
+          .json(ReasonPhrases.BAD_REQUEST);
+      }
 
       try {
-        await vote(pin, accessToken, trackId, state);
+        await vote(pin, createdBy, trackId, state);
         const votes = await getRoomVotes(pin);
 
         await publish(`fissa/room/${pin}/votes`, votes);
