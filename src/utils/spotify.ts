@@ -217,12 +217,34 @@ const clearQueue = async (accessToken: string, attempt = 0) => {
       actions: { disallows },
     } = await getMyCurrentPlaybackState(accessToken);
 
-    if (!Boolean(disallows.skipping_next)) {
-      await spotifyApi.skipToNext();
-      await clearQueue(accessToken);
-    }
+    if (Boolean(disallows.skipping_next)) return;
+
+    await spotifyApi.skipToNext();
+    await clearQueue(accessToken, attempt + 1);
   } catch (error) {
     logger.warn(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
+  }
+};
+
+const setActiveDevice = async (accessToken: string, attempt = 0) => {
+  const spotifyApi = spotifyClient(accessToken);
+
+  try {
+    const {
+      body: { devices },
+    } = await spotifyApi.getMyDevices();
+
+    const activeDevice = devices.find((device) => device.is_active);
+
+    if (activeDevice) return;
+    if (attempt > devices.length) return;
+
+    await spotifyApi.transferMyPlayback([devices[attempt].id]);
+    return await setActiveDevice(accessToken, attempt + 1);
+  } catch (error) {
+    logger.warn(
+      `${setActiveDevice.name}(${attempt}): ${JSON.stringify(error)}`
+    );
   }
 };
 
@@ -234,9 +256,8 @@ export const startPlayingTrack = async (
   const spotifyApi = spotifyClient(accessToken);
 
   try {
-    // TODO: clear user queue
+    await setActiveDevice(accessToken);
     await clearQueue(accessToken);
-
     await spotifyApi.play({
       uris: [uri],
     });
@@ -244,26 +265,6 @@ export const startPlayingTrack = async (
     logger.warn(
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
     );
-
-    if (error.body.error.reason === "NO_ACTIVE_DEVICE") {
-      logger.info(
-        `${startPlayingTrack.name}(${attempt}): setting active device`
-      );
-      try {
-        const {
-          body: { devices },
-        } = await spotifyApi.getMyDevices();
-
-        if (devices.length >= attempt) {
-          await spotifyApi.transferMyPlayback([devices[attempt].id]);
-          await startPlayingTrack(accessToken, uri, attempt + 1);
-        }
-      } catch {
-        logger.error(
-          `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
-        );
-      }
-    }
   }
 };
 

@@ -13,7 +13,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@vercel/node": "2.5.22",
+    "@vercel/node": "2.5.24",
     "dotenv": "16.0.3",
     "http-status-codes": "2.2.0",
     "luxon": "^3.0.4",
@@ -28,7 +28,7 @@
   "devDependencies": {
     "@types/jest": "^29.1.2",
     "@types/luxon": "^3.0.1",
-    "@types/node": "^18.8.3",
+    "@types/node": "^18.8.5",
     "@types/spotify-web-api-node": "5.0.7",
     "jest": "^29.1.2",
     "nodemon": "2.0.20",

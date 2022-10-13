@@ -763,10 +763,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.42.tgz#d7e8f22700efc94d125103075c074396b5f41f9b"
   integrity sha512-Q5BPGyGKcvQgAMbsr7qEGN/kIPN6zZecYYABeTDBizOsau+2NMdSVTar9UQw21A2+JyA2KRNDYaYrPB0Rpk2oQ==
 
-"@types/node@^18.8.3":
-  version "18.8.3"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.8.3.tgz#ce750ab4017effa51aed6a7230651778d54e327c"
-  integrity sha512-0os9vz6BpGwxGe9LOhgP/ncvYN5Tx1fNcd2TM3rD/aCGBkysb+ZWpXEocG24h6ZzOi13+VB8HndAQFezsSOw1w==
+"@types/node@^18.8.5":
+  version "18.8.5"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.8.5.tgz#6a31f820c1077c3f8ce44f9e203e68a176e8f59e"
+  integrity sha512-Bq7G3AErwe5A/Zki5fdD3O6+0zDChhg671NfPjtIcbtzDNZTv4NPKMRFr7gtYPG7y+B8uTiNK4Ngd9T0FTar6Q==
 
 "@types/prettier@^2.1.5":
   version "2.7.1"
@@ -825,17 +825,17 @@
   resolved "https://registry.yarnpkg.com/@vercel/node-bridge/-/node-bridge-3.0.0.tgz#443655b74713ec65531726fb5a30c5c528c804bf"
   integrity sha512-TNQK6cufwrhd8ASDk5YHHenH8Xhp9sY8xUjOTKnQQI37KLk+Sw2HlHhT5rzUFN23ahosUlkY8InwtYUmSNb9kw==
 
-"@vercel/node@2.5.22":
-  version "2.5.22"
-  resolved "https://registry.yarnpkg.com/@vercel/node/-/node-2.5.22.tgz#48422f7dd78468adb753e5755a42506c300b7809"
-  integrity sha512-phlgW4qHGEt/yQ/nbGCd3vrFM0n48/MBbvmAKgTeVE/mjzdWxPnuSHNQlaipJkzfT3tv8kiiJu9ZoicuDoACTw==
+"@vercel/node@2.5.24":
+  version "2.5.24"
+  resolved "https://registry.yarnpkg.com/@vercel/node/-/node-2.5.24.tgz#f2ca3418e94afc9c99d301b131795c2e326a75f1"
+  integrity sha512-DrvAQMyngMjnyHr3uhvShXi1f3iBTrURa/6vLQkWPJv1lfcVP/tcz7uwVX4tAb0a0i+reNhMMdUxH75m/Q6OdA==
   dependencies:
     "@edge-runtime/vm" "1.1.0-beta.36"
     "@types/node" "*"
     "@vercel/build-utils" "5.5.4"
     "@vercel/node-bridge" "3.0.0"
     "@vercel/static-config" "2.0.3"
-    edge-runtime "1.1.0-beta.37"
+    edge-runtime "1.1.0-beta.38"
     esbuild "0.14.47"
     exit-hook "2.2.1"
     node-fetch "2.6.7"
@@ -1362,10 +1362,10 @@ duplexify@^4.1.1:
     readable-stream "^3.1.1"
     stream-shift "^1.0.0"
 
-edge-runtime@1.1.0-beta.37:
-  version "1.1.0-beta.37"
-  resolved "https://registry.yarnpkg.com/edge-runtime/-/edge-runtime-1.1.0-beta.37.tgz#e88eafba4f3630990468bb53efca6f48d76063c4"
-  integrity sha512-IP0xYNmp0XXoXVnrAf/e67224ZkMUUBMyUUohVxWWI5XdyetIGRNWp3GifDy3LpbuE02yv42rgtoE+tm+whcLA==
+edge-runtime@1.1.0-beta.38:
+  version "1.1.0-beta.38"
+  resolved "https://registry.yarnpkg.com/edge-runtime/-/edge-runtime-1.1.0-beta.38.tgz#f15f136a553e342744aae1a345368bc2c6298a4e"
+  integrity sha512-MY6/XcnGGuvLmwAR6PQizjhW/ABjVnmpJQmhJRacmo7K7LhuevszrPFVf0GmwVrr9PUahrvgmZYydQLSTpS5AA==
   dependencies:
     "@edge-runtime/format" "1.1.0-beta.33"
     "@edge-runtime/vm" "1.1.0-beta.36"
