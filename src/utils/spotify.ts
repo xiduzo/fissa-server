@@ -235,7 +235,7 @@ export const startPlayingTrack = async (
 
   try {
     // TODO: clear user queue
-    // await clearQueue(accessToken);
+    await clearQueue(accessToken);
 
     await spotifyApi.play({
       uris: [uri],
@@ -247,7 +247,7 @@ export const startPlayingTrack = async (
 
     if (error.body.error.reason === "NO_ACTIVE_DEVICE") {
       logger.info(
-        `${startPlayingTrack.name}(${attempt}): Setting active device`
+        `${startPlayingTrack.name}(${attempt}): setting active device`
       );
       try {
         const {
@@ -257,9 +257,6 @@ export const startPlayingTrack = async (
         if (devices.length >= attempt) {
           await spotifyApi.transferMyPlayback([devices[attempt].id]);
           await startPlayingTrack(accessToken, uri, attempt + 1);
-          const rooms = await mongoCollection<Room>("room");
-          const room = await rooms.findOne({ accessToken });
-          await updateRoom(room);
         }
       } catch {
         logger.error(
