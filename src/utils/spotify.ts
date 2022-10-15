@@ -1,8 +1,5 @@
 import SpotifyWebApi from "spotify-web-api-node";
-import { updateRoom } from "../client-sync/processes/sync-currently-playing";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
-import { Room } from "../lib/interfaces/Room";
-import { mongoCollection } from "./database";
 import { logger } from "./logger";
 
 enum SpotifyLimits {
@@ -212,14 +209,21 @@ export const skipTrack = async (
 const clearQueue = async (accessToken: string, attempt = 0) => {
   const spotifyApi = spotifyClient(accessToken);
 
+  if (attempt > 3) return;
+
   try {
     const {
       actions: { disallows },
     } = await getMyCurrentPlaybackState(accessToken);
+    const {
+      body: {},
+    } = await spotifyApi.getMe();
 
     if (Boolean(disallows.skipping_next)) return;
 
-    await spotifyApi.skipToNext();
+    for (let i = 0; i < 10; i++) {
+      await spotifyApi.skipToNext();
+    }
     await clearQueue(accessToken, attempt + 1);
   } catch (error) {
     logger.warn(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
@@ -237,7 +241,7 @@ const setActiveDevice = async (accessToken: string, attempt = 0) => {
     const activeDevice = devices.find((device) => device.is_active);
 
     if (activeDevice) return;
-    if (attempt > devices.length) return;
+    if (attempt >= devices.length) return;
 
     await spotifyApi.transferMyPlayback([devices[attempt].id]);
     return await setActiveDevice(accessToken, attempt + 1);
@@ -257,7 +261,7 @@ export const startPlayingTrack = async (
 
   try {
     await setActiveDevice(accessToken);
-    await clearQueue(accessToken);
+    //await clearQueue(accessToken);
     await spotifyApi.play({
       uris: [uri],
     });
