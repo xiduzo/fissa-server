@@ -19,24 +19,25 @@ const handler: VercelApiHandler = async (request, response) => {
       };
 
       if (!pin) {
-        return response
+        response
           .status(StatusCodes.BAD_REQUEST)
           .json(ReasonPhrases.BAD_REQUEST);
+        return;
       }
 
       try {
         const room = await getRoom(pin);
 
         if (!room) {
-          return response
-            .status(StatusCodes.NOT_FOUND)
-            .json(ReasonPhrases.NOT_FOUND);
+          response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
+          return;
         }
 
         if (room.createdBy !== createdBy) {
-          return response
+          response
             .status(StatusCodes.METHOD_NOT_ALLOWED)
             .json(ReasonPhrases.METHOD_NOT_ALLOWED);
+          return;
         }
 
         const { accessToken } = room;
@@ -45,9 +46,10 @@ const handler: VercelApiHandler = async (request, response) => {
 
         logger.info(`${pin}: skipped track: ${skipped}`);
         if (!skipped) {
-          return response
+          response
             .status(StatusCodes.UNPROCESSABLE_ENTITY)
             .json(ReasonPhrases.UNPROCESSABLE_ENTITY);
+          return;
         }
 
         const nextTrackId = await updateRoom(room);
@@ -59,6 +61,7 @@ const handler: VercelApiHandler = async (request, response) => {
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+        return;
       } finally {
         await cleanupDbClient();
       }

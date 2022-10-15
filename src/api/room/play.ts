@@ -22,9 +22,10 @@ const handler: VercelApiHandler = async (request, response) => {
       };
 
       if (!pin) {
-        return response
+        response
           .status(StatusCodes.BAD_REQUEST)
           .json(ReasonPhrases.BAD_REQUEST);
+        return;
       }
 
       try {
@@ -46,9 +47,8 @@ const handler: VercelApiHandler = async (request, response) => {
         if (is_playing && tracks.map((track) => track.id).includes(item.id)) {
           logger.warn(`tried to restart ${pin} but it was already playing`);
           await updateRoom(room);
-          return response
-            .status(StatusCodes.CONFLICT)
-            .json(ReasonPhrases.CONFLICT);
+          response.status(StatusCodes.CONFLICT).json(ReasonPhrases.CONFLICT);
+          return;
         }
 
         await startPlayingTrack(accessToken, `spotify:track:${tracks[0].id}`);

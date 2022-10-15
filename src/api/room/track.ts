@@ -18,9 +18,10 @@ const handler: VercelApiHandler = async (request, response) => {
       const pin = (request.query.pin as string)?.toUpperCase();
 
       if (!pin) {
-        return response
+        response
           .status(StatusCodes.BAD_REQUEST)
           .json(ReasonPhrases.BAD_REQUEST);
+        return;
       }
 
       try {
@@ -48,9 +49,8 @@ const handler: VercelApiHandler = async (request, response) => {
         const room = await getRoom(pin);
 
         if (!room) {
-          return response
-            .status(StatusCodes.NOT_FOUND)
-            .json(ReasonPhrases.NOT_FOUND);
+          response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
+          return;
         }
 
         const { accessToken, currentIndex } = room;

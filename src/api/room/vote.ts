@@ -34,9 +34,10 @@ const handler: VercelApiHandler = async (request, response) => {
       const { pin, accessToken, trackId, state, createdBy } = request.body;
 
       if (!createdBy || !state || !trackId || !pin || !accessToken) {
-        return response
+        response
           .status(StatusCodes.BAD_REQUEST)
           .json(ReasonPhrases.BAD_REQUEST);
+        return;
       }
 
       try {

@@ -29,9 +29,10 @@ const handler: VercelApiHandler = async (request, response) => {
       const { accessToken, refreshToken, playlistId, createdBy } = request.body;
 
       if (!accessToken || !refreshToken || !createdBy) {
-        return response
+        response
           .status(StatusCodes.BAD_REQUEST)
           .json(ReasonPhrases.BAD_REQUEST);
+        return;
       }
 
       let pin: string;
