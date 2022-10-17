@@ -267,7 +267,21 @@ export const startPlayingTrack = async (
     });
 
     // Spotify needs some time to actually start playing the track
-    await new Promise((resolve) => setTimeout(resolve, 3_000));
+    // so we create a loop that checks if the track is playing
+    // and if it is, we return
+    // it can take at most 10 seconds before we return anyway
+    await new Promise(async (resolve) => {
+      setTimeout(resolve, 10_000);
+      for (let i = 0; i < 10; i++) {
+        const {
+          body: { is_playing },
+        } = await spotifyApi.getMyCurrentPlaybackState();
+
+        if (!is_playing) continue;
+
+        resolve(i);
+      }
+    });
   } catch (error) {
     logger.warn(
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
