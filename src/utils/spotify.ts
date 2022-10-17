@@ -126,7 +126,9 @@ const getMyLikedTracks = async (
       received = received.concat(body.items);
     }
 
-    return received as any as SpotifyApi.TrackObjectFull[];
+    const tracks = received.map((track) => track.track);
+
+    return tracks;
   } catch (error) {
     logger.warn(
       `${getMyLikedTracks.name}(${attempt}): ${JSON.stringify(error)}`
@@ -161,9 +163,7 @@ export const getPlaylistTracks = async (
       received = received.concat(body.items);
     }
 
-    const tracks = received.map(
-      (item) => item.track as SpotifyApi.TrackObjectFull
-    );
+    const tracks = received.map((item) => item.track);
 
     return tracks;
   } catch (error) {
