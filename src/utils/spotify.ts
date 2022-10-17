@@ -102,6 +102,38 @@ export const createPlaylist = async (
   }
 };
 
+const getMyLikedTracks = async (
+  accessToken: string,
+  playlistId: string,
+  attempt = 0
+): Promise<SpotifyApi.TrackObjectFull[]> => {
+  const spotifyApi = spotifyClient(accessToken);
+
+  let received: SpotifyApi.SavedTrackObject[] = [];
+
+  try {
+    const {
+      body: { total, items },
+    } = await spotifyApi.getMySavedTracks();
+
+    received = received.concat(items);
+
+    while (received.length < total) {
+      const { body } = await spotifyApi.getMySavedTracks({
+        offset: received.length,
+      });
+
+      received = received.concat(body.items);
+    }
+
+    return received as any as SpotifyApi.TrackObjectFull[];
+  } catch (error) {
+    logger.warn(
+      `${getMyLikedTracks.name}(${attempt}): ${JSON.stringify(error)}`
+    );
+  }
+};
+
 export const getPlaylistTracks = async (
   accessToken: string,
   playlistId: string,
@@ -110,22 +142,23 @@ export const getPlaylistTracks = async (
   const spotifyApi = spotifyClient(accessToken);
 
   try {
-    let total = 0;
-
+    if (playlistId === "saved-tracks") {
+      return await getMyLikedTracks(accessToken, playlistId);
+    }
     let received: SpotifyApi.PlaylistTrackObject[] = [];
 
-    let response = await spotifyApi.getPlaylistTracks(playlistId);
+    const {
+      body: { total, items },
+    } = await spotifyApi.getPlaylistTracks(playlistId);
 
-    total = response.body.total;
-
-    received = received.concat(response.body.items);
+    received = received.concat(items);
 
     while (received.length < total) {
-      response = await spotifyApi.getPlaylistTracks(playlistId, {
+      const { body } = await spotifyApi.getPlaylistTracks(playlistId, {
         offset: received.length,
       });
 
-      received = received.concat(response.body.items);
+      received = received.concat(body.items);
     }
 
     const tracks = received.map(
