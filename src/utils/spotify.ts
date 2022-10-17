@@ -206,25 +206,24 @@ export const skipTrack = async (
   }
 };
 
+// TODO wait for: https://github.com/thelinmichael/spotify-web-api-node/pull/465/files
 const clearQueue = async (accessToken: string, attempt = 0) => {
   const spotifyApi = spotifyClient(accessToken);
-
-  if (attempt > 3) return;
 
   try {
     const {
       actions: { disallows },
     } = await getMyCurrentPlaybackState(accessToken);
+
     const {
       body: {},
     } = await spotifyApi.getMe();
 
     if (Boolean(disallows.skipping_next)) return;
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 5; i++) {
       await spotifyApi.skipToNext();
     }
-    await clearQueue(accessToken, attempt + 1);
   } catch (error) {
     logger.warn(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
   }
@@ -261,7 +260,7 @@ export const startPlayingTrack = async (
 
   try {
     await setActiveDevice(accessToken);
-    //await clearQueue(accessToken);
+    await clearQueue(accessToken);
     await spotifyApi.play({
       uris: [uri],
     });
