@@ -265,6 +265,9 @@ export const startPlayingTrack = async (
     await spotifyApi.play({
       uris: [uri],
     });
+
+    // Spotify needs some time to actually start playing the track
+    await new Promise((resolve) => setTimeout(resolve, 3_000));
   } catch (error) {
     logger.warn(
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
