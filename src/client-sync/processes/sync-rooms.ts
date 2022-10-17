@@ -4,6 +4,7 @@ import { Room } from "../../lib/interfaces/Room";
 import { Track } from "../../lib/interfaces/Track";
 import { Vote } from "../../lib/interfaces/Vote";
 import { mongoCollection } from "../../utils/database";
+import { logger } from "../../utils/logger";
 
 const setRoomsCache = async (appCache: cache) => {
   const rooms = await mongoCollection<Room>("room");
@@ -22,13 +23,13 @@ export const syncActiveRooms = async (appCache: cache) => {
   });
 };
 
-const CLEAR_INACTIVE_ROOMS_DAYS = 3;
+const CLEAR_INACTIVE_ROOMS_DAYS = 14;
 const CLEAR_INACTIVE_ROOMS_SYNC_TIME = 1000 * 60 * 60;
 
 export const clearInactiveRooms = async () => {
   const rooms = await mongoCollection<Room>("room");
 
-  const allRooms = await rooms.find({ accessToken: { $eq: null } }).toArray();
+  const allRooms = await rooms.find().toArray();
 
   const deletes = allRooms.map(async (room) => {
     const { createdAt, pin } = room;
@@ -38,6 +39,7 @@ export const clearInactiveRooms = async () => {
       .toISO();
 
     if (createdAt < maxLifetime) {
+      logger.info(`Deleting room ${pin} because it is inactive`);
       const votes = await mongoCollection<Vote>("vote");
       const tracks = await mongoCollection<Track>("track");
       await rooms.deleteOne({ pin });
