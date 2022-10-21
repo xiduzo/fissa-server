@@ -27,6 +27,16 @@ const handler: VercelApiHandler = async (request, response) => {
         response.status(StatusCodes.OK).json(room);
       } catch (error) {
         logger.error(`[pin] GET handler: ${error}`);
+
+        if (error instanceof Error) {
+          if (error.message === ReasonPhrases.NOT_FOUND) {
+            response
+              .status(StatusCodes.NOT_FOUND)
+              .json(ReasonPhrases.NOT_FOUND);
+            return;
+          }
+        }
+
         response
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .json(ReasonPhrases.INTERNAL_SERVER_ERROR);

@@ -79,10 +79,20 @@ const handler: VercelApiHandler = async (request, response) => {
 
         response.status(StatusCodes.OK).json(pin);
       } catch (error) {
-        logger.error(`room POS handler: ${error}`);
+        logger.error(`room POST handler: ${error}`);
+
+        if (error instanceof Error) {
+          if (error.message === ReasonPhrases.NOT_FOUND) {
+            response
+              .status(StatusCodes.NOT_FOUND)
+              .json(ReasonPhrases.NOT_FOUND);
+            return;
+          }
+        }
+
         response
-          .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+          .status(error.status ?? StatusCodes.INTERNAL_SERVER_ERROR)
+          .json(error.reason ?? ReasonPhrases.INTERNAL_SERVER_ERROR);
       } finally {
         await cleanupDbClient();
       }

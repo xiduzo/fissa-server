@@ -1,3 +1,4 @@
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 import { logger } from "./logger";
@@ -318,6 +319,9 @@ export const startPlayingTrack = async (
     logger.warn(
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
     );
+
+    if (error.body.error.status === StatusCodes.NOT_FOUND)
+      throw new Error(ReasonPhrases.NOT_FOUND);
   }
 };
 
