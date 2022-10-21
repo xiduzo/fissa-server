@@ -293,7 +293,7 @@ export const startPlayingTrack = async (
 
   try {
     await setActiveDevice(accessToken);
-    await clearQueue(accessToken);
+    // await clearQueue(accessToken);
     await spotifyApi.play({
       uris: [uri],
     });
