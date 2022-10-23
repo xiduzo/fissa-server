@@ -320,8 +320,9 @@ export const startPlayingTrack = async (
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
     );
 
-    if (error.body.error.status === StatusCodes.NOT_FOUND)
+    if (error.body.error.status === StatusCodes.NOT_FOUND) {
       throw new Error(ReasonPhrases.NOT_FOUND);
+    }
   }
 };
 
