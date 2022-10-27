@@ -287,7 +287,8 @@ const clearQueue = async (accessToken: string, attempt = 0) => {
   try {
     const response = await getMyQueue(accessToken);
 
-    response.queue.forEach(async (track) => {
+    if (!response.currently_playing) return;
+    response.queue?.forEach(async (track) => {
       spotifyApi.skipToNext();
     });
   } catch (error) {
@@ -326,7 +327,6 @@ export const startPlayingTrack = async (
 
   try {
     await setActiveDevice(accessToken);
-    await clearQueue(accessToken);
     await spotifyApi.play({
       uris: [uri],
     });
@@ -347,6 +347,8 @@ export const startPlayingTrack = async (
         resolve(i);
       }
     });
+
+    await clearQueue(accessToken);
   } catch (error) {
     logger.warn(
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
