@@ -5,6 +5,7 @@ export interface Room {
   refreshToken: string;
   createdBy: string;
   currentIndex: number;
+  lastPlayedIndex: number;
   createdAt: string;
   expectedEndTime?: string;
 }

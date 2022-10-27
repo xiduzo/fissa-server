@@ -58,6 +58,7 @@ const handler: VercelApiHandler = async (request, response) => {
           accessToken,
           refreshToken,
           currentIndex: -1,
+          lastPlayedIndex: -1,
           createdAt: DateTime.now().toISO(),
         };
         await rooms.insertOne(room);

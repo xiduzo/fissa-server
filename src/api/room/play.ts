@@ -51,7 +51,10 @@ const handler: VercelApiHandler = async (request, response) => {
           return;
         }
 
-        await startPlayingTrack(accessToken, `spotify:track:${tracks[0].id}`);
+        await startPlayingTrack(
+          accessToken,
+          `spotify:track:${tracks[Math.max(0, room.lastPlayedIndex)].id}`
+        );
 
         const nextTrackId = await updateRoom(room);
         await addTackToQueue(accessToken, nextTrackId);

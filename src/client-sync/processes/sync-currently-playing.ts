@@ -74,6 +74,7 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
 
     let newState: Partial<Room> = {
       currentIndex: -1,
+      lastPlayedIndex: currentIndex,
       expectedEndTime: undefined,
     };
 

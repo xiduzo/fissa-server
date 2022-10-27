@@ -3,6 +3,8 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 import { logger } from "./logger";
 
+import https from "https";
+
 enum SpotifyLimits {
   MaxTracksToAddPerRequest = 100,
 }
@@ -105,7 +107,6 @@ export const createPlaylist = async (
 
 const getMyLikedTracks = async (
   accessToken: string,
-  playlistId: string,
   attempt = 0
 ): Promise<SpotifyApi.TrackObjectFull[]> => {
   const spotifyApi = spotifyClient(accessToken);
@@ -146,7 +147,7 @@ export const getPlaylistTracks = async (
 
   try {
     if (playlistId === "saved-tracks") {
-      return await getMyLikedTracks(accessToken, playlistId);
+      return await getMyLikedTracks(accessToken);
     }
     let received: SpotifyApi.PlaylistTrackObject[] = [];
 
@@ -240,26 +241,57 @@ export const skipTrack = async (
   }
 };
 
+type MyQueueResponse = {
+  currently_playing: SpotifyApi.TrackObjectFull | null;
+  queue: SpotifyApi.TrackObjectFull[];
+};
 // TODO wait for: https://github.com/thelinmichael/spotify-web-api-node/pull/465/files
+export const getMyQueue = async (
+  accessToken: string,
+  attempt = 0
+): Promise<MyQueueResponse> => {
+  const request = https.get({
+    hostname: "api.spotify.com",
+    path: "/v1/me/player/queue",
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  try {
+    return new Promise((resolve, reject) => {
+      let data = "";
+      request
+        .on("response", (response) => {
+          if (response.statusCode !== 200) reject(response.statusCode);
+
+          response.resume();
+          response.on("data", (chunk) => (data += chunk));
+          response.on("end", () => {
+            resolve(JSON.parse(data) as MyQueueResponse);
+          });
+        })
+        .on("end", reject)
+        .on("error", reject);
+    });
+  } catch (error) {
+    logger.error(`${getMyQueue.name}(${attempt}): ${JSON.stringify(error)}`);
+  }
+};
+
 const clearQueue = async (accessToken: string, attempt = 0) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
-    const {
-      actions: { disallows },
-    } = await getMyCurrentPlaybackState(accessToken);
+    const response = await getMyQueue(accessToken);
 
-    const {
-      body: {},
-    } = await spotifyApi.getMe();
-
-    if (Boolean(disallows.skipping_next)) return;
-
-    for (let i = 0; i < 5; i++) {
-      await spotifyApi.skipToNext();
-    }
+    response.queue.forEach(async (track) => {
+      spotifyApi.skipToNext();
+    });
   } catch (error) {
-    logger.warn(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
+    logger.error(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
   }
 };
 
@@ -294,7 +326,7 @@ export const startPlayingTrack = async (
 
   try {
     await setActiveDevice(accessToken);
-    // await clearQueue(accessToken);
+    await clearQueue(accessToken);
     await spotifyApi.play({
       uris: [uri],
     });
@@ -302,9 +334,9 @@ export const startPlayingTrack = async (
     // Spotify needs some time to actually start playing the track
     // so we create a loop that checks if the track is playing
     // and if it is, we return
-    // it can take at most 10 seconds before we return anyway
+    // it can take at most N seconds before we return anyway
     await new Promise(async (resolve) => {
-      setTimeout(resolve, 8_000);
+      setTimeout(resolve, 5_000);
       for (let i = 0; i < 5; i++) {
         const {
           body: { is_playing },
