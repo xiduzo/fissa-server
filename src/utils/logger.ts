@@ -2,6 +2,7 @@
 // import { join } from "path";
 import winston from "winston";
 // import { LOG_DIR } from "@config";
+import Sentry from "winston-transport-sentry-node";
 
 // logs dir
 // const logDir: string = join(__dirname, LOG_DIR);
@@ -59,6 +60,16 @@ logger.add(
       winston.format.splat(),
       winston.format.colorize()
     ),
+  })
+);
+
+logger.add(
+  new Sentry({
+    sentry: {
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV,
+    },
+    level: "info",
   })
 );
 
