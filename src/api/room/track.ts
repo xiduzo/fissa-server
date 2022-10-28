@@ -4,13 +4,13 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { VoteState } from "../../lib/interfaces/Vote";
 import {
   addTracks,
-  cleanupDbClient,
   getRoom,
   getRoomTracks,
   getRoomVotes,
   vote,
 } from "../../utils/database";
 import { publish } from "../../utils/mqtt";
+import { responseAsync } from "../../utils/response";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {
@@ -18,22 +18,24 @@ const handler: VercelApiHandler = async (request, response) => {
       const pin = (request.query.pin as string)?.toUpperCase();
 
       if (!pin) {
-        response
-          .status(StatusCodes.BAD_REQUEST)
-          .json(ReasonPhrases.BAD_REQUEST);
+        await responseAsync(
+          response,
+          StatusCodes.BAD_REQUEST,
+          ReasonPhrases.BAD_REQUEST
+        );
         return;
       }
 
       try {
         const tracks = await getRoomTracks(pin);
-        response.status(StatusCodes.OK).json(tracks);
+        await responseAsync(response, StatusCodes.OK, tracks);
       } catch (error) {
         logger.error(`track POST handler: ${error}`);
-        response
-          .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
-      } finally {
-        await cleanupDbClient();
+        await responseAsync(
+          response,
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          ReasonPhrases.INTERNAL_SERVER_ERROR
+        );
       }
       break;
     }
@@ -49,7 +51,11 @@ const handler: VercelApiHandler = async (request, response) => {
         const room = await getRoom(pin);
 
         if (!room) {
-          response.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
+          await responseAsync(
+            response,
+            StatusCodes.NOT_FOUND,
+            ReasonPhrases.NOT_FOUND
+          );
           return;
         }
 
@@ -83,14 +89,14 @@ const handler: VercelApiHandler = async (request, response) => {
         const votes = await getRoomVotes(pin);
         await publish(`fissa/room/${pin}/votes`, votes);
 
-        response.status(StatusCodes.OK).json(trackIds.length);
+        await responseAsync(response, StatusCodes.OK, trackIds.length);
       } catch (error) {
         logger.error(`track POST handler: ${error}`);
-        response
-          .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
-      } finally {
-        await cleanupDbClient();
+        await responseAsync(
+          response,
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          ReasonPhrases.INTERNAL_SERVER_ERROR
+        );
       }
       break;
     }

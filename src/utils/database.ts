@@ -27,7 +27,9 @@ export const cleanupDbClient = async () => {
   db = undefined;
 };
 
-const mongoDb = async (): Promise<Db> => {
+export const getDb = () => db;
+
+export const mongoDb = async (): Promise<Db> => {
   if (client && db) return Promise.resolve(db);
 
   return new Promise(async (resolve, reject) => {
@@ -43,6 +45,7 @@ const mongoDb = async (): Promise<Db> => {
         .on("connectionClosed", cleanupDbClient)
         .on("serverClosed", cleanupDbClient)
         .on("connectionPoolClosed", cleanupDbClient);
+
       resolve(db);
     } catch (error) {
       logger.error(`${mongoDb.name}: ${JSON.stringify(error)}`);

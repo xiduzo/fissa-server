@@ -5,12 +5,12 @@ import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
 import { Room } from "../../lib/interfaces/Room";
 import {
   addTracks,
-  cleanupDbClient,
   deleteMyOtherRooms,
   mongoCollection,
 } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { createPin } from "../../utils/pin";
+import { responseAsync } from "../../utils/response";
 import {
   addTackToQueue,
   getMyTopTracks,
@@ -29,9 +29,11 @@ const handler: VercelApiHandler = async (request, response) => {
       const { accessToken, refreshToken, playlistId, createdBy } = request.body;
 
       if (!accessToken || !refreshToken || !createdBy) {
-        response
-          .status(StatusCodes.BAD_REQUEST)
-          .json(ReasonPhrases.BAD_REQUEST);
+        await responseAsync(
+          response,
+          StatusCodes.BAD_REQUEST,
+          ReasonPhrases.BAD_REQUEST
+        );
         return;
       }
 
@@ -78,24 +80,26 @@ const handler: VercelApiHandler = async (request, response) => {
         const nextTrackId = await updateRoom(room);
         await addTackToQueue(accessToken, nextTrackId);
 
-        response.status(StatusCodes.OK).json(pin);
+        await responseAsync(response, StatusCodes.OK, pin);
       } catch (error) {
         logger.error(`room POST handler: ${error}`);
 
         if (error instanceof Error) {
           if (error.message === ReasonPhrases.NOT_FOUND) {
-            response
-              .status(StatusCodes.NOT_FOUND)
-              .json(ReasonPhrases.NOT_FOUND);
+            await responseAsync(
+              response,
+              StatusCodes.NOT_FOUND,
+              ReasonPhrases.NOT_FOUND
+            );
             return;
           }
         }
 
-        response
-          .status(error.status ?? StatusCodes.INTERNAL_SERVER_ERROR)
-          .json(error.reason ?? ReasonPhrases.INTERNAL_SERVER_ERROR);
-      } finally {
-        await cleanupDbClient();
+        await responseAsync(
+          response,
+          error.status ?? StatusCodes.INTERNAL_SERVER_ERROR,
+          error.reason ?? ReasonPhrases.INTERNAL_SERVER_ERROR
+        );
       }
       break;
   }

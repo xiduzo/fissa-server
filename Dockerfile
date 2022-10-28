@@ -20,4 +20,4 @@ COPY tsconfig.json ./
 RUN npx npm run build
 
 EXPOSE 8000
-CMD [ "node", "public/client-sync/index.js" ]
+CMD [ "node", "public/index.js" ]

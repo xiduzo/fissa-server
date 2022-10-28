@@ -3,6 +3,7 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Room } from "../../lib/interfaces/Room";
 import { cleanupDbClient, mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
+import { responseAsync } from "../../utils/response";
 import { getMe, updateTokens } from "../../utils/spotify";
 
 const handler: VercelApiHandler = async (request, response) => {
@@ -31,14 +32,14 @@ const handler: VercelApiHandler = async (request, response) => {
           }
         );
 
-        response.status(StatusCodes.OK).json(tokens);
+        await responseAsync(response, StatusCodes.OK, tokens);
       } catch (error) {
         logger.error(`Token refresh POST handler: ${error}`);
-        response
-          .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
-      } finally {
-        await cleanupDbClient();
+        await responseAsync(
+          response,
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          ReasonPhrases.INTERNAL_SERVER_ERROR
+        );
       }
       break;
   }

@@ -23,8 +23,9 @@ export const syncActiveRooms = async (appCache: cache) => {
   });
 };
 
+const HOUR = 1000 * 60 * 60;
 const CLEAR_INACTIVE_ROOMS_DAYS = 14;
-const CLEAR_INACTIVE_ROOMS_SYNC_TIME = 1000 * 60 * 60;
+const CLEAR_INACTIVE_ROOMS_SYNC_TIME = HOUR * 12;
 
 export const clearInactiveRooms = async () => {
   const rooms = await mongoCollection<Room>("room");
