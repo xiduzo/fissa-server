@@ -1,7 +1,7 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
-import { RoomService } from "./RoomService";
+import { RoomService } from "../../service/RoomService";
 import { BadRequest } from "../../lib/classes/errors/BadRequest";
 
 const handler: VercelApiHandler = async (request, response) => {

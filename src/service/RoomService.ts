@@ -1,23 +1,23 @@
 import { ReasonPhrases } from "http-status-codes";
 import { DateTime } from "luxon";
-import { updateRoom } from "../../client-sync/processes/sync-currently-playing";
-import { Conflict } from "../../lib/classes/errors/Conflict";
-import { NotFound } from "../../lib/classes/errors/NotFound";
-import { Unauthorized } from "../../lib/classes/errors/Unauthorized";
-import { UnprocessableEntity } from "../../lib/classes/errors/UnprocessableEntity";
-import { Room } from "../../lib/interfaces/Room";
-import { Track } from "../../lib/interfaces/Track";
-import { Vote, VoteState } from "../../lib/interfaces/Vote";
+import { updateRoom } from "../client-sync/processes/sync-currently-playing";
+import { Conflict } from "../lib/classes/errors/Conflict";
+import { NotFound } from "../lib/classes/errors/NotFound";
+import { Unauthorized } from "../lib/classes/errors/Unauthorized";
+import { UnprocessableEntity } from "../lib/classes/errors/UnprocessableEntity";
+import { Room } from "../lib/interfaces/Room";
+import { Track } from "../lib/interfaces/Track";
+import { Vote, VoteState } from "../lib/interfaces/Vote";
 import {
   addTracks,
   deleteMyOtherRooms,
   getRoom,
   mongoCollection,
   vote,
-} from "../../utils/database";
-import { logger } from "../../utils/logger";
-import { publish } from "../../utils/mqtt";
-import { createPin } from "../../utils/pin";
+} from "../utils/database";
+import { logger } from "../utils/logger";
+import { publish } from "../utils/mqtt";
+import { createPin } from "../utils/pin";
 import {
   getPlaylistTracks,
   getMyTopTracks,
@@ -25,7 +25,7 @@ import {
   addTackToQueue,
   getMyCurrentPlaybackState,
   skipTrack,
-} from "../../utils/spotify";
+} from "../utils/spotify";
 
 export class RoomService {
   public createRoom = async (

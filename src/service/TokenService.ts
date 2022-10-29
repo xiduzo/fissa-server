@@ -1,9 +1,9 @@
 import SpotifyWebApi from "spotify-web-api-node";
-import { NotFound } from "../../lib/classes/errors/NotFound";
-import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
-import { Room } from "../../lib/interfaces/Room";
-import { mongoCollection } from "../../utils/database";
-import { updateTokens, getMe } from "../../utils/spotify";
+import { NotFound } from "../lib/classes/errors/NotFound";
+import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
+import { Room } from "../lib/interfaces/Room";
+import { mongoCollection } from "../utils/database";
+import { updateTokens, getMe } from "../utils/spotify";
 
 export class TokenService {
   public authorizationCodeGrant = async (

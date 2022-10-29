@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
-import { RoomService } from "../../api/room/RoomService";
+import { RoomService } from "../../service/RoomService";
 import { Room } from "../../lib/interfaces/Room";
 import { Track } from "../../lib/interfaces/Track";
 import { Vote } from "../../lib/interfaces/Vote";
