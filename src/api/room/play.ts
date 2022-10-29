@@ -16,7 +16,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
       if (!pin) throw new BadRequest("Pin is required");
 
-      await service.restartRoom(pin.toUpperCase());
+      await service.restartRoom(pin);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
     }

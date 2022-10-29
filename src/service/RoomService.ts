@@ -1,5 +1,3 @@
-import { ReasonPhrases } from "http-status-codes";
-import { DateTime } from "luxon";
 import { updateRoom } from "../processes/sync-currently-playing";
 import { Conflict } from "../lib/classes/errors/Conflict";
 import { NotFound } from "../lib/classes/errors/NotFound";
@@ -19,9 +17,10 @@ import {
   getMyCurrentPlaybackState,
   skipTrack,
 } from "../utils/spotify";
-import { RoomStore } from "../data/RoomStore";
-import { VoteStore } from "../data/VoteStore";
-import { TrackStore } from "../data/TrackStore";
+import { RoomStore } from "../store/RoomStore";
+import { VoteStore } from "../store/VoteStore";
+import { TrackStore } from "../store/TrackStore";
+import { RoomBuilder } from "../builders/RoomBuilder";
 
 export class RoomService {
   rooms = new RoomStore();
@@ -50,15 +49,12 @@ export class RoomService {
 
     await deleteMyOtherRooms(createdBy);
 
-    const room: Room = {
-      pin,
+    const room = new RoomBuilder(
+      pin.toUpperCase(),
       createdBy,
       accessToken,
-      refreshToken,
-      currentIndex: -1,
-      lastPlayedIndex: -1,
-      createdAt: DateTime.now().toISO(),
-    };
+      refreshToken
+    ).build();
     await this.rooms.createRoom(room);
 
     const tracks = playlistId
@@ -79,9 +75,9 @@ export class RoomService {
   };
 
   getRoom = async (pin: string) => {
-    const room = await this.rooms.getRoom(pin);
+    const room = await this.rooms.getRoom(pin.toUpperCase());
 
-    if (!room) throw Error(ReasonPhrases.NOT_FOUND);
+    if (!room) throw new NotFound(`Room with pin ${pin} not found`);
 
     delete room.accessToken;
     return room;
@@ -89,8 +85,6 @@ export class RoomService {
 
   restartRoom = async (pin: string) => {
     const room = await this.rooms.getRoom(pin);
-
-    if (!room) throw new NotFound(`Room ${pin} not found`);
 
     const { accessToken } = room;
 
@@ -115,10 +109,10 @@ export class RoomService {
     await addTackToQueue(accessToken, nextTrackId);
   };
 
+  // TODO: add tracks service and votes service
   skipTrack = async (pin: string, createdBy: string) => {
     const room = await this.rooms.getRoom(pin);
 
-    if (!room) throw new NotFound(`Room ${pin} not found`);
     if (room.createdBy !== createdBy)
       throw new Unauthorized(`You are not the room owner`);
 
@@ -136,8 +130,6 @@ export class RoomService {
 
   addTracks = async (pin: string, trackIds: string[], createdBy: string) => {
     const room = await this.rooms.getRoom(pin);
-
-    if (!room) throw new NotFound(`Room ${pin} not found`);
 
     await this.tracks.addTracks(room, trackIds);
     await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);

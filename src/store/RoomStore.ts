@@ -1,4 +1,4 @@
-import { Store } from "../lib/classes/Store";
+import { Store } from "./_Store";
 import { Room } from "../lib/interfaces/Room";
 
 export class RoomStore extends Store<Room> {

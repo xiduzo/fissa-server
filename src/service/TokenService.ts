@@ -1,5 +1,5 @@
 import SpotifyWebApi from "spotify-web-api-node";
-import { TokenStore } from "../data/TokenStore";
+import { TokenStore } from "../store/TokenStore";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 
 export class TokenService {

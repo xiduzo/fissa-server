@@ -28,8 +28,7 @@ const handler: VercelApiHandler = async (request, response) => {
         throw new BadRequest("Missing required fields");
       }
 
-      const room = await service.getRoom(pin.toUpperCase());
-      if (!room) throw new NotFound(`Room with pin ${pin} not found`);
+      const room = await service.getRoom(pin);
 
       await service.voteForTracks(room, [trackId], createdBy);
 
