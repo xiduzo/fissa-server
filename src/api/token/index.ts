@@ -1,37 +1,24 @@
 import { VercelApiHandler } from "@vercel/node";
-import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import SpotifyWebApi from "spotify-web-api-node";
-import { SPOTIFY_CREDENTIALS } from "../../lib/constants/credentials";
-import { cleanupDbClient } from "../../utils/database";
-import { logger } from "../../utils/logger";
-import { responseAsync } from "../../utils/response";
+import { StatusCodes } from "http-status-codes";
+import { handleRequestError, responseAsync } from "../../utils/http";
+import { TokenService } from "./TokenService";
 
 const handler: VercelApiHandler = async (request, response) => {
-  switch (request.method) {
-    case "GET":
-      response.json({
-        app: "token",
-      });
-      break;
-    case "POST":
-      try {
-        const { code, redirect_uri } = request.body;
-        const spotifyApi = new SpotifyWebApi({
-          ...SPOTIFY_CREDENTIALS,
-          redirectUri: redirect_uri,
-        });
-        const tokens = await spotifyApi.authorizationCodeGrant(code);
+  const { method, body } = request;
 
-        await responseAsync(response, StatusCodes.OK, tokens.body);
-        break;
-      } catch (error) {
-        logger.error(`Token POST handler: ${error}`);
-        await responseAsync(
-          response,
-          StatusCodes.INTERNAL_SERVER_ERROR,
-          ReasonPhrases.INTERNAL_SERVER_ERROR
-        );
-      }
+  const service = new TokenService();
+
+  try {
+    if (method === "GET") {
+      // TODO type validations
+      const { code, redirect_uri } = body;
+
+      const tokens = await service.authorizationCodeGrant(code, redirect_uri);
+
+      await responseAsync(response, StatusCodes.OK, tokens.body);
+    }
+  } catch (error) {
+    await handleRequestError(response, error);
   }
 };
 

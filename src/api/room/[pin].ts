@@ -1,58 +1,28 @@
 import { VercelApiHandler } from "@vercel/node";
-import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { getRoom } from "../../utils/database";
-import { logger } from "../../utils/logger";
-import { responseAsync } from "../../utils/response";
+import { StatusCodes } from "http-status-codes";
+import { handleRequestError, responseAsync } from "../../utils/http";
+import { RoomService } from "./RoomService";
+import { NotFound } from "../../lib/classes/errors/NotFound";
 
 const handler: VercelApiHandler = async (request, response) => {
-  switch (request.method) {
-    case "GET":
-      const pin = (request.query.pin as string)?.toUpperCase();
+  const { method, query } = request;
 
-      if (!pin) {
-        await responseAsync(
-          response,
-          StatusCodes.BAD_REQUEST,
-          ReasonPhrases.BAD_REQUEST
-        );
-        return;
-      }
+  const service = new RoomService();
 
-      try {
-        const room = await getRoom(pin);
+  try {
+    if (method === "GET") {
+      // TODO type validations using ZOD
+      const pin = query.pin as string;
 
-        if (!room) {
-          await responseAsync(
-            response,
-            StatusCodes.NOT_FOUND,
-            ReasonPhrases.NOT_FOUND
-          );
-          return;
-        }
+      if (!pin) throw new NotFound(`Room ${pin} not found`);
 
-        delete room.accessToken;
-        await responseAsync(response, StatusCodes.OK, room);
-      } catch (error) {
-        logger.error(`[pin] GET handler: ${error}`);
+      const room = await service.getRoom(pin.toUpperCase());
 
-        if (error instanceof Error) {
-          if (error.message === ReasonPhrases.NOT_FOUND) {
-            await responseAsync(
-              response,
-              StatusCodes.NOT_FOUND,
-              ReasonPhrases.NOT_FOUND
-            );
-            return;
-          }
-        }
-
-        await responseAsync(
-          response,
-          StatusCodes.INTERNAL_SERVER_ERROR,
-          ReasonPhrases.INTERNAL_SERVER_ERROR
-        );
-      }
-      break;
+      delete room.accessToken;
+      await responseAsync(response, StatusCodes.OK, room);
+    }
+  } catch (error) {
+    await handleRequestError(response, error);
   }
 };
 

@@ -1,66 +1,42 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { getRoomVotes, vote } from "../../utils/database";
+import { vote } from "../../utils/database";
 import { publish } from "../../utils/mqtt";
-import { logger } from "../../utils/logger";
-import { responseAsync } from "../../utils/response";
+import { handleRequestError, responseAsync } from "../../utils/http";
+import { RoomService } from "./RoomService";
+import { BadRequest } from "../../lib/classes/errors/BadRequest";
 
 const handler: VercelApiHandler = async (request, response) => {
-  switch (request.method) {
-    case "GET": {
-      try {
-        const pin = (request.query.pin as string)?.toUpperCase();
+  const { method, body, query } = request;
 
-        if (!pin) {
-          await responseAsync(
-            response,
-            StatusCodes.BAD_REQUEST,
-            ReasonPhrases.BAD_REQUEST
-          );
-          return;
-        }
+  const service = new RoomService();
 
-        const votes = await getRoomVotes(pin);
+  try {
+    if (method === "GET") {
+      const pin = (query.pin as string)?.toUpperCase();
 
-        await responseAsync(response, StatusCodes.OK, votes);
-      } catch (error) {
-        logger.error(`Votes GET handler: ${error}`);
-        await responseAsync(
-          response,
-          StatusCodes.INTERNAL_SERVER_ERROR,
-          ReasonPhrases.INTERNAL_SERVER_ERROR
-        );
-      }
-      break;
+      if (!pin) throw new BadRequest("Pin is required");
+
+      const votes = await service.getVotes(pin);
+
+      await responseAsync(response, StatusCodes.OK, votes);
     }
-    case "POST": {
-      const { pin, accessToken, trackId, state, createdBy } = request.body;
+
+    if (method === "POST") {
+      const { pin, accessToken, trackId, state, createdBy } = body;
 
       if (!createdBy || !state || !trackId || !pin || !accessToken) {
-        await responseAsync(
-          response,
-          StatusCodes.BAD_REQUEST,
-          ReasonPhrases.BAD_REQUEST
-        );
-        return;
+        throw new BadRequest("Missing required fields");
       }
 
-      try {
-        await vote(pin, createdBy, trackId, state);
-        const votes = await getRoomVotes(pin);
+      await vote(pin, createdBy, trackId, state);
+      const votes = await service.getVotes(pin);
 
-        await publish(`fissa/room/${pin}/votes`, votes);
-        await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
-      } catch (error) {
-        logger.error(`Votes POST handler: ${error}`);
-        await responseAsync(
-          response,
-          StatusCodes.INTERNAL_SERVER_ERROR,
-          ReasonPhrases.INTERNAL_SERVER_ERROR
-        );
-      }
-      break;
+      await publish(`fissa/room/${pin}/votes`, votes);
+      await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
     }
+  } catch (error) {
+    await handleRequestError(response, error);
   }
 };
 

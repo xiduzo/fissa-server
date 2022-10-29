@@ -2,7 +2,7 @@ import { logger } from "../../utils/logger";
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { getMyQueue } from "../../utils/spotify";
-import { responseAsync } from "../../utils/response";
+import { responseAsync } from "../../utils/http";
 
 const handler: VercelApiHandler = async (request, response) => {
   switch (request.method) {

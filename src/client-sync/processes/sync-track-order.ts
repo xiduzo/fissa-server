@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
+import { RoomService } from "../../api/room/RoomService";
 import { Room } from "../../lib/interfaces/Room";
 import { Track } from "../../lib/interfaces/Track";
 import {
@@ -9,17 +10,15 @@ import {
   positiveScore,
   SortedVoteData,
 } from "../../lib/interfaces/Vote";
-import {
-  getRoomTracks,
-  getRoomVotes,
-  mongoCollection,
-} from "../../utils/database";
+import { mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { publish } from "../../utils/mqtt";
 import { updateRoom } from "./sync-currently-playing";
 
 const TRACK_ORDER_SYNC_TIME = 1000 * 2;
 const NO_SYNC_MARGIN = 1000 * 5;
+
+const roomService = new RoomService();
 
 export const syncTrackOrder = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -61,9 +60,9 @@ const mapTo = <T extends { id: string }>(arr: T[], mapFrom: SortedVoteData[]) =>
 const reorderPlaylist = async (room: Room): Promise<number> => {
   try {
     const { pin, currentIndex } = room;
-    const votes = await getRoomVotes(pin);
+    const votes = await roomService.getVotes(pin);
     const sortedVotes = getScores(votes);
-    const tracks = await getRoomTracks(pin);
+    const tracks = await roomService.getTracks(pin);
     const currentTrackId = tracks[currentIndex].id;
     const roomTracks = await mongoCollection<Track>("track");
     const voteIds = votes.map((vote) => vote.trackId);

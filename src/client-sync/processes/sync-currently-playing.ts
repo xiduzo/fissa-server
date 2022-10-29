@@ -1,14 +1,10 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
+import { RoomService } from "../../api/room/RoomService";
 import { Room } from "../../lib/interfaces/Room";
 import { Track } from "../../lib/interfaces/Track";
 import { Vote } from "../../lib/interfaces/Vote";
-import {
-  addTracks,
-  getRoomTracks,
-  getRoomVotes,
-  mongoCollection,
-} from "../../utils/database";
+import { addTracks, mongoCollection } from "../../utils/database";
 import { logger } from "../../utils/logger";
 import { publish } from "../../utils/mqtt";
 import {
@@ -18,6 +14,8 @@ import {
 } from "../../utils/spotify";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 250;
+
+const roomService = new RoomService();
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -84,7 +82,7 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
       return;
     }
 
-    const tracks = await getRoomTracks(pin);
+    const tracks = await roomService.getTracks(pin);
     newState = getNextState(tracks, currentlyPlaying);
 
     const newRoom = { ...room, ...newState };
@@ -115,7 +113,7 @@ const deleteVotesForTrack = async (pin: string, trackId: string) => {
     trackId,
   });
 
-  const roomVotes = await getRoomVotes(pin);
+  const roomVotes = await roomService.getVotes(pin);
   await publish(`fissa/room/${pin}/votes`, roomVotes);
 };
 

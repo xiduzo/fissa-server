@@ -155,25 +155,6 @@ export const addTracks = async (
   await Promise.all(inserts);
 };
 
-export const getRoomVotes = async (pin: string) => {
-  const votes = await mongoCollection<Vote>("vote");
-
-  const roomVotes = await votes.find({ pin }).toArray();
-
-  return roomVotes;
-};
-
-/**
- * @returns sorted room tracks based on their index
- */
-export const getRoomTracks = async (pin: string) => {
-  const tracks = await mongoCollection<Track>("track");
-
-  const roomTracks = await tracks.find({ pin }).toArray();
-  const orderedTracks = roomTracks.sort((a, b) => a.index - b.index);
-  return orderedTracks;
-};
-
 export const getRoom = async (pin: string) => {
   const rooms = await mongoCollection<Room>("room");
 

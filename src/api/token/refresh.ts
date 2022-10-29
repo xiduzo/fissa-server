@@ -1,47 +1,23 @@
 import { VercelApiHandler } from "@vercel/node";
-import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { Room } from "../../lib/interfaces/Room";
-import { cleanupDbClient, mongoCollection } from "../../utils/database";
-import { logger } from "../../utils/logger";
-import { responseAsync } from "../../utils/response";
-import { getMe, updateTokens } from "../../utils/spotify";
+import { StatusCodes } from "http-status-codes";
+import { handleRequestError, responseAsync } from "../../utils/http";
+import { TokenService } from "./TokenService";
 
 const handler: VercelApiHandler = async (request, response) => {
-  switch (request.method) {
-    case "GET":
-      response.json({
-        app: "token::refresh",
-      });
-      break;
-    case "POST":
-      try {
-        const { access_token, refresh_token } = request.body;
+  const { method, body } = request;
 
-        const tokens = await updateTokens(access_token, refresh_token);
+  const service = new TokenService();
 
-        const rooms = await mongoCollection<Room>("room");
+  try {
+    if (method === "POST") {
+      const { access_token, refresh_token } = body;
 
-        const me = await getMe(tokens.access_token);
+      const tokens = await service.refreshToken(access_token, refresh_token);
 
-        // TODO: temporary add refresh token of user in DB via this route
-        // It should be added when creating the room
-        await rooms.updateMany(
-          { createdBy: me?.id },
-          {
-            $set: { accessToken: tokens.access_token },
-          }
-        );
-
-        await responseAsync(response, StatusCodes.OK, tokens);
-      } catch (error) {
-        logger.error(`Token refresh POST handler: ${error}`);
-        await responseAsync(
-          response,
-          StatusCodes.INTERNAL_SERVER_ERROR,
-          ReasonPhrases.INTERNAL_SERVER_ERROR
-        );
-      }
-      break;
+      await responseAsync(response, StatusCodes.OK, tokens);
+    }
+  } catch (error) {
+    await handleRequestError(response, error);
   }
 };
 
