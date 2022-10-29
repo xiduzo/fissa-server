@@ -1,15 +1,11 @@
 import SpotifyWebApi from "spotify-web-api-node";
-import { NotFound } from "../lib/classes/errors/NotFound";
+import { TokenStore } from "../data/TokenStore";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
-import { Room } from "../lib/interfaces/Room";
-import { mongoCollection } from "../utils/database";
-import { updateTokens, getMe } from "../utils/spotify";
 
 export class TokenService {
-  public authorizationCodeGrant = async (
-    code: string,
-    redirect_uri: string
-  ) => {
+  store = new TokenStore();
+
+  authorizationCodeGrant = async (code: string, redirect_uri: string) => {
     const spotifyApi = new SpotifyWebApi({
       ...SPOTIFY_CREDENTIALS,
       redirectUri: redirect_uri,
@@ -19,21 +15,8 @@ export class TokenService {
     return tokens;
   };
 
-  public refreshToken = async (accessToken: string, refreshToken: string) => {
-    const tokens = await updateTokens(accessToken, refreshToken);
-
-    const rooms = await mongoCollection<Room>("room");
-
-    const me = await getMe(tokens.access_token);
-
-    if (!me) throw new NotFound("User not found");
-
-    await rooms.updateMany(
-      { createdBy: me?.id },
-      {
-        $set: { accessToken: tokens.access_token },
-      }
-    );
+  refreshToken = async (accessToken: string, refreshToken: string) => {
+    const tokens = this.store.refreshToken(accessToken, refreshToken);
 
     return tokens;
   };

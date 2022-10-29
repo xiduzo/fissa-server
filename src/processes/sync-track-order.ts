@@ -1,18 +1,18 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
-import { RoomService } from "../../service/RoomService";
-import { Room } from "../../lib/interfaces/Room";
-import { Track } from "../../lib/interfaces/Track";
+import { RoomService } from "../service/RoomService";
+import { Room } from "../lib/interfaces/Room";
+import { Track } from "../lib/interfaces/Track";
 import {
   getScores,
   highToLow,
   negativeScore,
   positiveScore,
   SortedVoteData,
-} from "../../lib/interfaces/Vote";
-import { mongoCollection } from "../../utils/database";
-import { logger } from "../../utils/logger";
-import { publish } from "../../utils/mqtt";
+} from "../lib/interfaces/Vote";
+import { mongoCollection } from "../utils/database";
+import { logger } from "../utils/logger";
+import { publish } from "../utils/mqtt";
 import { updateRoom } from "./sync-currently-playing";
 
 const TRACK_ORDER_SYNC_TIME = 1000 * 2;

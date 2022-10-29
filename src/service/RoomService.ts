@@ -1,20 +1,13 @@
 import { ReasonPhrases } from "http-status-codes";
 import { DateTime } from "luxon";
-import { updateRoom } from "../client-sync/processes/sync-currently-playing";
+import { updateRoom } from "../processes/sync-currently-playing";
 import { Conflict } from "../lib/classes/errors/Conflict";
 import { NotFound } from "../lib/classes/errors/NotFound";
 import { Unauthorized } from "../lib/classes/errors/Unauthorized";
 import { UnprocessableEntity } from "../lib/classes/errors/UnprocessableEntity";
 import { Room } from "../lib/interfaces/Room";
-import { Track } from "../lib/interfaces/Track";
-import { Vote, VoteState } from "../lib/interfaces/Vote";
-import {
-  addTracks,
-  deleteMyOtherRooms,
-  getRoom,
-  mongoCollection,
-  vote,
-} from "../utils/database";
+import { VoteState } from "../lib/interfaces/Vote";
+import { deleteMyOtherRooms } from "../utils/database";
 import { logger } from "../utils/logger";
 import { publish } from "../utils/mqtt";
 import { createPin } from "../utils/pin";
@@ -26,9 +19,16 @@ import {
   getMyCurrentPlaybackState,
   skipTrack,
 } from "../utils/spotify";
+import { RoomStore } from "../data/RoomStore";
+import { VoteStore } from "../data/VoteStore";
+import { TrackStore } from "../data/TrackStore";
 
 export class RoomService {
-  public createRoom = async (
+  rooms = new RoomStore();
+  votes = new VoteStore();
+  tracks = new TrackStore();
+
+  createRoom = async (
     accessToken: string,
     refreshToken: string,
     playlistId: string,
@@ -37,11 +37,9 @@ export class RoomService {
     let pin: string;
     let blockedPins: string[] = [];
 
-    const rooms = await mongoCollection<Room>("room");
-
     do {
       pin = createPin(blockedPins);
-      const room = await rooms.findOne({ pin });
+      const room = await this.rooms.getRoom(pin);
 
       if (room) {
         blockedPins.push(pin);
@@ -61,15 +59,14 @@ export class RoomService {
       lastPlayedIndex: -1,
       createdAt: DateTime.now().toISO(),
     };
-    await rooms.insertOne(room);
+    await this.rooms.createRoom(room);
 
     const tracks = playlistId
       ? await getPlaylistTracks(accessToken, playlistId)
       : await getMyTopTracks(accessToken);
 
-    await addTracks(
-      accessToken,
-      pin,
+    await this.tracks.addTracks(
+      room,
       tracks.map((track) => track.id)
     );
 
@@ -81,8 +78,8 @@ export class RoomService {
     return pin;
   };
 
-  public getRoom = async (pin: string) => {
-    const room = await getRoom(pin);
+  getRoom = async (pin: string) => {
+    const room = await this.rooms.getRoom(pin);
 
     if (!room) throw Error(ReasonPhrases.NOT_FOUND);
 
@@ -90,8 +87,8 @@ export class RoomService {
     return room;
   };
 
-  public restartRoom = async (pin: string) => {
-    const room = await getRoom(pin);
+  restartRoom = async (pin: string) => {
+    const room = await this.rooms.getRoom(pin);
 
     if (!room) throw new NotFound(`Room ${pin} not found`);
 
@@ -101,7 +98,7 @@ export class RoomService {
 
     const { item, is_playing } = currentlyPlaying;
 
-    const tracks = await this.getTracks(pin);
+    const tracks = await this.tracks.getTracks(pin);
 
     if (is_playing && tracks.map((track) => track.id).includes(item.id)) {
       logger.warn(`tried to restart ${pin} but it was already playing`);
@@ -118,8 +115,8 @@ export class RoomService {
     await addTackToQueue(accessToken, nextTrackId);
   };
 
-  public skipTrack = async (pin: string, createdBy: string) => {
-    const room = await getRoom(pin);
+  skipTrack = async (pin: string, createdBy: string) => {
+    const room = await this.rooms.getRoom(pin);
 
     if (!room) throw new NotFound(`Room ${pin} not found`);
     if (room.createdBy !== createdBy)
@@ -137,18 +134,12 @@ export class RoomService {
     await addTackToQueue(accessToken, nextTrackId);
   };
 
-  public addTracks = async (
-    pin: string,
-    trackIds: string[],
-    createdBy: string
-  ) => {
-    const room = await getRoom(pin);
+  addTracks = async (pin: string, trackIds: string[], createdBy: string) => {
+    const room = await this.rooms.getRoom(pin);
 
     if (!room) throw new NotFound(`Room ${pin} not found`);
 
-    const { accessToken } = room;
-
-    await addTracks(accessToken, pin, trackIds);
+    await this.tracks.addTracks(room, trackIds);
     await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);
 
     await this.voteForTracks(room, trackIds, createdBy);
@@ -156,33 +147,22 @@ export class RoomService {
     await publish(`fissa/room/${pin}/votes`, votes);
   };
 
-  /**
-   * @returns sorted room tracks based on their index
-   */
-  public getTracks = async (pin: string) => {
-    const tracks = await mongoCollection<Track>("track");
+  getTracks = async (pin: string) => {
+    const tracks = await this.tracks.getTracks(pin);
 
-    const roomTracks = await tracks.find({ pin }).toArray();
-    const orderedTracks = roomTracks.sort((a, b) => a.index - b.index);
-    return orderedTracks;
+    return tracks;
   };
 
-  public getVotes = async (pin: string) => {
-    const votes = await mongoCollection<Vote>("vote");
+  getVotes = async (pin: string) => {
+    const votes = await this.votes.getVotes(pin);
 
-    const roomVotes = await votes.find({ pin }).toArray();
-
-    return roomVotes;
+    return votes;
   };
 
-  private voteForTracks = async (
-    room: Room,
-    trackIds: string[],
-    createdBy: string
-  ) => {
+  voteForTracks = async (room: Room, trackIds: string[], createdBy: string) => {
     const { currentIndex, pin } = room;
 
-    const roomTracks = await this.getTracks(pin);
+    const roomTracks = await this.tracks.getTracks(pin);
 
     // TODO: don't vote on tracks you've already voted on
     const votePromises = trackIds
@@ -196,8 +176,29 @@ export class RoomService {
 
         return trackId;
       })
-      .map(async (trackId) => vote(pin, createdBy, trackId, VoteState.Upvote));
+      .map(async (trackId) => {
+        const _vote = await this.votes.getVote(pin, trackId, createdBy);
 
-    return Promise.all(votePromises);
+        if (!_vote) {
+          await this.votes.addVote({
+            pin: room.pin,
+            createdBy,
+            trackId,
+            state: VoteState.Upvote,
+          });
+        } else {
+          await this.votes.updateVote(_vote.id, VoteState.Upvote);
+        }
+      });
+
+    await Promise.all(votePromises);
+
+    const votes = await this.getVotes(pin);
+
+    await publish(`fissa/room/${pin}/votes`, votes);
+  };
+
+  deleteVotes = async (pin: string, trackId: string) => {
+    return this.votes.deleteVotes(pin, trackId);
   };
 }

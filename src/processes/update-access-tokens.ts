@@ -1,8 +1,8 @@
 import cache from "node-cache";
-import { Room } from "../../lib/interfaces/Room";
-import { mongoCollection } from "../../utils/database";
-import { logger } from "../../utils/logger";
-import { updateTokens } from "../../utils/spotify";
+import { Room } from "../lib/interfaces/Room";
+import { mongoCollection } from "../utils/database";
+import { logger } from "../utils/logger";
+import { updateTokens } from "../utils/spotify";
 
 const UPDATE_ACCESS_TOKEN_TIME = 1000 * 60 * 20;
 

@@ -1,10 +1,10 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
-import { Room } from "../../lib/interfaces/Room";
-import { Track } from "../../lib/interfaces/Track";
-import { Vote } from "../../lib/interfaces/Vote";
-import { mongoCollection } from "../../utils/database";
-import { logger } from "../../utils/logger";
+import { Room } from "../lib/interfaces/Room";
+import { Track } from "../lib/interfaces/Track";
+import { Vote } from "../lib/interfaces/Vote";
+import { mongoCollection } from "../utils/database";
+import { logger } from "../utils/logger";
 
 const setRoomsCache = async (appCache: cache) => {
   const rooms = await mongoCollection<Room>("room");

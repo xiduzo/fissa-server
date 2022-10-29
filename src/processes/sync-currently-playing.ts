@@ -1,17 +1,17 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
-import { RoomService } from "../../service/RoomService";
-import { Room } from "../../lib/interfaces/Room";
-import { Track } from "../../lib/interfaces/Track";
-import { Vote } from "../../lib/interfaces/Vote";
-import { addTracks, mongoCollection } from "../../utils/database";
-import { logger } from "../../utils/logger";
-import { publish } from "../../utils/mqtt";
+import { RoomService } from "../service/RoomService";
+import { Room } from "../lib/interfaces/Room";
+import { Track } from "../lib/interfaces/Track";
+import { Vote } from "../lib/interfaces/Vote";
+import { mongoCollection } from "../utils/database";
+import { logger } from "../utils/logger";
+import { publish } from "../utils/mqtt";
 import {
   addTackToQueue,
   getMyCurrentPlaybackState,
   getRecommendedTracks,
-} from "../../utils/spotify";
+} from "../utils/spotify";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 250;
 
@@ -105,18 +105,6 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
   }
 };
 
-const deleteVotesForTrack = async (pin: string, trackId: string) => {
-  const votes = await mongoCollection<Vote>("vote");
-
-  await votes.deleteMany({
-    pin,
-    trackId,
-  });
-
-  const roomVotes = await roomService.getVotes(pin);
-  await publish(`fissa/room/${pin}/votes`, roomVotes);
-};
-
 const saveAndPublishRoom = async (room: Room) => {
   const rooms = await mongoCollection<Room>("room");
 
@@ -163,7 +151,7 @@ const getNextTrackId = async (
 
       if (nextTrack) {
         nextTrackId = nextTrack.id;
-        await deleteVotesForTrack(pin, nextTrack.id);
+        roomService.deleteVotes(pin, nextTrackId);
       }
 
       if (!trackAfterNext) {
@@ -174,8 +162,7 @@ const getNextTrackId = async (
         );
         const recommendedIds = recommendations?.map((track) => track.id);
 
-        await addTracks(accessToken, pin, recommendedIds);
-        await publish(`fissa/room/${pin}/tracks/added`, seedIds.length);
+        await roomService.addTracks(pin, recommendedIds, "bot");
         if (!nextTrack) {
           nextTrackId = recommendedIds[0];
         }

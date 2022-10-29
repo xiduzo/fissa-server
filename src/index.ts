@@ -2,14 +2,11 @@ import { logger } from "./utils/logger";
 import "dotenv/config";
 import { createServer } from "http";
 import cache from "node-cache";
-import { syncCurrentlyPlaying } from "./client-sync/processes/sync-currently-playing";
-import {
-  clearInactiveRooms,
-  syncActiveRooms,
-} from "./client-sync/processes/sync-rooms";
-import { syncTrackOrder } from "./client-sync/processes/sync-track-order";
+import { syncCurrentlyPlaying } from "./processes/sync-currently-playing";
+import { clearInactiveRooms, syncActiveRooms } from "./processes/sync-rooms";
+import { syncTrackOrder } from "./processes/sync-track-order";
 import { cleanupDbClient, initDb } from "./utils/database";
-import { updateAccessTokens } from "./client-sync/processes/update-access-tokens";
+import { updateAccessTokens } from "./processes/update-access-tokens";
 
 const appCache = new cache();
 appCache.set("rooms", []);

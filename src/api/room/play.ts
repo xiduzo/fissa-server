@@ -11,6 +11,7 @@ const handler: VercelApiHandler = async (request, response) => {
 
   try {
     if (method === "POST") {
+      // TODO: only creator should be able to restart room
       const pin = body.pin as string;
 
       if (!pin) throw new BadRequest("Pin is required");

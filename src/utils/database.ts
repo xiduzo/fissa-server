@@ -7,8 +7,7 @@ import {
   ServerApiVersion,
 } from "mongodb";
 import { MONGODB_URI } from "../lib/constants/credentials";
-import { Vote, VoteState } from "../lib/interfaces/Vote";
-import { getTracks } from "./spotify";
+import { Vote } from "../lib/interfaces/Vote";
 import { logger } from "./logger";
 import { Track } from "../lib/interfaces/Track";
 import { Room } from "../lib/interfaces/Room";
@@ -72,96 +71,7 @@ export const mongoCollection = async <T>(
   }
 };
 
-const saveVote = async (vote: Vote) => {
-  const votes = await mongoCollection<Vote>("vote");
-
-  const _vote = await votes.findOne({
-    pin: vote.pin,
-    createdBy: vote.createdBy,
-    trackId: vote.trackId,
-  });
-
-  if (!_vote) {
-    return await votes.insertOne(vote);
-  }
-
-  if (vote.state === _vote.state) {
-    return await votes.deleteOne({ _id: _vote._id });
-  }
-
-  return await votes.updateOne(
-    { _id: _vote._id },
-    {
-      $set: {
-        state: vote.state,
-      },
-    }
-  );
-};
-
-export const vote = async (
-  pin: string,
-  createdBy: string,
-  trackId: string,
-  state: VoteState
-): Promise<Vote> => {
-  try {
-    const vote: Vote = {
-      pin,
-      createdBy,
-      trackId,
-      state,
-    };
-
-    await saveVote(vote);
-    return vote;
-  } catch (error) {
-    logger.error(`${vote.name}: ${error}`);
-    throw new Error("Unable to vote");
-  }
-};
-
-export const addTracks = async (
-  accessToken: string,
-  pin: string,
-  trackIdsToAdd: string[]
-) => {
-  const tracks = await mongoCollection<Track>("track");
-  const roomTracks = await tracks.find({ pin }).toArray();
-
-  const spotifyTracks = await getTracks(accessToken, trackIdsToAdd);
-
-  const roomTrackIds = roomTracks.map((track) => track.id);
-  const tracksToAdd = trackIdsToAdd.filter(
-    (trackId) => !roomTrackIds.includes(trackId)
-  );
-
-  const inserts = tracksToAdd.map(async (trackId, index) => {
-    const track = spotifyTracks.find((track) => track.id === trackId);
-
-    if (!track) return;
-
-    return tracks.insertOne({
-      pin,
-      index: roomTracks.length + index,
-      artists: track.artists.map((artist) => artist.name).join(", "),
-      name: track.name,
-      id: track.id,
-      image: track.album.images[0]?.url,
-      duration_ms: track.duration_ms,
-    });
-  });
-
-  await Promise.all(inserts);
-};
-
-export const getRoom = async (pin: string) => {
-  const rooms = await mongoCollection<Room>("room");
-
-  const room = await rooms.findOne({ pin });
-  return room;
-};
-
+// TODO: move to room service?
 export const deleteMyOtherRooms = async (createdBy: string) => {
   const rooms = await mongoCollection<Room>("room");
   const tracks = await mongoCollection<Track>("track");

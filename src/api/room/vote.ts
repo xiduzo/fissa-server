@@ -1,10 +1,9 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { vote } from "../../utils/database";
-import { publish } from "../../utils/mqtt";
 import { handleRequestError, responseAsync } from "../../utils/http";
 import { RoomService } from "../../service/RoomService";
 import { BadRequest } from "../../lib/classes/errors/BadRequest";
+import { NotFound } from "../../lib/classes/errors/NotFound";
 
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body, query } = request;
@@ -29,10 +28,11 @@ const handler: VercelApiHandler = async (request, response) => {
         throw new BadRequest("Missing required fields");
       }
 
-      await vote(pin, createdBy, trackId, state);
-      const votes = await service.getVotes(pin);
+      const room = await service.getRoom(pin.toUpperCase());
+      if (!room) throw new NotFound(`Room with pin ${pin} not found`);
 
-      await publish(`fissa/room/${pin}/votes`, votes);
+      await service.voteForTracks(room, [trackId], createdBy);
+
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
     }
   } catch (error) {
