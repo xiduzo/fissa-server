@@ -1,7 +1,6 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
-import { BadRequest } from "../../lib/classes/errors/BadRequest";
 import { TrackService } from "../../service/TrackService";
 import { z } from "zod";
 import { pinValidation } from "../../lib/zod/pin";
