@@ -12,7 +12,7 @@ export class RoomBuilder extends Builder<Room> {
     super();
 
     this.value = {
-      pin,
+      pin: pin.toUpperCase(),
       createdBy,
       accessToken,
       refreshToken,

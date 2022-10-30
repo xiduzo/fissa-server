@@ -5,7 +5,7 @@ import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 export class TokenService {
   store = new TokenStore();
 
-  authorizationCodeGrant = async (code: string, redirect_uri: string) => {
+  codeGrant = async (code: string, redirect_uri: string) => {
     const spotifyApi = new SpotifyWebApi({
       ...SPOTIFY_CREDENTIALS,
       redirectUri: redirect_uri,
@@ -15,7 +15,7 @@ export class TokenService {
     return tokens;
   };
 
-  refreshToken = async (accessToken: string, refreshToken: string) => {
+  refresh = async (accessToken: string, refreshToken: string) => {
     const tokens = this.store.refreshToken(accessToken, refreshToken);
 
     return tokens;

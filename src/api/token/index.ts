@@ -6,14 +6,14 @@ import { TokenService } from "../../service/TokenService";
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
-  const service = new TokenService();
-
   try {
+    const tokenService = new TokenService();
+
     if (method === "GET") {
       // TODO type validations
       const { code, redirect_uri } = body;
 
-      const tokens = await service.authorizationCodeGrant(code, redirect_uri);
+      const tokens = await tokenService.codeGrant(code, redirect_uri);
 
       await responseAsync(response, StatusCodes.OK, tokens.body);
     }

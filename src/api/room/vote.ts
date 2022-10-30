@@ -1,22 +1,21 @@
 import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
-import { RoomService } from "../../service/RoomService";
 import { BadRequest } from "../../lib/classes/errors/BadRequest";
-import { NotFound } from "../../lib/classes/errors/NotFound";
+import { VoteService } from "../../service/VoteService";
 
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body, query } = request;
 
-  const service = new RoomService();
-
   try {
+    const voteService = new VoteService();
+
     if (method === "GET") {
-      const pin = (query.pin as string)?.toUpperCase();
+      const pin = query.pin as string;
 
       if (!pin) throw new BadRequest("Pin is required");
 
-      const votes = await service.getVotes(pin);
+      const votes = await voteService.getVotes(pin);
 
       await responseAsync(response, StatusCodes.OK, votes);
     }
@@ -28,9 +27,7 @@ const handler: VercelApiHandler = async (request, response) => {
         throw new BadRequest("Missing required fields");
       }
 
-      const room = await service.getRoom(pin);
-
-      await service.voteForTracks(room, [trackId], createdBy);
+      await voteService.voteForTracks(pin, [trackId], createdBy);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
     }

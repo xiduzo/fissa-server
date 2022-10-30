@@ -7,16 +7,16 @@ import { BadRequest } from "../../lib/classes/errors/BadRequest";
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
-  const service = new RoomService();
-
   try {
+    const roomService = new RoomService();
+
     if (method === "POST") {
       // TODO: only creator should be able to restart room
       const pin = body.pin as string;
 
       if (!pin) throw new BadRequest("Pin is required");
 
-      await service.restartRoom(pin);
+      await roomService.restartRoom(pin);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
     }

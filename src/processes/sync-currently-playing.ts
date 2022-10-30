@@ -12,10 +12,14 @@ import {
   getMyCurrentPlaybackState,
   getRecommendedTracks,
 } from "../utils/spotify";
+import { TrackService } from "../service/TrackService";
+import { VoteService } from "../service/VoteService";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 250;
 
 const roomService = new RoomService();
+const trackService = new TrackService();
+const voteService = new VoteService();
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -82,7 +86,7 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
       return;
     }
 
-    const tracks = await roomService.getTracks(pin);
+    const tracks = await trackService.getTracks(pin);
     newState = getNextState(tracks, currentlyPlaying);
 
     const newRoom = { ...room, ...newState };
@@ -151,7 +155,7 @@ const getNextTrackId = async (
 
       if (nextTrack) {
         nextTrackId = nextTrack.id;
-        roomService.deleteVotes(pin, nextTrackId);
+        voteService.deleteVotes(pin, nextTrackId);
       }
 
       if (!trackAfterNext) {
@@ -162,7 +166,7 @@ const getNextTrackId = async (
         );
         const recommendedIds = recommendations?.map((track) => track.id);
 
-        await roomService.addTracks(pin, recommendedIds, "bot");
+        await trackService.addTracks(pin, recommendedIds, "bot");
         if (!nextTrack) {
           nextTrackId = recommendedIds[0];
         }

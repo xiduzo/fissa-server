@@ -6,13 +6,13 @@ import { RoomService } from "../../service/RoomService";
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
-  const service = new RoomService();
-
   try {
-    const { accessToken, refreshToken, playlistId, createdBy } = body;
+    const roomService = new RoomService();
 
     if (method === "POST") {
-      const pin = service.createRoom(
+      const { accessToken, refreshToken, playlistId, createdBy } = body;
+
+      const pin = roomService.createRoom(
         accessToken,
         refreshToken,
         playlistId,

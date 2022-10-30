@@ -6,13 +6,13 @@ import { TokenService } from "../../service/TokenService";
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
-  const service = new TokenService();
-
   try {
+    const tokenService = new TokenService();
+
     if (method === "POST") {
       const { access_token, refresh_token } = body;
 
-      const tokens = await service.refreshToken(access_token, refresh_token);
+      const tokens = await tokenService.refresh(access_token, refresh_token);
 
       await responseAsync(response, StatusCodes.OK, tokens);
     }

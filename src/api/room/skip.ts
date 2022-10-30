@@ -7,15 +7,15 @@ import { BadRequest } from "../../lib/classes/errors/BadRequest";
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
-  const service = new RoomService();
-
   try {
+    const roomService = new RoomService();
+
     if (method === "POST") {
       const { pin, createdBy } = body;
 
       if (!pin) throw new BadRequest("Pin is required");
 
-      await service.skipTrack(pin.toUpperCase(), createdBy);
+      await roomService.skipTrack(pin, createdBy);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
     }

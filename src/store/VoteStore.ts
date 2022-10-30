@@ -1,38 +1,34 @@
 import { Collection, Document } from "mongodb";
 import { Vote, VoteState } from "../lib/interfaces/Vote";
 import { mongoCollection } from "../utils/database";
+import { Store } from "./_Store";
 
-export class VoteStore {
-  private collection: Collection<Vote & Document>;
-
+export class VoteStore extends Store<Vote> {
   constructor() {
-    mongoCollection<Vote>("vote").then((collection) => {
-      this.collection = collection;
-    });
+    super("vote");
   }
 
   getVotes = async (pin: string) => {
-    return await this.collection.find({ pin }).toArray();
+    return await this.collection.find({ pin: pin.toUpperCase() }).toArray();
   };
 
   getVote = async (pin: string, createdBy: string, trackId: string) => {
     return await this.collection.findOne({
-      pin,
+      pin: pin.toUpperCase(),
       createdBy,
       trackId,
     });
   };
 
   deleteVotes = async (pin: string, trackId: string) => {
-    return await this.collection.deleteMany({ pin, trackId });
+    return await this.collection.deleteMany({
+      pin: pin.toUpperCase(),
+      trackId,
+    });
   };
 
   addVote = async (vote: Vote) => {
     return await this.collection.insertOne(vote);
-  };
-
-  deleteVote = async (id: string) => {
-    return await this.collection.deleteOne({ _id: id });
   };
 
   updateVote = async (id: string, state: VoteState) => {
