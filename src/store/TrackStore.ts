@@ -1,7 +1,5 @@
-import { Store } from "./_Store";
-import { Room } from "../lib/interfaces/Room";
+import { Store } from "./Store";
 import { Track } from "../lib/interfaces/Track";
-import { getTracks } from "../utils/spotify";
 
 export class TrackStore extends Store<Track> {
   constructor() {
@@ -15,7 +13,7 @@ export class TrackStore extends Store<Track> {
     const roomTracks = await this.collection
       .find({ pin: pin.toUpperCase() })
       .toArray();
-    const orderedTracks = roomTracks.sort((a, b) => a.index - b.index);
+    const orderedTracks = roomTracks.sort((a, b) => a.index - b.index); // TODO: check .sort method of mongodb
     return orderedTracks;
   };
 

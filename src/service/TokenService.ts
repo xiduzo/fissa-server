@@ -1,6 +1,7 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { TokenStore } from "../store/TokenStore";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
+import { getMe, updateTokens } from "../utils/spotify";
 
 export class TokenService {
   store = new TokenStore();
@@ -16,7 +17,11 @@ export class TokenService {
   };
 
   refresh = async (accessToken: string, refreshToken: string) => {
-    const tokens = this.store.refreshToken(accessToken, refreshToken);
+    const tokens = await updateTokens(accessToken, refreshToken);
+
+    const me = await getMe(tokens.access_token);
+
+    this.store.refreshToken(accessToken, me.id);
 
     return tokens;
   };

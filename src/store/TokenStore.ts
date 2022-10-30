@@ -1,24 +1,17 @@
 import { Store } from "./_Store";
 import { Room } from "../lib/interfaces/Room";
-import { getMe, updateTokens } from "../utils/spotify";
 
 export class TokenStore extends Store<Room> {
   constructor() {
     super("room");
   }
 
-  refreshToken = async (accessToken: string, refreshToken: string) => {
-    const tokens = await updateTokens(accessToken, refreshToken);
-
-    const me = await getMe(tokens.access_token);
-
-    await this.collection.updateMany(
-      { createdBy: me?.id },
+  refreshToken = async (accessToken: string, createdBy: string) => {
+    return await this.collection.updateMany(
+      { createdBy },
       {
-        $set: { accessToken: tokens.access_token },
+        $set: { accessToken },
       }
     );
-
-    return tokens;
   };
 }
