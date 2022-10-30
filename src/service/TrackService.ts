@@ -6,21 +6,20 @@ import { VoteService } from "./VoteService";
 import { Service } from "./_Service";
 
 export class TrackService extends Service<TrackStore> {
-  private roomService = new RoomService();
-  private voteService = new VoteService();
-
   constructor() {
     super(TrackStore);
   }
 
   addTracks = async (pin: string, trackIds: string[], createdBy: string) => {
-    const room = await this.roomService.getRoom(pin);
+    const roomService = new RoomService();
+    const room = await roomService.getRoom(pin);
 
     const tracks = await getTracks(room.accessToken, trackIds);
     await this.store.addTracks(pin, tracks);
     await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);
 
-    await this.voteService.voteForTracks(pin, trackIds, createdBy);
+    const voteService = new VoteService();
+    await voteService.voteForTracks(pin, trackIds, createdBy);
   };
 
   getTracks = async (pin: string) => {

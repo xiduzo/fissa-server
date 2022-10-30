@@ -1,6 +1,4 @@
-import { Room } from "../lib/interfaces/Room";
 import { VoteState } from "../lib/interfaces/Vote";
-import { TrackStore } from "../store/TrackStore";
 import { VoteStore } from "../store/VoteStore";
 import { publish } from "../utils/mqtt";
 import { RoomService } from "./RoomService";
@@ -8,9 +6,6 @@ import { TrackService } from "./TrackService";
 import { Service } from "./_Service";
 
 export class VoteService extends Service<VoteStore> {
-  private trackService = new TrackService();
-  private roomService = new RoomService();
-
   constructor() {
     super(VoteStore);
   }
@@ -21,10 +16,12 @@ export class VoteService extends Service<VoteStore> {
     createdBy: string,
     state: VoteState = VoteState.Upvote
   ) => {
-    const room = await this.roomService.getRoom(roomPin);
+    const roomService = new RoomService();
+    const room = await roomService.getRoom(roomPin);
     const { currentIndex, pin } = room;
 
-    const roomTracks = await this.trackService.getTracks(pin);
+    const trackService = new TrackService();
+    const roomTracks = await trackService.getTracks(pin);
 
     // TODO: don't vote on tracks you've already voted on
     const votePromises = trackIds

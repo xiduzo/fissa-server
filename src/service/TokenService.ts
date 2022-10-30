@@ -2,9 +2,12 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { TokenStore } from "../store/TokenStore";
 import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 import { getMe, updateTokens } from "../utils/spotify";
+import { Service } from "./_Service";
 
-export class TokenService {
-  store = new TokenStore();
+export class TokenService extends Service<TokenStore> {
+  constructor() {
+    super(TokenStore);
+  }
 
   codeGrant = async (code: string, redirect_uri: string) => {
     const spotifyApi = new SpotifyWebApi({
