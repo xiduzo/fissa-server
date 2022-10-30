@@ -1,23 +1,26 @@
-import { VercelApiHandler, VercelRequest, VercelResponse } from "@vercel/node";
+import { VercelApiHandler } from "@vercel/node";
 import { StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
 import { RoomService } from "../../service/RoomService";
-import { BadRequest } from "../../lib/classes/errors/BadRequest";
+import { z } from "zod";
+import { pinValidation } from "../../lib/zod/pin";
 
 const handler: VercelApiHandler = async (request, response) => {
   const { method, query } = request;
 
   try {
-    const roomService = new RoomService();
-
     if (method === "GET") {
-      // TODO type validations using ZOD
-      const pin = query.pin as string;
+      const { pin } = z
+        .object({
+          pin: pinValidation,
+        })
+        .parse(query);
 
-      if (!pin) throw new BadRequest(`Pin is required`);
-
+      const roomService = new RoomService();
       const room = await roomService.getRoom(pin);
 
+      delete room.accessToken;
+      delete room.refreshToken;
       await responseAsync(response, StatusCodes.OK, room);
     }
   } catch (error) {

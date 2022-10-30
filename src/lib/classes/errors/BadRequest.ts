@@ -1,8 +1,8 @@
-import { ReasonPhrases } from "http-status-codes";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { HttpError } from "./_HttpError";
 
-export class BadRequest extends Error {
+export class BadRequest extends HttpError {
   constructor(message: string) {
-    super(message);
-    this.name = ReasonPhrases[ReasonPhrases.BAD_REQUEST];
+    super(message, StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
   }
 }

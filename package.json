@@ -23,7 +23,8 @@
     "spotify-web-api-node": "5.0.2",
     "winston": "3.8.2",
     "winston-mongodb": "5.1.0",
-    "winston-sentry-log": "1.0.26"
+    "winston-sentry-log": "1.0.26",
+    "zod": "^3.19.1"
   },
   "devDependencies": {
     "@types/jest": "29.2.0",

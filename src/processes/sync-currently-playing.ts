@@ -1,9 +1,7 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
-import { RoomService } from "../service/RoomService";
 import { Room } from "../lib/interfaces/Room";
 import { Track } from "../lib/interfaces/Track";
-import { Vote } from "../lib/interfaces/Vote";
 import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
 import { publish } from "../utils/mqtt";
@@ -16,10 +14,6 @@ import { TrackService } from "../service/TrackService";
 import { VoteService } from "../service/VoteService";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 250;
-
-const roomService = new RoomService();
-const trackService = new TrackService();
-const voteService = new VoteService();
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -85,6 +79,7 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
       await saveAndPublishRoom({ ...room, ...newState });
       return;
     }
+    const trackService = new TrackService();
 
     const tracks = await trackService.getTracks(pin);
     newState = getNextState(tracks, currentlyPlaying);
@@ -115,6 +110,7 @@ const saveAndPublishRoom = async (room: Room) => {
   const { pin, currentIndex, expectedEndTime } = room;
 
   delete room.accessToken;
+  delete room.refreshToken;
   await publish(`fissa/room/${pin}`, room);
 
   await rooms.updateOne({ pin }, { $set: { currentIndex, expectedEndTime } });
@@ -152,6 +148,7 @@ const getNextTrackId = async (
     if (currentIndex >= 0) {
       const nextTrack = tracks[newState.currentIndex + 1];
       const trackAfterNext = tracks[newState.currentIndex + 2];
+      const voteService = new VoteService();
 
       if (nextTrack) {
         nextTrackId = nextTrack.id;
@@ -165,6 +162,7 @@ const getNextTrackId = async (
           seedIds
         );
         const recommendedIds = recommendations?.map((track) => track.id);
+        const trackService = new TrackService();
 
         await trackService.addTracks(pin, recommendedIds, "bot");
         if (!nextTrack) {

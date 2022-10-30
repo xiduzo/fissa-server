@@ -7,6 +7,8 @@ export class TokenStore extends Store<Room> {
   }
 
   refreshToken = async (accessToken: string, createdBy: string) => {
+    await this.waitForCollection();
+
     return await this.collection.updateMany(
       { createdBy },
       {

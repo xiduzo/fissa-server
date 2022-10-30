@@ -2,20 +2,25 @@ import { VercelApiHandler } from "@vercel/node";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
 import { RoomService } from "../../service/RoomService";
-import { BadRequest } from "../../lib/classes/errors/BadRequest";
+import { pinValidation } from "../../lib/zod/pin";
+import { z } from "zod";
 
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
   try {
-    const roomService = new RoomService();
+    if (method === "GET") {
+      await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
+    }
 
     if (method === "POST") {
-      // TODO: only creator should be able to restart room
-      const pin = body.pin as string;
+      const { pin } = z
+        .object({
+          pin: pinValidation,
+        })
+        .parse(body);
 
-      if (!pin) throw new BadRequest("Pin is required");
-
+      const roomService = new RoomService();
       await roomService.restartRoom(pin);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);

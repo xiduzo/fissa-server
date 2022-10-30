@@ -18,7 +18,8 @@ export class VoteService extends Service<VoteStore> {
   voteForTracks = async (
     roomPin: string,
     trackIds: string[],
-    createdBy: string
+    createdBy: string,
+    state: VoteState = VoteState.Upvote
   ) => {
     const room = await this.roomService.getRoom(roomPin);
     const { currentIndex, pin } = room;
@@ -45,10 +46,10 @@ export class VoteService extends Service<VoteStore> {
             pin: room.pin,
             createdBy,
             trackId,
-            state: VoteState.Upvote,
+            state,
           });
         } else {
-          await this.store.updateVote(_vote.id, VoteState.Upvote);
+          await this.store.updateVote(_vote.id, state);
         }
       });
 

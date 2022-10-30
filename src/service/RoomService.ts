@@ -3,11 +3,8 @@ import { Conflict } from "../lib/classes/errors/Conflict";
 import { NotFound } from "../lib/classes/errors/NotFound";
 import { Unauthorized } from "../lib/classes/errors/Unauthorized";
 import { UnprocessableEntity } from "../lib/classes/errors/UnprocessableEntity";
-import { Room } from "../lib/interfaces/Room";
-import { VoteState } from "../lib/interfaces/Vote";
 import { deleteMyOtherRooms } from "../utils/database";
 import { logger } from "../utils/logger";
-import { publish } from "../utils/mqtt";
 import { createPin } from "../utils/pin";
 import {
   getPlaylistTracks,
@@ -23,8 +20,6 @@ import { TrackService } from "./TrackService";
 import { Service } from "./_Service";
 
 export class RoomService extends Service<RoomStore> {
-  trackService = new TrackService();
-
   constructor() {
     super(RoomStore);
   }
@@ -63,7 +58,8 @@ export class RoomService extends Service<RoomStore> {
       ? await getPlaylistTracks(accessToken, playlistId)
       : await getMyTopTracks(accessToken);
 
-    await this.trackService.addTracks(
+    const trackService = new TrackService();
+    await trackService.addTracks(
       room.pin,
       tracks.map((track) => track.id),
       createdBy
@@ -82,7 +78,6 @@ export class RoomService extends Service<RoomStore> {
 
     if (!room) throw new NotFound(`Room with pin ${pin} not found`);
 
-    delete room.accessToken;
     return room;
   };
 
@@ -95,7 +90,9 @@ export class RoomService extends Service<RoomStore> {
 
     const { item, is_playing } = currentlyPlaying;
 
-    const tracks = await this.trackService.getTracks(pin);
+    const trackService = new TrackService();
+
+    const tracks = await trackService.getTracks(pin);
 
     if (is_playing && tracks.map((track) => track.id).includes(item.id)) {
       logger.warn(`tried to restart ${pin} but it was already playing`);

@@ -1,8 +1,12 @@
-import { ReasonPhrases } from "http-status-codes";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { HttpError } from "./_HttpError";
 
-export class UnprocessableEntity extends Error {
+export class UnprocessableEntity extends HttpError {
   constructor(message: string) {
-    super(message);
-    this.name = ReasonPhrases[ReasonPhrases.UNPROCESSABLE_ENTITY];
+    super(
+      message,
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      ReasonPhrases.UNPROCESSABLE_ENTITY
+    );
   }
 }

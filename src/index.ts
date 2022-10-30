@@ -5,7 +5,7 @@ import cache from "node-cache";
 import { syncCurrentlyPlaying } from "./processes/sync-currently-playing";
 import { clearInactiveRooms, syncActiveRooms } from "./processes/sync-rooms";
 import { syncTrackOrder } from "./processes/sync-track-order";
-import { cleanupDbClient, initDb } from "./utils/database";
+import { cleanupDbClient, warmupDbConnection } from "./utils/database";
 import { updateAccessTokens } from "./processes/update-access-tokens";
 
 const appCache = new cache();
@@ -17,7 +17,7 @@ const port = process.env.PORT ?? process.env.NODE_PORT ?? 8000;
 httpServer.listen(port, async () => {
   logger.info(`Server running on port ${port}`);
 
-  await initDb();
+  await warmupDbConnection();
 
   logger.info("Starting sync processes");
   // TODO spawn as child processes

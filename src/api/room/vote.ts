@@ -3,31 +3,39 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
 import { BadRequest } from "../../lib/classes/errors/BadRequest";
 import { VoteService } from "../../service/VoteService";
+import { pinValidation } from "../../lib/zod/pin";
+import { z } from "zod";
+import { VoteState } from "../../lib/interfaces/Vote";
 
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body, query } = request;
 
   try {
-    const voteService = new VoteService();
-
     if (method === "GET") {
-      const pin = query.pin as string;
+      const { pin } = z
+        .object({
+          pin: pinValidation,
+        })
+        .parse(query);
 
-      if (!pin) throw new BadRequest("Pin is required");
-
+      const voteService = new VoteService();
       const votes = await voteService.getVotes(pin);
 
       await responseAsync(response, StatusCodes.OK, votes);
     }
 
     if (method === "POST") {
-      const { pin, accessToken, trackId, state, createdBy } = body;
+      const { pin, trackId, state, createdBy } = z
+        .object({
+          pin: pinValidation,
+          trackId: z.string(),
+          state: z.nativeEnum(VoteState),
+          createdBy: z.string(),
+        })
+        .parse(body);
 
-      if (!createdBy || !state || !trackId || !pin || !accessToken) {
-        throw new BadRequest("Missing required fields");
-      }
-
-      await voteService.voteForTracks(pin, [trackId], createdBy);
+      const voteService = new VoteService();
+      await voteService.voteForTracks(pin, [trackId], createdBy, state);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
     }

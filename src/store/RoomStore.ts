@@ -7,10 +7,14 @@ export class RoomStore extends Store<Room> {
   }
 
   getRoom = async (pin: string) => {
+    await this.waitForCollection();
+
     return await this.collection.findOne({ pin: pin.toUpperCase() });
   };
 
   createRoom = async (room: Room) => {
+    await this.waitForCollection();
+
     return await this.collection.insertOne({
       ...room,
       pin: room.pin.toUpperCase(),

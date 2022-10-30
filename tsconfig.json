@@ -7,7 +7,8 @@
     "module": "commonjs",
     "sourceMap": true,
     "outDir": "public",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "strict": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "../node_modules"]

@@ -1,4 +1,4 @@
-import { Store } from "./Store";
+import { Store } from "./_Store";
 import { Track } from "../lib/interfaces/Track";
 
 export class TrackStore extends Store<Track> {
@@ -10,6 +10,8 @@ export class TrackStore extends Store<Track> {
    * @returns sorted room tracks based on their index
    */
   getTracks = async (pin: string) => {
+    await this.waitForCollection();
+
     const roomTracks = await this.collection
       .find({ pin: pin.toUpperCase() })
       .toArray();
@@ -18,6 +20,8 @@ export class TrackStore extends Store<Track> {
   };
 
   addTracks = async (pin: string, tracks: SpotifyApi.TrackObjectFull[]) => {
+    await this.waitForCollection();
+
     const currentTracks = await this.collection
       .find({ pin: pin.toUpperCase() })
       .toArray();

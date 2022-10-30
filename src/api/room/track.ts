@@ -3,30 +3,35 @@ import { StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
 import { BadRequest } from "../../lib/classes/errors/BadRequest";
 import { TrackService } from "../../service/TrackService";
+import { z } from "zod";
+import { pinValidation } from "../../lib/zod/pin";
 
 const handler: VercelApiHandler = async (request, response) => {
-  const { method, body } = request;
+  const { method, body, query } = request;
 
   try {
-    const trackService = new TrackService();
-
     if (method === "GET") {
-      const pin = request.query.pin as string;
+      const { pin } = z
+        .object({
+          pin: pinValidation,
+        })
+        .parse(query);
 
-      if (!pin) throw new BadRequest("Pin is required");
-
+      const trackService = new TrackService();
       const tracks = await trackService.getTracks(pin);
       await responseAsync(response, StatusCodes.OK, tracks);
     }
 
     if (method === "POST") {
-      // TODO: add validation
-      const { pin, trackIds, createdBy } = body as {
-        pin: string;
-        trackIds: string[];
-        createdBy: string;
-      };
+      const { pin, trackIds, createdBy } = z
+        .object({
+          pin: pinValidation,
+          createdBy: z.string(),
+          trackIds: z.array(z.string()),
+        })
+        .parse(body);
 
+      const trackService = new TrackService();
       await trackService.addTracks(pin, trackIds, createdBy);
 
       await responseAsync(response, StatusCodes.OK, trackIds.length);

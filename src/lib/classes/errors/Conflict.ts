@@ -1,8 +1,8 @@
-import { ReasonPhrases } from "http-status-codes";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { HttpError } from "./_HttpError";
 
-export class Conflict extends Error {
+export class Conflict extends HttpError {
   constructor(message: string) {
-    super(message);
-    this.name = ReasonPhrases[ReasonPhrases.CONFLICT];
+    super(message, StatusCodes.CONFLICT, ReasonPhrases.CONFLICT);
   }
 }

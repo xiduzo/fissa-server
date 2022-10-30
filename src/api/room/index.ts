@@ -1,17 +1,28 @@
 import { VercelApiHandler } from "@vercel/node";
-import { StatusCodes } from "http-status-codes";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
 import { RoomService } from "../../service/RoomService";
+import { z } from "zod";
 
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
   try {
-    const roomService = new RoomService();
+    if (method === "GET") {
+      await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
+    }
 
     if (method === "POST") {
-      const { accessToken, refreshToken, playlistId, createdBy } = body;
+      const { accessToken, refreshToken, playlistId, createdBy } = z
+        .object({
+          playlistId: z.string().optional(),
+          createdBy: z.string(),
+          accessToken: z.string(),
+          refreshToken: z.string(),
+        })
+        .parse(body);
 
+      const roomService = new RoomService();
       const pin = roomService.createRoom(
         accessToken,
         refreshToken,

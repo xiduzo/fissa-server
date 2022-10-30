@@ -1,17 +1,26 @@
 import { VercelApiHandler } from "@vercel/node";
-import { StatusCodes } from "http-status-codes";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
 import { TokenService } from "../../service/TokenService";
+import { z } from "zod";
 
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
   try {
-    const tokenService = new TokenService();
+    if (method === "GET") {
+      await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
+    }
 
     if (method === "POST") {
-      const { access_token, refresh_token } = body;
+      const { access_token, refresh_token } = z
+        .object({
+          access_token: z.string(),
+          refresh_token: z.string(),
+        })
+        .parse(body);
 
+      const tokenService = new TokenService();
       const tokens = await tokenService.refresh(access_token, refresh_token);
 
       await responseAsync(response, StatusCodes.OK, tokens);
