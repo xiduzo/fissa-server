@@ -1,5 +1,5 @@
 import { VercelApiHandler } from "@vercel/node";
-import { StatusCodes } from "http-status-codes";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { handleRequestError, responseAsync } from "../../utils/http";
 import { BadRequest } from "../../lib/classes/errors/BadRequest";
 import { TrackService } from "../../service/TrackService";
@@ -38,6 +38,8 @@ const handler: VercelApiHandler = async (request, response) => {
     }
   } catch (error) {
     await handleRequestError(response, error);
+  } finally {
+    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   }
 };
 

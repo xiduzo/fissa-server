@@ -65,7 +65,7 @@ const getPendingCallbacks = () =>
 const waitForLogs = async (time: number): Promise<void> => {
   const count = getPendingCallbacks();
   if (count > 0) {
-    console.log(`waiting for ${count} logs to be processed`);
+    console.debug(`waiting for ${count} logs to be processed`);
     await new Promise((resolve) => setTimeout(resolve, time));
   }
 };
@@ -78,7 +78,7 @@ const waitForLogSinks = async (): Promise<void> => {
     await waitForLogs(500);
     await waitForLogs(1000);
     await waitForLogs(5000);
-    console.log("done processing logs");
+    console.debug("done processing logs");
     return Promise.resolve();
   } catch (error) {
     console.error(`${waitForLogSinks.name}: ${JSON.stringify(error)}`);
