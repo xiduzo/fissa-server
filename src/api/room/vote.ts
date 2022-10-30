@@ -21,6 +21,7 @@ const handler: VercelApiHandler = async (request, response) => {
       const votes = await voteService.getVotes(pin);
 
       await responseAsync(response, StatusCodes.OK, votes);
+      return;
     }
 
     if (method === "POST") {
@@ -37,11 +38,12 @@ const handler: VercelApiHandler = async (request, response) => {
       await voteService.voteForTracks(pin, [trackId], createdBy, state);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
+      return;
     }
+
+    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   } catch (error) {
     await handleRequestError(response, error);
-  } finally {
-    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   }
 };
 

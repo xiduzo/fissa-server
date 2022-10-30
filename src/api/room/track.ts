@@ -19,6 +19,7 @@ const handler: VercelApiHandler = async (request, response) => {
       const trackService = new TrackService();
       const tracks = await trackService.getTracks(pin);
       await responseAsync(response, StatusCodes.OK, tracks);
+      return;
     }
 
     if (method === "POST") {
@@ -34,11 +35,12 @@ const handler: VercelApiHandler = async (request, response) => {
       await trackService.addTracks(pin, trackIds, createdBy);
 
       await responseAsync(response, StatusCodes.OK, trackIds.length);
+      return;
     }
+
+    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   } catch (error) {
     await handleRequestError(response, error);
-  } finally {
-    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   }
 };
 

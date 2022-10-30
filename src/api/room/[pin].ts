@@ -22,11 +22,12 @@ const handler: VercelApiHandler = async (request, response) => {
       delete room.accessToken;
       delete room.refreshToken;
       await responseAsync(response, StatusCodes.OK, room);
+      return;
     }
+
+    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   } catch (error) {
     await handleRequestError(response, error);
-  } finally {
-    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   }
 };
 

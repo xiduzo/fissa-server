@@ -20,11 +20,12 @@ const handler: VercelApiHandler = async (request, response) => {
       const tokens = await tokenService.codeGrant(code, redirect_uri);
 
       await responseAsync(response, StatusCodes.OK, tokens.body);
+      return;
     }
+
+    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   } catch (error) {
     await handleRequestError(response, error);
-  } finally {
-    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   }
 };
 

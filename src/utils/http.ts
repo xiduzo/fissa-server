@@ -32,9 +32,9 @@ export const handleRequestError = async (
     code = error.code;
     phrase = error.name;
   } else if (error instanceof Error) {
-    logger.warn(error);
+    logger.warn(error.message, { error });
   } else {
-    logger.error(error);
+    logger.error(error, { error });
   }
 
   await responseAsync(response, code, phrase);

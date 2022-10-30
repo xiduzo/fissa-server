@@ -19,7 +19,7 @@ const handler: VercelApiHandler = async (request, response) => {
         .parse(body);
 
       const roomService = new RoomService();
-      const pin = roomService.createRoom(
+      const pin = await roomService.createRoom(
         accessToken,
         refreshToken,
         playlistId,
@@ -27,11 +27,12 @@ const handler: VercelApiHandler = async (request, response) => {
       );
 
       await responseAsync(response, StatusCodes.OK, pin);
+      return;
     }
+
+    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   } catch (error) {
     await handleRequestError(response, error);
-  } finally {
-    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   }
 };
 

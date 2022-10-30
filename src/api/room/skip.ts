@@ -21,11 +21,12 @@ const handler: VercelApiHandler = async (request, response) => {
       await roomService.skipTrack(pin, createdBy);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
+      return;
     }
+
+    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   } catch (error) {
     await handleRequestError(response, error);
-  } finally {
-    await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);
   }
 };
 
