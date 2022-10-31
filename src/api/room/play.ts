@@ -9,6 +9,8 @@ const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
   try {
+    const roomService = new RoomService();
+
     if (method === "POST") {
       const { pin } = z
         .object({
@@ -16,7 +18,6 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(body);
 
-      const roomService = new RoomService();
       await roomService.restartRoom(pin);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);

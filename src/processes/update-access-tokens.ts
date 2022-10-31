@@ -1,4 +1,5 @@
 import cache from "node-cache";
+import { Conflict } from "../lib/classes/errors/Conflict";
 import { Room } from "../lib/interfaces/Room";
 import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
@@ -18,10 +19,9 @@ export const updateAccessTokens = async (appCache: cache) => {
           if (!accessToken || !refreshToken) return;
 
           if (currentIndex < 0) {
-            logger.info(
-              `${pin}: not updating token as the room does not seem to be playing`
+            throw new Conflict(
+              "not updating token as the room does not seem to be playing"
             );
-            return;
           }
           const tokens = await updateTokens(accessToken, refreshToken);
 
@@ -36,7 +36,9 @@ export const updateAccessTokens = async (appCache: cache) => {
             }
           );
         } catch (error) {
-          logger.error(`${updateAccessTokens.name}: ${JSON.stringify(error)}`);
+          logger.error(
+            `${updateAccessTokens.name}(${room.pin}): ${JSON.stringify(error)}`
+          );
         } finally {
           resolve();
         }

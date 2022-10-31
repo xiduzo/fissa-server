@@ -8,6 +8,8 @@ const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
   try {
+    const tokenService = new TokenService();
+
     if (method === "POST") {
       const { access_token, refresh_token } = z
         .object({
@@ -16,7 +18,6 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(body);
 
-      const tokenService = new TokenService();
       const tokens = await tokenService.refresh(access_token, refresh_token);
 
       await responseAsync(response, StatusCodes.OK, tokens);

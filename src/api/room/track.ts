@@ -9,6 +9,8 @@ const handler: VercelApiHandler = async (request, response) => {
   const { method, body, query } = request;
 
   try {
+    const trackService = new TrackService();
+
     if (method === "GET") {
       const { pin } = z
         .object({
@@ -16,7 +18,6 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(query);
 
-      const trackService = new TrackService();
       const tracks = await trackService.getTracks(pin);
       await responseAsync(response, StatusCodes.OK, tracks);
       return;
@@ -31,7 +32,6 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(body);
 
-      const trackService = new TrackService();
       await trackService.addTracks(pin, trackIds, createdBy);
 
       await responseAsync(response, StatusCodes.OK, trackIds.length);

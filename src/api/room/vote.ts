@@ -10,6 +10,8 @@ const handler: VercelApiHandler = async (request, response) => {
   const { method, body, query } = request;
 
   try {
+    const voteService = new VoteService();
+
     if (method === "GET") {
       const { pin } = z
         .object({
@@ -17,7 +19,6 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(query);
 
-      const voteService = new VoteService();
       const votes = await voteService.getVotes(pin);
 
       await responseAsync(response, StatusCodes.OK, votes);
@@ -34,7 +35,6 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(body);
 
-      const voteService = new VoteService();
       await voteService.voteForTracks(pin, [trackId], createdBy, state);
 
       await responseAsync(response, StatusCodes.OK, ReasonPhrases.OK);

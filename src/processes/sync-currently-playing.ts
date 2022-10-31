@@ -12,6 +12,7 @@ import {
 } from "../utils/spotify";
 import { TrackService } from "../service/TrackService";
 import { VoteService } from "../service/VoteService";
+import { Conflict } from "../lib/classes/errors/Conflict";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 250;
 
@@ -39,8 +40,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           if (!nextTrackId) return;
 
           if (lastAddedTrack == nextTrackId) {
-            logger.warn(`${room.pin}: trying to add same track to the queue`);
-            return;
+            throw new Conflict("trying to add same track to the queue");
           }
 
           await addTackToQueue(accessToken, nextTrackId);
@@ -75,9 +75,8 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
     };
 
     if (!currentlyPlaying?.is_playing) {
-      logger.warn(`${pin}: not playing anymore`);
       await saveAndPublishRoom({ ...room, ...newState });
-      return;
+      throw new Conflict(`${pin}: not playing anymore`);
     }
     const trackService = new TrackService();
 
@@ -88,10 +87,8 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
 
     logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
     if (currentIndex === newState.currentIndex) {
-      logger.warn(`${pin}: same index, update new end time`);
       await saveAndPublishRoom(newRoom);
-
-      return undefined;
+      throw new Conflict(`${pin}: not playing anymore`);
     }
 
     const nextTrackId = await getNextTrackId(newRoom, tracks);

@@ -12,7 +12,7 @@ export class Store<T> {
   }
 
   waitForCollection = async () => {
-    const TIMEOUTS = [100, 500, 1000, 2000, 5000];
+    const TIMEOUTS = [500, 1000, 2000, 5000, 7500];
     let attempt = 0;
     while (!this.collection && attempt < 5) {
       logger.debug("collection not ready");

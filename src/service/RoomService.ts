@@ -95,9 +95,8 @@ export class RoomService extends Service<RoomStore> {
     const tracks = await trackService.getTracks(pin);
 
     if (is_playing && tracks.map((track) => track.id).includes(item.id)) {
-      logger.warn(`tried to restart ${pin} but it was already playing`);
       await updateRoom(room);
-      throw new Conflict(`Room ${pin} is already playing`);
+      throw new Conflict(`room ${pin} is already playing`);
     }
 
     await startPlayingTrack(

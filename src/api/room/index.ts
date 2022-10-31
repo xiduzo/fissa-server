@@ -8,6 +8,8 @@ const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
   try {
+    const roomService = new RoomService();
+
     if (method === "POST") {
       const { accessToken, refreshToken, playlistId, createdBy } = z
         .object({
@@ -18,7 +20,6 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(body);
 
-      const roomService = new RoomService();
       const pin = await roomService.createRoom(
         accessToken,
         refreshToken,

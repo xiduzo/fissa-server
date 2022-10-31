@@ -9,6 +9,8 @@ const handler: VercelApiHandler = async (request, response) => {
   const { method, query } = request;
 
   try {
+    const roomService = new RoomService();
+
     if (method === "GET") {
       const { pin } = z
         .object({
@@ -16,7 +18,6 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(query);
 
-      const roomService = new RoomService();
       const room = await roomService.getRoom(pin);
 
       delete room.accessToken;
