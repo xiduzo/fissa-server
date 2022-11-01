@@ -18,10 +18,8 @@ const handler: VercelApiHandler = async (request, response) => {
         })
         .parse(query);
 
-      const room = await roomService.getRoom(pin);
+      const room = await roomService.getRoomDto(pin);
 
-      delete room.accessToken;
-      delete room.refreshToken;
       await responseAsync(response, StatusCodes.OK, room);
       return;
     }

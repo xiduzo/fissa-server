@@ -6,7 +6,7 @@ const connection = mqtt.connect("mqtt://mqtt.mdd-tardis.net", MQTT_CREDENTIALS);
 
 export const publish = async <T>(
   topic: string,
-  message?: T extends Promise<unknown> ? never : T // Make sure T can never be a promise
+  message?: T extends Promise<T> ? never : T // Make sure T can never be a promise
 ): Promise<T> => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -16,7 +16,12 @@ export const publish = async <T>(
           reject(error);
         }
 
-        resolve(message);
+        // Double catch if ts fails to check properly
+        if (message instanceof Promise) {
+          message.then(resolve).catch(reject);
+        }
+
+        resolve(message as T);
       });
     } catch (error) {
       logger.error(

@@ -18,7 +18,7 @@ export const responseAsync = async (
 
 export const handleRequestError = async (
   response: VercelResponse,
-  error: Error
+  error: unknown
 ) => {
   let code = StatusCodes.INTERNAL_SERVER_ERROR;
   let phrase: string = ReasonPhrases.INTERNAL_SERVER_ERROR;
@@ -34,7 +34,7 @@ export const handleRequestError = async (
   } else if (error instanceof Error) {
     logger.warn(error.message, { error });
   } else {
-    logger.error(error, { error });
+    logger.error(`${error}`, { error });
   }
 
   await responseAsync(response, code, phrase);

@@ -35,9 +35,9 @@ export const syncTrackOrder = async (appCache: cache) => {
           if (!accessToken) return;
           if (currentIndex < 0) return;
 
-          const tMinus = DateTime.fromISO(expectedEndTime).diff(
-            DateTime.now()
-          ).milliseconds;
+          const tMinus = DateTime.fromISO(
+            expectedEndTime ?? DateTime.now().toISO()
+          ).diff(DateTime.now()).milliseconds;
 
           if (tMinus <= NO_SYNC_MARGIN) return;
 
@@ -53,13 +53,19 @@ export const syncTrackOrder = async (appCache: cache) => {
       })
   );
 
-  await Promise.all(promises);
+  if (promises?.length) await Promise.all(promises);
 
   setTimeout(() => syncTrackOrder(appCache), TRACK_ORDER_SYNC_TIME);
 };
 
-const mapTo = <T extends { id: string }>(arr: T[], mapFrom: SortedVoteData[]) =>
-  mapFrom.map((from) => arr.find((item) => item.id === from.trackId));
+const mapTo = <T extends { id: string }>(
+  arr: T[],
+  mapFrom: SortedVoteData[]
+): T[] =>
+  mapFrom.map((from) => {
+    const index = arr.findIndex((item) => item.id === from.trackId);
+    return arr[index];
+  });
 
 const reorderPlaylist = async (room: Room): Promise<number> => {
   try {
@@ -127,5 +133,6 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     logger.error(
       `${reorderPlaylist.name}(${room.pin}): ${JSON.stringify(error)}`
     );
+    return 0;
   }
 };

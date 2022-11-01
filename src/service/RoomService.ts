@@ -18,6 +18,7 @@ import { RoomStore } from "../store/RoomStore";
 import { RoomBuilder } from "../builders/RoomBuilder";
 import { TrackService } from "./TrackService";
 import { Service } from "./_Service";
+import { Room } from "../lib/interfaces/Room";
 
 export class RoomService extends Service<RoomStore> {
   constructor() {
@@ -27,10 +28,10 @@ export class RoomService extends Service<RoomStore> {
   createRoom = async (
     accessToken: string,
     refreshToken: string,
-    playlistId: string,
-    createdBy: string
+    createdBy: string,
+    playlistId?: string
   ) => {
-    let pin: string;
+    let pin: string | undefined;
     let blockedPins: string[] = [];
 
     do {
@@ -73,6 +74,9 @@ export class RoomService extends Service<RoomStore> {
     return pin;
   };
 
+  /**
+   * Use the `getRoomDto` method when exposing the room to the client
+   */
   getRoom = async (pin: string) => {
     const room = await this.store.getRoom(pin);
 
@@ -81,8 +85,17 @@ export class RoomService extends Service<RoomStore> {
     return room;
   };
 
+  getRoomDto = async (pin: string) => {
+    const room = (await this.getRoom(pin)) as Partial<Room>;
+
+    delete room.accessToken;
+    delete room.refreshToken;
+
+    return room;
+  };
+
   restartRoom = async (pin: string) => {
-    const room = await this.store.getRoom(pin);
+    const room = await this.getRoom(pin);
 
     const { accessToken } = room;
 
@@ -94,7 +107,11 @@ export class RoomService extends Service<RoomStore> {
 
     const tracks = await trackService.getTracks(pin);
 
-    if (is_playing && tracks.map((track) => track.id).includes(item.id)) {
+    if (
+      is_playing &&
+      item &&
+      tracks.map((track) => track.id).includes(item.id)
+    ) {
       await updateRoom(room);
       throw new Conflict(`room ${pin} is already playing`);
     }
@@ -109,7 +126,7 @@ export class RoomService extends Service<RoomStore> {
   };
 
   skipTrack = async (pin: string, createdBy: string) => {
-    const room = await this.store.getRoom(pin);
+    const room = await this.getRoom(pin);
 
     if (room.createdBy !== createdBy)
       throw new Unauthorized(`You are not the room owner`);

@@ -23,8 +23,8 @@ const handler: VercelApiHandler = async (request, response) => {
       const pin = await roomService.createRoom(
         accessToken,
         refreshToken,
-        playlistId,
-        createdBy
+        createdBy,
+        playlistId
       );
 
       await responseAsync(response, StatusCodes.OK, pin);

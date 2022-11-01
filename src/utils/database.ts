@@ -12,7 +12,7 @@ import { logger } from "./logger";
 import { Track } from "../lib/interfaces/Track";
 import { Room } from "../lib/interfaces/Room";
 
-const mongoClient = new MongoClient(MONGODB_URI, {
+const mongoClient = new MongoClient(MONGODB_URI ?? `MONGODB_URI`, {
   serverApi: ServerApiVersion.v1,
   appName: "fissa",
 });
@@ -66,9 +66,10 @@ export const mongoCollection = async <T>(
 ): Promise<Collection<T & Document>> => {
   try {
     const database = await mongoDb();
-    return database.collection<T>(name, options);
+    return database.collection<T & Document>(name, options);
   } catch (error) {
     logger.error(`${mongoCollection.name}(${name}): ${JSON.stringify(error)}`);
+    return Promise.reject(error);
   }
 };
 

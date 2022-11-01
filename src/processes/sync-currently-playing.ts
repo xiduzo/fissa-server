@@ -27,9 +27,9 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           if (!accessToken) return;
           if (currentIndex < 0) return;
 
-          const tMinus = DateTime.fromISO(expectedEndTime).diff(
-            DateTime.now()
-          ).milliseconds;
+          const tMinus = DateTime.fromISO(
+            expectedEndTime ?? DateTime.now().toISO()
+          ).diff(DateTime.now()).milliseconds;
 
           if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
 
@@ -101,7 +101,7 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
   }
 };
 
-const saveAndPublishRoom = async (room: Room) => {
+const saveAndPublishRoom = async (room: Partial<Room>) => {
   const rooms = await mongoCollection<Room>("room");
 
   const { pin, currentIndex, expectedEndTime } = room;
@@ -117,8 +117,11 @@ const getNextState = (
   tracks: Track[],
   currentlyPlaying: SpotifyApi.CurrentlyPlayingResponse
 ): Partial<Room> => {
-  const newState = { currentIndex: -1, expectedEndTime: undefined };
+  const newState = { currentIndex: -1, expectedEndTime: "" };
   const { item, progress_ms } = currentlyPlaying;
+
+  if (!item) return newState;
+  if (!progress_ms) return newState;
 
   newState.currentIndex =
     tracks.find((track) => track.id === item.id)?.index ?? -1;

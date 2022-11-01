@@ -37,28 +37,6 @@ export const getScores = (votes: Vote[]): SortedVoteData[] => {
           trackId: vote.trackId,
         },
       };
-    }, {})
+    }, {} as SortedVotes)
   );
-};
-
-export const sortVotes = (votes: Vote[]): SortedVotes => {
-  const reduced = votes.reduce((curr, vote) => {
-    const track = curr[vote.trackId] ?? {
-      trackId: vote.trackId,
-      total: 0,
-      votes: [],
-    };
-
-    const addToTotal = vote.state === VoteState.Upvote ? 1 : -1;
-
-    return {
-      ...curr,
-      [vote.trackId]: {
-        ...track,
-        total: track.total + addToTotal,
-      },
-    };
-  }, {} as SortedVotes);
-
-  return reduced;
 };
