@@ -28,9 +28,11 @@ export const handleRequestError = async (
     phrase = error.errors
       .map((err) => `${err.path.join()}: ${err.message}`.toLowerCase())
       .join(", ");
+    logger.warn(`${handleRequestError.name}: ${phrase}`);
   } else if (error instanceof FissaError) {
     code = error.code;
     phrase = error.name;
+    logger.warn(`${handleRequestError.name}: ${error.toString()}`);
   } else if (error instanceof Error) {
     logger.warn(error.message, { error });
   } else {

@@ -41,7 +41,7 @@ export const updateAccessTokens = async (appCache: cache) => {
           );
         } catch (error) {
           if (error instanceof FissaError) {
-            logger.info(`${updateAccessTokens.name}: ${error.toString()}`);
+            logger.warn(`${updateAccessTokens.name}: ${error.toString()}`);
             return;
           }
           logger.error(

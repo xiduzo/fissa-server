@@ -98,7 +98,7 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
     return nextTrackId;
   } catch (error) {
     if (error instanceof FissaError) {
-      logger.info(`${updateRoom.name}: ${error.toString()}`);
+      logger.warn(`${updateRoom.name}: ${error.toString()}`);
       return undefined;
     }
     logger.error(`${updateRoom.name}: ${JSON.stringify(error)}`);
