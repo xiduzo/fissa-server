@@ -77,7 +77,8 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
 
     if (!currentlyPlaying?.is_playing) {
       await saveAndPublishRoom({ ...room, ...newState });
-      throw new Conflict(`${pin}: not playing anymore`);
+      logger.warn(`${updateRoom.name}(${pin}): not playing`);
+      return undefined;
     }
     const trackService = new TrackService();
 
@@ -89,7 +90,8 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
     logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
     if (currentIndex === newState.currentIndex) {
       await saveAndPublishRoom(newRoom);
-      throw new Conflict(`${pin}: not playing anymore`);
+      logger.warn(`${updateRoom.name}(${pin}): same index`);
+      return undefined;
     }
 
     const nextTrackId = await getNextTrackId(newRoom, tracks);
