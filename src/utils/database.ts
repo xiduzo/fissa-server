@@ -16,7 +16,7 @@ const mongoClient = new MongoClient(process.env.MONGODB_URI ?? `MONGODB_URI`, {
   appName: "fissa",
   // @ts-ignore-next-line
   useUnifiedTopology: true,
-});
+}).connect();
 
 let client: MongoClient | undefined;
 let db: Db | undefined;
@@ -35,7 +35,7 @@ export const mongoDb = (): Promise<Db> => {
   logger.info("Connecting to MongoDB");
   return new Promise(async (resolve, reject) => {
     try {
-      client = await mongoClient.connect();
+      client = await mongoClient;
       db = client.db("fissa", {
         logger: logger.info,
         retryWrites: true,
@@ -50,7 +50,7 @@ export const mongoDb = (): Promise<Db> => {
       resolve(db);
     } catch (error) {
       logger.error(`${mongoDb.name}: ${JSON.stringify(error)}`);
-      await mongoClient.close();
+      (await mongoClient).close();
       reject(error);
     }
   });
