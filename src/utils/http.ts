@@ -3,7 +3,7 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { cleanupDbClient } from "./database";
 import { logger, waitForLogSinks } from "./logger";
 import { ZodError } from "zod";
-import { HttpError } from "../lib/classes/errors/_HttpError";
+import { FissaError } from "../lib/classes/errors/_FissaError";
 
 export const responseAsync = async (
   response: VercelResponse,
@@ -28,7 +28,7 @@ export const handleRequestError = async (
     phrase = error.errors
       .map((err) => `${err.path.join()}: ${err.message}`.toLowerCase())
       .join(", ");
-  } else if (error instanceof HttpError) {
+  } else if (error instanceof FissaError) {
     code = error.code;
     phrase = error.name;
   } else if (error instanceof Error) {

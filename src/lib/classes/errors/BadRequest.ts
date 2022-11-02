@@ -1,7 +1,7 @@
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { HttpError } from "./_HttpError";
+import { FissaError } from "./_FissaError";
 
-export class BadRequest extends HttpError {
+export class BadRequest extends FissaError {
   constructor(message: string) {
     super(message, StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
   }

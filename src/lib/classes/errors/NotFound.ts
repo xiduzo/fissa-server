@@ -1,7 +1,7 @@
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { HttpError } from "./_HttpError";
+import { FissaError } from "./_FissaError";
 
-export class NotFound extends HttpError {
+export class NotFound extends FissaError {
   constructor(message: string) {
     super(message, StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
   }

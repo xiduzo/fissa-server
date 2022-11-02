@@ -16,6 +16,7 @@ import { publish } from "../utils/mqtt";
 import { updateRoom } from "./sync-currently-playing";
 import { VoteService } from "../service/VoteService";
 import { TrackService } from "../service/TrackService";
+import { FissaError } from "../lib/classes/errors/_FissaError";
 
 const TRACK_ORDER_SYNC_TIME = 1000 * 2;
 const NO_SYNC_MARGIN = 1000 * 5;
@@ -44,6 +45,10 @@ export const syncTrackOrder = async (appCache: cache) => {
           const reorders = await reorderPlaylist(room);
           if (reorders) await publish(`fissa/room/${pin}/tracks/reordered`);
         } catch (error) {
+          if (error instanceof FissaError) {
+            logger.info(`${syncTrackOrder.name}: ${JSON.stringify(error)}`);
+            return;
+          }
           logger.error(
             `${syncTrackOrder.name}(${pin}): ${JSON.stringify(error)}`
           );
@@ -129,7 +134,10 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     if (reorders) logger.info(`${pin}: reorders: ${reorders}`);
     return reorders;
   } catch (error) {
-    logger.info(error);
+    if (error instanceof FissaError) {
+      logger.info(`${reorderPlaylist.name}: ${JSON.stringify(error)}`);
+      return 0;
+    }
     logger.error(
       `${reorderPlaylist.name}(${room.pin}): ${JSON.stringify(error)}`
     );

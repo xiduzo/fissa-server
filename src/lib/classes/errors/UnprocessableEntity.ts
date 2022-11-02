@@ -1,7 +1,7 @@
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { HttpError } from "./_HttpError";
+import { FissaError } from "./_FissaError";
 
-export class UnprocessableEntity extends HttpError {
+export class UnprocessableEntity extends FissaError {
   constructor(message: string) {
     super(
       message,

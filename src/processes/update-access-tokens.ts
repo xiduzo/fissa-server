@@ -1,6 +1,7 @@
 import cache from "node-cache";
 import { Conflict } from "../lib/classes/errors/Conflict";
 import { NotFound } from "../lib/classes/errors/NotFound";
+import { FissaError } from "../lib/classes/errors/_FissaError";
 import { Room } from "../lib/interfaces/Room";
 import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
@@ -39,6 +40,10 @@ export const updateAccessTokens = async (appCache: cache) => {
             }
           );
         } catch (error) {
+          if (error instanceof FissaError) {
+            logger.info(`${updateAccessTokens.name}: ${JSON.stringify(error)}`);
+            return;
+          }
           logger.error(
             `${updateAccessTokens.name}(${room.pin}): ${JSON.stringify(error)}`
           );

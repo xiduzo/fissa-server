@@ -13,6 +13,7 @@ import {
 import { TrackService } from "../service/TrackService";
 import { VoteService } from "../service/VoteService";
 import { Conflict } from "../lib/classes/errors/Conflict";
+import { FissaError } from "../lib/classes/errors/_FissaError";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 250;
 
@@ -96,6 +97,10 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
     await saveAndPublishRoom(newRoom);
     return nextTrackId;
   } catch (error) {
+    if (error instanceof FissaError) {
+      logger.info(`${updateRoom.name}: ${JSON.stringify(error)}`);
+      return undefined;
+    }
     logger.error(`${updateRoom.name}: ${JSON.stringify(error)}`);
     return undefined;
   }
