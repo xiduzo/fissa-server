@@ -157,7 +157,7 @@ const getNextTrackId = async (
 
       if (nextTrack) {
         nextTrackId = nextTrack.id;
-        voteService.deleteVotes(pin, nextTrackId);
+        await voteService.deleteVotes(pin, nextTrackId);
       }
 
       if (!trackAfterNext) {

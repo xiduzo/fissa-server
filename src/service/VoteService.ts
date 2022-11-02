@@ -64,6 +64,7 @@ export class VoteService extends Service<VoteStore> {
   };
 
   deleteVotes = async (pin: string, trackId: string) => {
-    return this.store.deleteVotes(pin, trackId);
+    const deletedVotes = await this.store.deleteVotes(pin, trackId);
+    return deletedVotes;
   };
 }
