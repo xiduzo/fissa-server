@@ -46,7 +46,7 @@ export const syncTrackOrder = async (appCache: cache) => {
           if (reorders) await publish(`fissa/room/${pin}/tracks/reordered`);
         } catch (error) {
           if (error instanceof FissaError) {
-            logger.info(`${syncTrackOrder.name}: ${JSON.stringify(error)}`);
+            logger.info(`${syncTrackOrder.name}: ${error.toString()}`);
             return;
           }
           logger.error(

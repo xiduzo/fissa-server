@@ -14,6 +14,8 @@ import { Room } from "../lib/interfaces/Room";
 const mongoClient = new MongoClient(process.env.MONGODB_URI ?? `MONGODB_URI`, {
   serverApi: ServerApiVersion.v1,
   appName: "fissa",
+  // @ts-ignore-next-line
+  useUnifiedTopology: true,
 });
 
 let client: MongoClient | undefined;

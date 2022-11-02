@@ -8,4 +8,8 @@ export class FissaError extends Error {
     this.name = name;
     this.code = code;
   }
+
+  toString() {
+    return `${this.name}(${this.code}): ${this.message}`;
+  }
 }
