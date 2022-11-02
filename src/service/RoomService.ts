@@ -115,9 +115,10 @@ export class RoomService extends Service<RoomStore> {
       throw new Conflict(`room ${pin} is already playing`);
     }
 
+    const nextTrackIndex = Math.max(0, room.lastPlayedIndex, room.currentIndex);
     await startPlayingTrack(
       accessToken,
-      `spotify:track:${tracks[Math.max(0, room.lastPlayedIndex)].id}`
+      `spotify:track:${tracks[nextTrackIndex].id}`
     );
 
     const nextTrackId = await updateRoom(room);
