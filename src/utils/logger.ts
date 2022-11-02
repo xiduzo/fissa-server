@@ -33,24 +33,32 @@ logger.add(
 const DAY = 1000 * 60 * 60 * 24;
 
 setTimeout(() => {
-  logger.add(
-    new SentryTransport({
-      config: {
-        dsn: process.env.SENTRY_DNS,
-      },
-      level: "error",
-    })
-  );
+  try {
+    logger.add(
+      new SentryTransport({
+        config: {
+          dsn: process.env.SENTRY_DNS,
+        },
+        level: "error",
+      })
+    );
+  } catch (error) {
+    logger.warn("Failed to add MongoDB transport", { error });
+  }
 
-  logger.add(
-    new MongoDB({
-      db: process.env.MONGODB_URI ?? `MONGODB_URI`,
-      dbName: "fissa",
-      level: "info",
-      leaveConnectionOpen: true,
-      expireAfterSeconds: DAY * 14,
-    })
-  );
+  try {
+    logger.add(
+      new MongoDB({
+        db: process.env.MONGODB_URI ?? `MONGODB_URI`,
+        dbName: "fissa",
+        level: "info",
+        leaveConnectionOpen: true,
+        expireAfterSeconds: DAY * 14,
+      })
+    );
+  } catch (error) {
+    logger.warn("Failed to add MongoDB transport", { error });
+  }
 }, 100); // Make sure the process.env is filled
 
 // DO NOT USE LOGGER INSIDE OF THIS METHOD
