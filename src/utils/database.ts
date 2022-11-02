@@ -45,8 +45,14 @@ export const mongoDb = (): Promise<Db> => {
 
       resolve(db);
     } catch (error) {
+      try {
+        await mongoClient.close();
+      } catch {
+        logger.warn("Failed to close mongo client");
+        reject(error);
+      }
+
       logger.error(`${mongoDb.name}: ${JSON.stringify(error)}`);
-      await mongoClient.close();
       reject(error);
     }
   });

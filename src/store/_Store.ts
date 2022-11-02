@@ -1,6 +1,5 @@
 import { Collection, Document } from "mongodb";
 import { mongoCollection } from "../utils/database";
-import { logger } from "../utils/logger";
 
 export class Store<T> {
   private _name = "Store";
