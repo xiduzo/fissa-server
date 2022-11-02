@@ -29,7 +29,6 @@ export const getDb = () => db;
 export const mongoDb = (): Promise<Db> => {
   if (client && db) return Promise.resolve(db);
 
-  logger.info("Connecting to MongoDB");
   return new Promise(async (resolve, reject) => {
     try {
       client = await mongoClient.connect();

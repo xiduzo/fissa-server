@@ -18,7 +18,6 @@ export class Store<T> {
     const TIMEOUTS = [500, 1000, 2000, 5000, 7500];
     let attempt = 0;
     while (!this.collection && attempt < 5) {
-      logger.debug("collection not ready", { name: this._name, attempt });
       await new Promise((resolve) => setTimeout(resolve, TIMEOUTS[attempt]));
       attempt++;
     }
