@@ -28,7 +28,7 @@ httpServer.listen(port, async () => {
   updateAccessTokens(appCache);
 });
 
-const cleanup = async (event) => {
+const cleanup = async (event: unknown) => {
   // SIGINT is sent for example when you Ctrl+C a running process from the command line.
   await cleanupDbClient(); // Close MongodDB Connection when Process ends
   process.exit(); // Exit with default success-code '0'.
