@@ -10,7 +10,7 @@ export class TrackService extends Service<TrackStore> {
     super(TrackStore);
   }
 
-  addTracks = async (pin: string, trackIds: string[], createdBy: string) => {
+  addTracks = async (pin: string, trackIds: string[], createdBy?: string) => {
     const roomService = new RoomService();
     const room = await roomService.getRoom(pin);
 
@@ -18,8 +18,10 @@ export class TrackService extends Service<TrackStore> {
     await this.store.addTracks(pin, tracks);
     await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);
 
-    const voteService = new VoteService();
-    await voteService.voteForTracks(pin, trackIds, createdBy);
+    if (createdBy) {
+      const voteService = new VoteService();
+      await voteService.voteForTracks(pin, trackIds, createdBy);
+    }
   };
 
   getTracks = async (pin: string) => {

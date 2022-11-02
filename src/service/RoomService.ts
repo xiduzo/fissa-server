@@ -62,8 +62,7 @@ export class RoomService extends Service<RoomStore> {
     const trackService = new TrackService();
     await trackService.addTracks(
       room.pin,
-      tracks.map((track) => track.id),
-      createdBy
+      tracks.map((track) => track.id)
     );
 
     await startPlayingTrack(accessToken, tracks[0].uri);

@@ -32,24 +32,26 @@ logger.add(
 );
 const DAY = 1000 * 60 * 60 * 24;
 
-logger.add(
-  new SentryTransport({
-    config: {
-      dsn: process.env.SENTRY_DNS,
-    },
-    level: "error",
-  })
-);
+setTimeout(() => {
+  logger.add(
+    new SentryTransport({
+      config: {
+        dsn: process.env.SENTRY_DNS,
+      },
+      level: "error",
+    })
+  );
 
-logger.add(
-  new MongoDB({
-    db: process.env.MONGODB_URI ?? `MONGODB_URI`,
-    dbName: "fissa",
-    level: "info",
-    leaveConnectionOpen: true,
-    expireAfterSeconds: DAY * 14,
-  })
-);
+  logger.add(
+    new MongoDB({
+      db: process.env.MONGODB_URI ?? `MONGODB_URI`,
+      dbName: "fissa",
+      level: "info",
+      leaveConnectionOpen: true,
+      expireAfterSeconds: DAY * 14,
+    })
+  );
+}, 100); // Make sure the process.env is filled
 
 // DO NOT USE LOGGER INSIDE OF THIS METHOD
 // AS IT WILL CAUSE AN INFINITE LOOP
