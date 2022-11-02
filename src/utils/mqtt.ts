@@ -1,5 +1,4 @@
 import mqtt from "mqtt";
-import { MQTT_CREDENTIALS } from "../lib/constants/credentials";
 import { logger } from "./logger";
 
 const connection = mqtt.connect("mqtt://mqtt.mdd-tardis.net", {

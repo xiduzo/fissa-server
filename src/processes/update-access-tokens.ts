@@ -1,5 +1,6 @@
 import cache from "node-cache";
 import { Conflict } from "../lib/classes/errors/Conflict";
+import { NotFound } from "../lib/classes/errors/NotFound";
 import { Room } from "../lib/interfaces/Room";
 import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
@@ -25,6 +26,8 @@ export const updateAccessTokens = async (appCache: cache) => {
           }
           const tokens = await updateTokens(accessToken, refreshToken);
 
+          if (!tokens) throw new NotFound("Tokens not found");
+
           const rooms = await mongoCollection<Room>("room");
 
           logger.info(`${pin}: Updating access token`);
@@ -45,7 +48,7 @@ export const updateAccessTokens = async (appCache: cache) => {
       })
   );
 
-  await Promise.all(promises);
+  if (promises) await Promise.all(promises);
 
   setTimeout(() => updateAccessTokens(appCache), UPDATE_ACCESS_TOKEN_TIME);
 };
