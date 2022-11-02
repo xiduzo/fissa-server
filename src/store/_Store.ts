@@ -12,7 +12,9 @@ export class Store<T> {
   }
 
   waitForCollection = async () => {
-    const TIMEOUTS = [500, 1000, 1000, 2000, 2000, 2000, 5000, 5000, 5000];
+    const TIMEOUTS = [
+      250, 250, 500, 500, 500, 1000, 1000, 1000, 1000, 2000, 5000,
+    ];
     let attempt = 0;
     while (!this.collection && attempt < TIMEOUTS.length - 1) {
       await new Promise((resolve) => setTimeout(resolve, TIMEOUTS[attempt]));
