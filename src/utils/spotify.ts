@@ -1,6 +1,5 @@
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
-import { SPOTIFY_CREDENTIALS } from "../lib/constants/credentials";
 import { logger } from "./logger";
 
 import https from "https";
@@ -11,7 +10,10 @@ enum SpotifyLimits {
 }
 
 const spotifyClient = (accessToken: string) => {
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  const spotifyApi = new SpotifyWebApi({
+    clientId: process.env.SPOTIFY_CLIENT_ID,
+    clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  });
   spotifyApi.setAccessToken(accessToken);
   return spotifyApi;
 };
@@ -303,9 +305,11 @@ const clearQueue = async (accessToken: string, attempt = 0) => {
     const response = await getMyQueue(accessToken);
 
     if (!response.currently_playing) return;
-    response.queue?.forEach(async (track) => {
-      spotifyApi.skipToNext();
+    const responses = response.queue?.map(async (track) => {
+      return spotifyApi.skipToNext();
     });
+
+    await Promise.all(responses);
   } catch (error) {
     logger.error(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
     return Promise.reject(error);
@@ -346,6 +350,7 @@ export const startPlayingTrack = async (
   const spotifyApi = spotifyClient(accessToken);
 
   try {
+    await clearQueue(accessToken);
     await setActiveDevice(accessToken);
     await spotifyApi.play({
       uris: [uri],
@@ -367,8 +372,6 @@ export const startPlayingTrack = async (
         resolve(i);
       }
     });
-
-    await clearQueue(accessToken);
   } catch (error) {
     logger.warn(
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
@@ -388,7 +391,7 @@ export const addTackToQueue = async (
 ) => {
   if (!trackId) return;
 
-  const spotifyApi = new SpotifyWebApi(SPOTIFY_CREDENTIALS);
+  const spotifyApi = spotifyClient(accessToken);
   spotifyApi.setAccessToken(accessToken);
 
   logger.info(`adding spotify:track:${trackId} to queue`);

@@ -2,7 +2,6 @@ import winston from "winston";
 import SentryTransport from "winston-sentry-log";
 
 import "winston-mongodb";
-import { MONGODB_URI } from "../lib/constants/credentials";
 
 const { combine, timestamp, printf, json, prettyPrint } = winston.format;
 const { MongoDB, Console } = winston.transports;
@@ -44,7 +43,7 @@ logger.add(
 
 logger.add(
   new MongoDB({
-    db: MONGODB_URI ?? `MONGODB_URI`,
+    db: process.env.MONGODB_URI ?? `MONGODB_URI`,
     dbName: "fissa",
     level: "info",
     leaveConnectionOpen: true,

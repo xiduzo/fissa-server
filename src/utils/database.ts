@@ -6,13 +6,12 @@ import {
   MongoClient,
   ServerApiVersion,
 } from "mongodb";
-import { MONGODB_URI } from "../lib/constants/credentials";
 import { Vote } from "../lib/interfaces/Vote";
 import { logger } from "./logger";
 import { Track } from "../lib/interfaces/Track";
 import { Room } from "../lib/interfaces/Room";
 
-const mongoClient = new MongoClient(MONGODB_URI ?? `MONGODB_URI`, {
+const mongoClient = new MongoClient(process.env.MONGODB_URI ?? `MONGODB_URI`, {
   serverApi: ServerApiVersion.v1,
   appName: "fissa",
 });

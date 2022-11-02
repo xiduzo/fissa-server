@@ -10,7 +10,7 @@ const handler: VercelApiHandler = async (request, response) => {
   try {
     const tokenService = new TokenService();
 
-    if (method === "GET") {
+    if (method === "POST") {
       const { code, redirect_uri } = z
         .object({
           code: z.string(),
