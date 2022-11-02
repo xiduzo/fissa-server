@@ -247,6 +247,7 @@ export const skipTrack = async (
     if (Boolean(disallows.skipping_next)) return false;
 
     await spotifyApi.skipToNext();
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for spotify to update the current track
     return true;
   } catch (error) {
     logger.warn(`${skipTrack.name}(${attempt}): ${JSON.stringify(error)}`);
