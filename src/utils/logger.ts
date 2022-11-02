@@ -1,10 +1,8 @@
 import winston from "winston";
 import SentryTransport from "winston-sentry-log";
 
-import "winston-mongodb";
-
-const { combine, timestamp, printf, json, prettyPrint } = winston.format;
-const { MongoDB, Console } = winston.transports;
+const { combine, timestamp, printf, prettyPrint } = winston.format;
+const { Console } = winston.transports;
 
 // Define log format
 const logFormat = printf(
@@ -30,7 +28,6 @@ logger.add(
     ),
   })
 );
-const DAY = 1000 * 60 * 60 * 24;
 
 setTimeout(() => {
   try {
@@ -40,20 +37,6 @@ setTimeout(() => {
           dsn: process.env.SENTRY_DNS,
         },
         level: "error",
-      })
-    );
-  } catch (error) {
-    logger.warn("Failed to add MongoDB transport", { error });
-  }
-
-  try {
-    logger.add(
-      new MongoDB({
-        db: process.env.MONGODB_URI ?? `MONGODB_URI`,
-        dbName: "fissa",
-        level: "info",
-        leaveConnectionOpen: true,
-        expireAfterSeconds: DAY * 14,
       })
     );
   } catch (error) {
