@@ -20,11 +20,11 @@ let db: Db | undefined;
 
 export const cleanupDbClient = async () => {
   try {
-    db = undefined;
     await client?.close();
   } catch {
     logger.warn("Failed to close db client");
   } finally {
+    db = undefined;
     client = undefined;
   }
 };
@@ -37,6 +37,7 @@ export const mongoDb = (): Promise<Db> => {
   return new Promise(async (resolve, reject) => {
     try {
       client = await mongoClient.connect();
+      client.setMaxListeners(30);
       db = client.db("fissa", {
         logger: logger.info,
         retryWrites: true,
