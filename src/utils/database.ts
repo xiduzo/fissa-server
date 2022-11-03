@@ -19,9 +19,14 @@ let client: MongoClient | undefined;
 let db: Db | undefined;
 
 export const cleanupDbClient = async () => {
-  await client?.close();
-  client = undefined;
-  db = undefined;
+  try {
+    db = undefined;
+    await client?.close();
+  } catch {
+    logger.warn("Failed to close db client");
+  } finally {
+    client = undefined;
+  }
 };
 
 export const getDb = () => db;
@@ -45,12 +50,7 @@ export const mongoDb = (): Promise<Db> => {
 
       resolve(db);
     } catch (error) {
-      try {
-        await mongoClient.close();
-      } catch {
-        logger.warn("Failed to close mongo client");
-        reject(error);
-      }
+      await cleanupDbClient();
 
       logger.error(`${mongoDb.name}: ${JSON.stringify(error)}`);
       reject(error);
