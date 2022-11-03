@@ -29,7 +29,7 @@ export class TokenService extends Service<TokenStore> {
 
     const me = await getMe(tokens.access_token);
 
-    this.store.refreshToken(accessToken, me.id);
+    await this.store.refreshToken(accessToken, me.id);
 
     return tokens;
   };
