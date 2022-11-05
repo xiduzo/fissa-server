@@ -277,25 +277,6 @@ export const getMyQueue = async (
   }
 };
 
-const clearQueue = async (accessToken: string, attempt = 0) => {
-  const spotifyApi = spotifyClient(accessToken);
-
-  try {
-    const response = await getMyQueue(accessToken);
-
-    if (!response.currently_playing) return;
-    const responses = response.queue?.map(async (track) => {
-      return spotifyApi.skipToNext();
-    });
-
-    await Promise.all(responses);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for spotify to update the current track
-  } catch (error) {
-    logger.error(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
-    return Promise.reject(error);
-  }
-};
-
 const setActiveDevice = async (accessToken: string, attempt = 0) => {
   const spotifyApi = spotifyClient(accessToken);
 
@@ -354,6 +335,9 @@ export const startPlayingTrack = async (
         resolve(i);
       }
     });
+
+    await new Promise((resolve) => setTimeout(resolve, 750)); // give spotify some slack
+
     return true;
   } catch (error) {
     logger.warn(
