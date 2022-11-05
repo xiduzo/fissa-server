@@ -85,7 +85,7 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
 
     const tracks = await trackService.getTracks(pin);
     newState = getNextState(tracks, currentlyPlaying);
-
+    newState.lastPlayedIndex = newState.currentIndex;
     const newRoom = { ...room, ...newState };
 
     logger.info(`${pin}: index ${currentIndex} -> ${newState.currentIndex}`);
