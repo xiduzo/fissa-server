@@ -1,6 +1,5 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
-import { RoomService } from "../service/RoomService";
 import { Room } from "../lib/interfaces/Room";
 import { Track } from "../lib/interfaces/Track";
 import {
@@ -13,7 +12,6 @@ import {
 import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
 import { publish } from "../utils/mqtt";
-import { updateRoom } from "./sync-currently-playing";
 import { VoteService } from "../service/VoteService";
 import { TrackService } from "../service/TrackService";
 import { FissaError } from "../lib/classes/errors/_FissaError";
@@ -129,7 +127,12 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       (track) => track.id === currentTrackId
     );
 
-    if (newCurrentTrackIndex !== currentIndex) await updateRoom(room);
+    if (newCurrentTrackIndex !== currentIndex) {
+      await publish(`fissa/room/${pin}`, {
+        ...room,
+        currentIndex: newCurrentTrackIndex,
+      });
+    }
     if (reorders) logger.info(`${pin}: reorders: ${reorders}`);
     return reorders;
   } catch (error) {

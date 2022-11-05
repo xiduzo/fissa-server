@@ -1,6 +1,6 @@
 import { TrackStore } from "../store/TrackStore";
 import { publish } from "../utils/mqtt";
-import { getTracks } from "../utils/spotify";
+import { getRecommendedTracks, getTracks } from "../utils/spotify";
 import { RoomService } from "./RoomService";
 import { VoteService } from "./VoteService";
 import { Service } from "./_Service";
@@ -22,6 +22,16 @@ export class TrackService extends Service<TrackStore> {
       const voteService = new VoteService();
       await voteService.voteForTracks(pin, trackIds, createdBy);
     }
+  };
+
+  addRandomTracks = async (pin: string, accessToken: string) => {
+    const tracks = await this.store.getTracks(pin);
+
+    const seedIds = tracks.slice(-5).map((track) => track.id);
+    const recommendations = await getRecommendedTracks(accessToken, seedIds);
+    const recommendedIds = recommendations?.map((track) => track.id);
+
+    await this.addTracks(pin, recommendedIds, "bot");
   };
 
   getTracks = async (pin: string) => {

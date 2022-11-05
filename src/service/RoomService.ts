@@ -1,4 +1,3 @@
-import { updateRoom } from "../processes/sync-currently-playing";
 import { Conflict } from "../lib/classes/errors/Conflict";
 import { NotFound } from "../lib/classes/errors/NotFound";
 import { Unauthorized } from "../lib/classes/errors/Unauthorized";
@@ -10,12 +9,17 @@ import {
   getMyTopTracks,
   startPlayingTrack,
   getMyCurrentPlaybackState,
+  getRecommendedTracks,
 } from "../utils/spotify";
 import { RoomStore } from "../store/RoomStore";
 import { RoomBuilder } from "../builders/RoomBuilder";
 import { TrackService } from "./TrackService";
 import { Service } from "./_Service";
 import { Room } from "../lib/interfaces/Room";
+import { logger } from "../utils/logger";
+import { DateTime } from "luxon";
+import { publish } from "../utils/mqtt";
+import { VoteService } from "./VoteService";
 
 export class RoomService extends Service<RoomStore> {
   constructor() {
@@ -64,7 +68,7 @@ export class RoomService extends Service<RoomStore> {
 
     await startPlayingTrack(accessToken, tracks[0].uri);
 
-    await updateRoom(room);
+    await this.updateRoom(room, 0);
 
     return pin;
   };
@@ -102,12 +106,11 @@ export class RoomService extends Service<RoomStore> {
 
     const tracks = await trackService.getTracks(pin);
 
-    if (
-      is_playing &&
-      item &&
-      tracks.map((track) => track.id).includes(item.id)
-    ) {
-      await updateRoom(room);
+    const trackIndex = item && tracks.map((track) => track.id).indexOf(item.id);
+
+    if (is_playing && trackIndex) {
+      await this.updateRoom(room, trackIndex);
+      logger.warn(`room ${pin} is already playing`);
       throw new Conflict(`room ${pin} is already playing`);
     }
 
@@ -116,6 +119,7 @@ export class RoomService extends Service<RoomStore> {
       accessToken,
       `spotify:track:${tracks[nextTrackIndex].id}`
     );
+    await this.updateRoom(room, nextTrackIndex);
   };
 
   skipTrack = async (pin: string, createdBy: string) => {
@@ -127,14 +131,49 @@ export class RoomService extends Service<RoomStore> {
 
     const { accessToken, currentIndex } = room;
     const tracks = await trackService.getTracks(pin);
+    const nextIndex = currentIndex + 1;
 
     const playing = await startPlayingTrack(
       accessToken,
-      `spotify:track:${tracks[currentIndex + 1].id}`
+      `spotify:track:${tracks[nextIndex].id}`
     );
 
     if (!playing) throw new UnprocessableEntity("Could not skip track");
 
-    await updateRoom(room);
+    await this.updateRoom(room, nextIndex);
+  };
+
+  updateRoom = async (room: Room, trackIndex: number) => {
+    const trackService = new TrackService();
+    const voteService = new VoteService();
+
+    const { currentIndex, pin, accessToken } = room;
+
+    let newState: Partial<Room> = {
+      ...room,
+      currentIndex: trackIndex,
+      lastPlayedIndex: currentIndex,
+      expectedEndTime: undefined,
+    };
+
+    const tracks = await trackService.getTracks(pin);
+    const track = tracks[trackIndex];
+    const trackAfter = tracks[trackIndex + 1];
+    newState.expectedEndTime = DateTime.now()
+      .plus({ milliseconds: track.duration_ms })
+      .toISO();
+
+    await this.store.updateRoom(newState);
+    await voteService.deleteVotes(pin, track.id);
+
+    delete newState.accessToken;
+    delete newState.refreshToken;
+    await publish(`fissa/room/${pin}`, room);
+
+    if (!trackAfter) {
+      await trackService.addRandomTracks(pin, accessToken);
+    }
+
+    return track.id;
   };
 }

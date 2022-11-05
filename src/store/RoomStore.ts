@@ -21,6 +21,14 @@ export class RoomStore extends Store<Room> {
     });
   };
 
+  updateRoom = async (room: Partial<Room>) => {
+    await this.waitForCollection();
+
+    const { pin } = room;
+
+    return await this.collection.updateOne({ pin }, { $set: room });
+  };
+
   deleteRoomsOfUser = async (createdBy: string) => {
     return await this.collection.deleteMany({ createdBy });
   };
