@@ -37,7 +37,10 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 
           const roomService = new RoomService();
           const lastAddedTrack = appCache.get(pin);
-          const newTrackId = roomService.updateRoom(room, currentIndex + 1);
+          const newTrackId = await roomService.updateRoom(
+            room,
+            currentIndex + 1
+          );
           if (lastAddedTrack === newTrackId) return;
 
           appCache.set(pin, newTrackId);
