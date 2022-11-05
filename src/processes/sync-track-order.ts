@@ -78,13 +78,12 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     const currentTrackId = tracks[currentIndex].id;
     const roomTracks = await mongoCollection<Track>("track");
     const voteIds = votes.map((vote) => vote.trackId);
-    const playlistOffset = 1; // 1 for the current track
 
     // 1 remove voted tracks from new order
     let newTracksOrder = tracks.filter((track) => {
-      // Keep the current track and the next track
+      // Keep the current track
       if (track.index === currentIndex) return true;
-      // Remove all other tracks
+      // Remove all tracks which have been voted on
       return !voteIds.includes(track.id);
     });
 
@@ -92,9 +91,9 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
     if (positiveVotes.length) {
       newTracksOrder = [
-        ...newTracksOrder.slice(0, currentIndex + playlistOffset),
+        ...newTracksOrder.slice(0, currentIndex),
         ...mapTo(tracks, positiveVotes),
-        ...newTracksOrder.slice(currentIndex + playlistOffset),
+        ...newTracksOrder.slice(currentIndex),
       ];
     }
 
