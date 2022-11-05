@@ -311,6 +311,7 @@ const clearQueue = async (accessToken: string, attempt = 0) => {
     });
 
     await Promise.all(responses);
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for spotify to update the current track
   } catch (error) {
     logger.error(`${clearQueue.name}(${attempt}): ${JSON.stringify(error)}`);
     return Promise.reject(error);
