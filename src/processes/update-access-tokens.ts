@@ -6,7 +6,7 @@ import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
 import { updateTokens } from "../utils/spotify";
 
-const UPDATE_ACCESS_TOKEN_TIME = 1000 * 60 * 20;
+const UPDATE_ACCESS_TOKEN_TIME = 1000 * 60 * 45;
 
 export const updateAccessTokens = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
