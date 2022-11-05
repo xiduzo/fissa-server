@@ -155,6 +155,7 @@ export class RoomService extends Service<RoomStore> {
       lastPlayedIndex: currentIndex,
       expectedEndTime: undefined,
     };
+    logger.info("updating room");
 
     const tracks = await trackService.getTracks(pin);
     const track = tracks[trackIndex];
@@ -162,13 +163,18 @@ export class RoomService extends Service<RoomStore> {
     newState.expectedEndTime = DateTime.now()
       .plus({ milliseconds: track.duration_ms })
       .toISO();
+    logger.info(`expected end time: ${newState.expectedEndTime}`);
 
     await this.store.updateRoom(newState);
     await voteService.deleteVotes(pin, track.id);
 
     delete newState.accessToken;
     delete newState.refreshToken;
-    await publish(`fissa/room/${pin}`, room);
+    logger.info(
+      `${pin} track index ${currentIndex} -> ${newState.currentIndex}`,
+      { newState }
+    );
+    await publish(`fissa/room/${pin}`, newState);
 
     if (!trackAfter) {
       await trackService.addRandomTracks(pin, accessToken);
