@@ -4,15 +4,12 @@ import { NotFound } from "../lib/classes/errors/NotFound";
 import { Unauthorized } from "../lib/classes/errors/Unauthorized";
 import { UnprocessableEntity } from "../lib/classes/errors/UnprocessableEntity";
 import { deleteMyOtherRooms } from "../utils/database";
-import { logger } from "../utils/logger";
 import { createPin } from "../utils/pin";
 import {
   getPlaylistTracks,
   getMyTopTracks,
   startPlayingTrack,
-  addTackToQueue,
   getMyCurrentPlaybackState,
-  skipTrack,
 } from "../utils/spotify";
 import { RoomStore } from "../store/RoomStore";
 import { RoomBuilder } from "../builders/RoomBuilder";
@@ -67,8 +64,7 @@ export class RoomService extends Service<RoomStore> {
 
     await startPlayingTrack(accessToken, tracks[0].uri);
 
-    const nextTrackId = await updateRoom(room);
-    await addTackToQueue(accessToken, nextTrackId);
+    await updateRoom(room);
 
     return pin;
   };
@@ -120,26 +116,25 @@ export class RoomService extends Service<RoomStore> {
       accessToken,
       `spotify:track:${tracks[nextTrackIndex].id}`
     );
-
-    const nextTrackId = await updateRoom(room);
-    await addTackToQueue(accessToken, nextTrackId);
   };
 
   skipTrack = async (pin: string, createdBy: string) => {
+    const trackService = new TrackService();
     const room = await this.getRoom(pin);
 
     if (room.createdBy !== createdBy)
       throw new Unauthorized(`You are not the room owner`);
 
-    const { accessToken } = room;
+    const { accessToken, currentIndex } = room;
+    const tracks = await trackService.getTracks(pin);
 
-    const skipped = await skipTrack(accessToken);
+    const playing = await startPlayingTrack(
+      accessToken,
+      `spotify:track:${tracks[currentIndex].id}`
+    );
 
-    logger.info(`${pin}: skipped track: ${skipped}`);
+    if (!playing) throw new UnprocessableEntity("Could not skip track");
 
-    if (!skipped) throw new UnprocessableEntity("Could not skip track");
-
-    const nextTrackId = await updateRoom(room);
-    await addTackToQueue(accessToken, nextTrackId);
+    await updateRoom(room);
   };
 }

@@ -6,9 +6,9 @@ import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
 import { publish } from "../utils/mqtt";
 import {
-  addTackToQueue,
   getMyCurrentPlaybackState,
   getRecommendedTracks,
+  startPlayingTrack,
 } from "../utils/spotify";
 import { TrackService } from "../service/TrackService";
 import { VoteService } from "../service/VoteService";
@@ -41,10 +41,10 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           if (!nextTrackId) return;
 
           if (lastAddedTrack == nextTrackId) {
-            throw new Conflict("trying to add same track to the queue");
+            throw new Conflict("trying to play the same track");
           }
 
-          await addTackToQueue(accessToken, nextTrackId);
+          await startPlayingTrack(accessToken, `spotify:track:${nextTrackId}`);
         } catch (error) {
           logger.error(
             `${syncCurrentlyPlaying.name}(${room.pin}): ${JSON.stringify(

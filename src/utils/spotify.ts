@@ -233,28 +233,6 @@ export const getMyTopTracks = async (
   }
 };
 
-export const skipTrack = async (
-  accessToken: string,
-  attempt = 0
-): Promise<boolean> => {
-  const spotifyApi = spotifyClient(accessToken);
-
-  try {
-    const {
-      actions: { disallows },
-    } = await getMyCurrentPlaybackState(accessToken);
-
-    if (Boolean(disallows.skipping_next)) return false;
-
-    await spotifyApi.skipToNext();
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for spotify to update the current track
-    return true;
-  } catch (error) {
-    logger.warn(`${skipTrack.name}(${attempt}): ${JSON.stringify(error)}`);
-    return false;
-  }
-};
-
 type MyQueueResponse = {
   currently_playing: SpotifyApi.TrackObjectFull | null;
   queue: SpotifyApi.TrackObjectFull[];
@@ -346,13 +324,15 @@ const setActiveDevice = async (accessToken: string, attempt = 0) => {
 
 export const startPlayingTrack = async (
   accessToken: string,
+  /**
+   * Should be in the format `spotify:track:{trackId}`
+   */
   uri: string,
   attempt = 0
 ) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
-    await clearQueue(accessToken);
     await setActiveDevice(accessToken);
     await spotifyApi.play({
       uris: [uri],
@@ -374,6 +354,7 @@ export const startPlayingTrack = async (
         resolve(i);
       }
     });
+    return true;
   } catch (error) {
     logger.warn(
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
@@ -382,26 +363,8 @@ export const startPlayingTrack = async (
     if ((error as any).body.error.status === StatusCodes.NOT_FOUND) {
       throw new NotFound("No active device found");
     }
-  }
-};
 
-export const addTackToQueue = async (
-  accessToken: string,
-  /** When no trackId has been given no track will be added to the queue */
-  trackId?: string,
-  attempt = 0
-) => {
-  if (!trackId) return;
-
-  const spotifyApi = spotifyClient(accessToken);
-  spotifyApi.setAccessToken(accessToken);
-
-  logger.info(`adding spotify:track:${trackId} to queue`);
-
-  try {
-    await spotifyApi.addToQueue(`spotify:track:${trackId}`);
-  } catch (error) {
-    logger.warn(`${addTackToQueue.name}(${attempt}): ${JSON.stringify(error)}`);
+    return false;
   }
 };
 
