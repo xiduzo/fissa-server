@@ -1,25 +1,17 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
 import { Room } from "../lib/interfaces/Room";
-import { Track } from "../lib/interfaces/Track";
-import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
-import { publish } from "../utils/mqtt";
-import {
-  getMyCurrentPlaybackState,
-  getRecommendedTracks,
-  startPlayingTrack,
-} from "../utils/spotify";
-import { TrackService } from "../service/TrackService";
-import { VoteService } from "../service/VoteService";
-import { Conflict } from "../lib/classes/errors/Conflict";
-import { FissaError } from "../lib/classes/errors/_FissaError";
+import { startPlayingTrack } from "../utils/spotify";
 import { RoomService } from "../service/RoomService";
+import { TrackService } from "../service/TrackService";
 
-const CURRENTLY_PLAYING_SYNC_TIME = 250;
+const CURRENTLY_PLAYING_SYNC_TIME = 500;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
+  const roomService = new RoomService();
+  const trackService = new TrackService();
 
   const promises = rooms?.map(
     async (room): Promise<void> =>
@@ -33,18 +25,21 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
             expectedEndTime ?? DateTime.now().toISO()
           ).diff(DateTime.now()).milliseconds;
 
+          logger.info(`tminus ${tMinus}ms`);
+
           if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
 
-          const roomService = new RoomService();
           const lastAddedTrack = appCache.get(pin);
-          const newTrackId = await roomService.updateRoom(
-            room,
-            currentIndex + 1
-          );
-          if (lastAddedTrack === newTrackId) return;
+          const tracks = await trackService.getTracks(pin);
+          const nextIndex = currentIndex + 1;
+          const nextTrackId = tracks[nextIndex].id;
 
-          appCache.set(pin, newTrackId);
-          await startPlayingTrack(accessToken, `spotify:track:${newTrackId}`);
+          logger.info(`${lastAddedTrack}, ${nextTrackId}`);
+          if (lastAddedTrack === nextTrackId) return;
+
+          await startPlayingTrack(accessToken, `spotify:track:${nextTrackId}`);
+          await roomService.updateRoom(room, nextIndex);
+          appCache.set(pin, nextTrackId);
         } catch (error) {
           logger.error(
             `${syncCurrentlyPlaying.name}(${room.pin}): ${JSON.stringify(

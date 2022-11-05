@@ -147,6 +147,7 @@ export class RoomService extends Service<RoomStore> {
     const trackService = new TrackService();
     const voteService = new VoteService();
 
+    const currentlyPlaying = await getMyCurrentPlaybackState(room.accessToken);
     const { currentIndex, pin, accessToken } = room;
 
     let newState: Partial<Room> = {
@@ -161,7 +162,9 @@ export class RoomService extends Service<RoomStore> {
     const track = tracks[trackIndex];
     const trackAfter = tracks[trackIndex + 1];
     newState.expectedEndTime = DateTime.now()
-      .plus({ milliseconds: track.duration_ms })
+      .plus({
+        milliseconds: track.duration_ms - (currentlyPlaying?.progress_ms ?? 0),
+      })
       .toISO();
     logger.info(`expected end time: ${newState.expectedEndTime}`);
 

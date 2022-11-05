@@ -78,7 +78,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     const currentTrackId = tracks[currentIndex].id;
     const roomTracks = await mongoCollection<Track>("track");
     const voteIds = votes.map((vote) => vote.trackId);
-    const playlistOffset = 2; // 1 for the current track + 1 for the next track
+    const playlistOffset = 2; // 1 for the current track
 
     // 1 remove voted tracks from new order
     let newTracksOrder = tracks.filter((track) => {

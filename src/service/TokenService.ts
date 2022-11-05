@@ -25,11 +25,11 @@ export class TokenService extends Service<TokenStore> {
   refresh = async (accessToken: string, refreshToken: string) => {
     const tokens = await updateTokens(accessToken, refreshToken);
 
-    if (!tokens?.refresh_token) throw new NotFound("Tokens not found");
+    if (!tokens) throw new NotFound("Tokens not found");
 
     const me = await getMe(tokens.access_token);
 
-    await this.store.refreshToken(accessToken, tokens.refresh_token, me.id);
+    await this.store.refreshToken(accessToken, me.id);
 
     return tokens;
   };
