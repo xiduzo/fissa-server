@@ -130,7 +130,7 @@ export class RoomService extends Service<RoomStore> {
 
     const playing = await startPlayingTrack(
       accessToken,
-      `spotify:track:${tracks[currentIndex].id}`
+      `spotify:track:${tracks[currentIndex + 1].id}`
     );
 
     if (!playing) throw new UnprocessableEntity("Could not skip track");
