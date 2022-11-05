@@ -152,8 +152,8 @@ export class RoomService extends Service<RoomStore> {
 
     let newState: Partial<Room> = {
       ...room,
-      currentIndex: trackIndex,
-      lastPlayedIndex: currentIndex,
+      currentIndex: currentlyPlaying?.is_playing ? trackIndex : -1,
+      lastPlayedIndex: trackIndex,
       expectedEndTime: undefined,
     };
     logger.info("updating room");
