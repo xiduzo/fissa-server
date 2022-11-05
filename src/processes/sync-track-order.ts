@@ -91,9 +91,9 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     const positiveVotes = sortedVotes.filter(positiveScore).sort(highToLow);
     if (positiveVotes.length) {
       newTracksOrder = [
-        ...newTracksOrder.slice(0, currentIndex),
+        ...newTracksOrder.slice(0, currentIndex + 1),
         ...mapTo(tracks, positiveVotes),
-        ...newTracksOrder.slice(currentIndex),
+        ...newTracksOrder.slice(currentIndex + 1),
       ];
     }
 
