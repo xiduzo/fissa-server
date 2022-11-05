@@ -1,5 +1,4 @@
 import cache from "node-cache";
-import { Conflict } from "../lib/classes/errors/Conflict";
 import { NotFound } from "../lib/classes/errors/NotFound";
 import { FissaError } from "../lib/classes/errors/_FissaError";
 import { Room } from "../lib/interfaces/Room";
@@ -16,15 +15,8 @@ export const updateAccessTokens = async (appCache: cache) => {
     async (room): Promise<void> =>
       new Promise(async (resolve) => {
         try {
-          const { createdBy, accessToken, refreshToken, currentIndex, pin } =
-            room;
-          if (!accessToken || !refreshToken) return;
+          const { createdBy, accessToken, refreshToken, pin } = room;
 
-          if (currentIndex < 0) {
-            throw new Conflict(
-              "not updating token as the room does not seem to be playing"
-            );
-          }
           const tokens = await updateTokens(accessToken, refreshToken);
 
           if (!tokens) throw new NotFound("Tokens not found");
