@@ -21,7 +21,6 @@ import { FissaError } from "../lib/classes/errors/_FissaError";
 const TRACK_ORDER_SYNC_TIME = 1000 * 2;
 const NO_SYNC_MARGIN = 1000 * 5;
 
-const roomService = new RoomService();
 const voteService = new VoteService();
 const trackService = new TrackService();
 

@@ -15,7 +15,10 @@ import { VoteService } from "../service/VoteService";
 import { Conflict } from "../lib/classes/errors/Conflict";
 import { FissaError } from "../lib/classes/errors/_FissaError";
 
-const CURRENTLY_PLAYING_SYNC_TIME = 250;
+const CURRENTLY_PLAYING_SYNC_TIME = 500;
+
+const trackService = new TrackService();
+const voteService = new VoteService();
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -80,7 +83,6 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
       logger.warn(`${updateRoom.name}(${pin}): not playing`);
       return undefined;
     }
-    const trackService = new TrackService();
 
     const tracks = await trackService.getTracks(pin);
     newState = getNextState(tracks, currentlyPlaying);
@@ -155,7 +157,6 @@ const getNextTrackId = async (
     if (currentIndex >= 0) {
       const nextTrack = tracks[newState.currentIndex + 1];
       const trackAfterNext = tracks[newState.currentIndex + 2];
-      const voteService = new VoteService();
 
       if (nextTrack) {
         nextTrackId = nextTrack.id;
@@ -169,7 +170,6 @@ const getNextTrackId = async (
           seedIds
         );
         const recommendedIds = recommendations?.map((track) => track.id);
-        const trackService = new TrackService();
 
         await trackService.addTracks(pin, recommendedIds, "bot");
         if (!nextTrack) {
