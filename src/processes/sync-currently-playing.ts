@@ -112,13 +112,13 @@ export const updateRoom = async (room: Room): Promise<string | undefined> => {
 const saveAndPublishRoom = async (room: Partial<Room>) => {
   const rooms = await mongoCollection<Room>("room");
 
-  const { pin, currentIndex, expectedEndTime } = room;
+  const { pin } = room;
 
   delete room.accessToken;
   delete room.refreshToken;
   await publish(`fissa/room/${pin}`, room);
 
-  await rooms.updateOne({ pin }, { $set: { currentIndex, expectedEndTime } });
+  await rooms.updateOne({ pin }, { $set: room });
 };
 
 const getNextState = (
