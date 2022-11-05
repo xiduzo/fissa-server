@@ -17,9 +17,6 @@ import { FissaError } from "../lib/classes/errors/_FissaError";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 500;
 
-const trackService = new TrackService();
-const voteService = new VoteService();
-
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
 
@@ -69,6 +66,8 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 
 export const updateRoom = async (room: Room): Promise<string | undefined> => {
   try {
+    const trackService = new TrackService();
+
     const { pin, currentIndex, accessToken } = room;
     const currentlyPlaying = await getMyCurrentPlaybackState(accessToken);
 
@@ -154,6 +153,9 @@ const getNextTrackId = async (
   const { currentIndex, pin, accessToken } = newState;
 
   try {
+    const voteService = new VoteService();
+    const trackService = new TrackService();
+
     if (currentIndex >= 0) {
       const nextTrack = tracks[newState.currentIndex + 1];
       const trackAfterNext = tracks[newState.currentIndex + 2];

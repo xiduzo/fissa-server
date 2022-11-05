@@ -21,6 +21,7 @@ httpServer.listen(port, async () => {
 
   logger.info("Starting sync processes");
   // TODO spawn as child processes
+
   syncActiveRooms(appCache);
   syncCurrentlyPlaying(appCache);
   syncTrackOrder(appCache);
