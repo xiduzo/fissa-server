@@ -10,8 +10,6 @@ export class TokenStore extends Store<Room> {
   refreshToken = async (accessToken: string, createdBy: string) => {
     await this.waitForCollection();
 
-    logger.info(`Refreshing token for ${createdBy}: ${accessToken}`);
-
     return await this.collection.updateMany(
       { createdBy },
       {
