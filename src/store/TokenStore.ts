@@ -6,13 +6,17 @@ export class TokenStore extends Store<Room> {
     super("room");
   }
 
-  refreshToken = async (accessToken: string, createdBy: string) => {
+  refreshToken = async (
+    accessToken: string,
+    refreshToken: string,
+    createdBy: string
+  ) => {
     await this.waitForCollection();
 
     return await this.collection.updateMany(
       { createdBy },
       {
-        $set: { accessToken },
+        $set: { accessToken, refreshToken },
       }
     );
   };
