@@ -25,8 +25,6 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
             expectedEndTime ?? DateTime.now().toISO()
           ).diff(DateTime.now()).milliseconds;
 
-          logger.info(`tminus ${tMinus}ms`);
-
           if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
 
           const lastAddedTrack = appCache.get(pin);
