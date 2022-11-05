@@ -3,6 +3,7 @@ import { TokenStore } from "../store/TokenStore";
 import { getMe, updateTokens } from "../utils/spotify";
 import { Service } from "./_Service";
 import { NotFound } from "../lib/classes/errors/NotFound";
+import { logger } from "../utils/logger";
 
 export class TokenService extends Service<TokenStore> {
   constructor() {
