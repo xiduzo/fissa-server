@@ -9,7 +9,6 @@ import {
   getMyTopTracks,
   startPlayingTrack,
   getMyCurrentPlaybackState,
-  getRecommendedTracks,
 } from "../utils/spotify";
 import { RoomStore } from "../store/RoomStore";
 import { RoomBuilder } from "../builders/RoomBuilder";
@@ -148,7 +147,7 @@ export class RoomService extends Service<RoomStore> {
     const voteService = new VoteService();
 
     const currentlyPlaying = await getMyCurrentPlaybackState(room.accessToken);
-    const { currentIndex, pin, accessToken } = room;
+    const { pin, accessToken } = room;
 
     let newState: Partial<Room> = {
       ...room,
@@ -156,7 +155,6 @@ export class RoomService extends Service<RoomStore> {
       lastPlayedIndex: trackIndex,
       expectedEndTime: undefined,
     };
-    logger.info("updating room");
 
     const tracks = await trackService.getTracks(pin);
     const track = tracks[trackIndex];
@@ -166,17 +164,12 @@ export class RoomService extends Service<RoomStore> {
         milliseconds: track.duration_ms - (currentlyPlaying?.progress_ms ?? 0),
       })
       .toISO();
-    logger.info(`expected end time: ${newState.expectedEndTime}`);
 
     await this.store.updateRoom(newState);
     await voteService.deleteVotes(pin, track.id);
 
     delete newState.accessToken;
     delete newState.refreshToken;
-    logger.info(
-      `${pin} track index ${currentIndex} -> ${newState.currentIndex}`,
-      { newState }
-    );
     await publish(`fissa/room/${pin}`, newState);
 
     if (!trackAfter) {
