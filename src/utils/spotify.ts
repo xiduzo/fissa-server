@@ -344,7 +344,7 @@ export const startPlayingTrack = async (
       `${startPlayingTrack.name}(${attempt}): ${JSON.stringify(error)}`
     );
 
-    if ((error as any).body.error.status === StatusCodes.NOT_FOUND) {
+    if ((error as any).body?.error?.status === StatusCodes.NOT_FOUND) {
       throw new NotFound("No active device found");
     }
 
