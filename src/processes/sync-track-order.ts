@@ -131,7 +131,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
         currentIndex: newCurrentTrackIndex,
       });
     }
-    if (reorders) logger.info(`${pin}: reorders: ${reorders}`);
+    if (reorders) logger.info(`${pin} - ${reorders} reorders`);
     return reorders;
   } catch (error) {
     if (error instanceof FissaError) {

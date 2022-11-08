@@ -6,7 +6,7 @@ import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
 import { updateTokens } from "../utils/spotify";
 
-const UPDATE_ACCESS_TOKEN_TIME = 1000 * 60 * 45;
+const UPDATE_ACCESS_TOKEN_TIME = 1000 * 60 * 25;
 
 export const updateAccessTokens = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -15,7 +15,7 @@ export const updateAccessTokens = async (appCache: cache) => {
     async (room): Promise<void> =>
       new Promise(async (resolve) => {
         try {
-          const { createdBy, accessToken, refreshToken, pin } = room;
+          const { accessToken, refreshToken, pin } = room;
 
           const tokens = await updateTokens(accessToken, refreshToken);
 
@@ -25,8 +25,8 @@ export const updateAccessTokens = async (appCache: cache) => {
 
           logger.info(`${pin}: Updating access token`);
 
-          await rooms.updateMany(
-            { createdBy },
+          await rooms.updateOne(
+            { pin },
             {
               $set: { accessToken: tokens.access_token },
             }

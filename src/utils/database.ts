@@ -43,11 +43,21 @@ export const mongoDb = (): Promise<Db> => {
         retryWrites: true,
       });
       client
-        .on("close", cleanupDbClient)
-        .on("error", cleanupDbClient)
-        .on("connectionClosed", cleanupDbClient)
-        .on("serverClosed", cleanupDbClient)
-        .on("connectionPoolClosed", cleanupDbClient);
+        .on("close", async () => {
+          await cleanupDbClient();
+        })
+        .on("error", async () => {
+          await cleanupDbClient();
+        })
+        .on("connectionClosed", async () => {
+          await cleanupDbClient();
+        })
+        .on("serverClosed", async () => {
+          await cleanupDbClient();
+        })
+        .on("connectionPoolClosed", async () => {
+          await cleanupDbClient();
+        });
 
       resolve(db);
     } catch (error) {

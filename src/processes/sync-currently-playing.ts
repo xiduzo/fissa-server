@@ -18,7 +18,6 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
       new Promise(async (resolve) => {
         try {
           const { accessToken, expectedEndTime, currentIndex, pin } = room;
-          if (!accessToken) return;
           if (currentIndex < 0) return;
 
           const tMinus = DateTime.fromISO(
@@ -30,14 +29,14 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           const lastAddedTrack = appCache.get(pin);
           const tracks = await trackService.getTracks(pin);
           const nextIndex = currentIndex + 1;
-          const nextTrackId = tracks[nextIndex].id;
+          const nextTrack = tracks[nextIndex];
 
-          logger.info(`${lastAddedTrack}, ${nextTrackId}`);
-          if (lastAddedTrack === nextTrackId) return;
+          if (lastAddedTrack === nextTrack.id) return;
 
-          await startPlayingTrack(accessToken, `spotify:track:${nextTrackId}`);
+          await startPlayingTrack(accessToken, `spotify:track:${nextTrack.id}`);
           await roomService.updateRoom(room, nextIndex);
-          appCache.set(pin, nextTrackId);
+          logger.info(`${pin} - playing track ${nextIndex}(${nextTrack.name})`);
+          appCache.set(pin, nextTrack);
         } catch (error) {
           logger.error(
             `${syncCurrentlyPlaying.name}(${room.pin}): ${JSON.stringify(
