@@ -277,7 +277,7 @@ export const getMyQueue = async (
   }
 };
 
-const setActiveDevice = async (accessToken: string, attempt = 0) => {
+export const setActiveDevice = async (accessToken: string, attempt = 0) => {
   const spotifyApi = spotifyClient(accessToken);
 
   try {
@@ -314,7 +314,6 @@ export const startPlayingTrack = async (
   const spotifyApi = spotifyClient(accessToken);
 
   try {
-    await setActiveDevice(accessToken);
     await spotifyApi.play({
       uris: [uri],
     });

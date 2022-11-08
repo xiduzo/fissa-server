@@ -9,6 +9,7 @@ import {
   getMyTopTracks,
   startPlayingTrack,
   getMyCurrentPlaybackState,
+  setActiveDevice,
 } from "../utils/spotify";
 import { RoomStore } from "../store/RoomStore";
 import { RoomBuilder } from "../builders/RoomBuilder";
@@ -65,6 +66,7 @@ export class RoomService extends Service<RoomStore> {
       tracks.map((track) => track.id)
     );
 
+    await setActiveDevice(accessToken);
     await startPlayingTrack(accessToken, tracks[0].uri);
 
     await this.updateRoom(room, 0);
@@ -114,6 +116,7 @@ export class RoomService extends Service<RoomStore> {
     }
 
     const nextTrackIndex = Math.max(0, room.lastPlayedIndex, room.currentIndex);
+    await setActiveDevice(accessToken);
     await startPlayingTrack(
       accessToken,
       `spotify:track:${tracks[nextTrackIndex].id}`
