@@ -12,6 +12,8 @@ const handler: VercelApiHandler = async (request, response) => {
     const roomService = new RoomService();
 
     if (method === "POST") {
+      // TODO: add track id in the request body
+      // to validate if we still want to skip this track
       const { pin, createdBy } = z
         .object({
           pin: pinValidation,

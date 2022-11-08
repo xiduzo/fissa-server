@@ -1,8 +1,7 @@
-import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { StatusCodes } from "http-status-codes";
 import SpotifyWebApi from "spotify-web-api-node";
 import { logger } from "./logger";
 
-import https from "https";
 import { NotFound } from "../lib/classes/errors/NotFound";
 
 enum SpotifyLimits {
@@ -83,31 +82,6 @@ export const getTracks = async (
   } catch (error) {
     logger.warn(`${getTracks.name}(${attempt}): ${JSON.stringify(error)}`);
     return [];
-  }
-};
-
-export const createPlaylist = async (
-  accessToken: string,
-  trackUris: string[],
-  attempt = 0
-): Promise<string> => {
-  try {
-    const spotifyApi = spotifyClient(accessToken);
-
-    const {
-      body: { id },
-    } = await spotifyApi.createPlaylist("🟣🔴🟢🔵🟠🟡", {
-      public: true,
-      collaborative: false,
-      description: "Playlist created with FISSA",
-    });
-
-    await addTracksToPlaylist(accessToken, id, trackUris);
-
-    return id;
-  } catch (error) {
-    logger.warn(`${createPlaylist.name}(${attempt}): ${JSON.stringify(error)}`);
-    return Promise.reject(error);
   }
 };
 
@@ -230,50 +204,6 @@ export const getMyTopTracks = async (
   } catch (error) {
     logger.warn(`${getMyTopTracks.name}(${attempt}): ${JSON.stringify(error)}`);
     return [];
-  }
-};
-
-type MyQueueResponse = {
-  currently_playing: SpotifyApi.TrackObjectFull | null;
-  queue: SpotifyApi.TrackObjectFull[];
-};
-// TODO wait for: https://github.com/thelinmichael/spotify-web-api-node/pull/465/files
-export const getMyQueue = async (
-  accessToken: string,
-  attempt = 0
-): Promise<MyQueueResponse> => {
-  const request = https.get({
-    hostname: "api.spotify.com",
-    path: "/v1/me/player/queue",
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  try {
-    return new Promise((resolve, reject) => {
-      let data = "";
-      request
-        .on("response", (response) => {
-          if (response.statusCode !== 200) reject(response.statusCode);
-
-          response.resume();
-          response.on("data", (chunk) => (data += chunk));
-          response.on("end", () => {
-            resolve(JSON.parse(data) as MyQueueResponse);
-          });
-        })
-        .on("end", reject)
-        .on("error", reject);
-    });
-  } catch (error) {
-    logger.error(`${getMyQueue.name}(${attempt}): ${JSON.stringify(error)}`);
-    return {
-      currently_playing: null,
-      queue: [],
-    };
   }
 };
 
