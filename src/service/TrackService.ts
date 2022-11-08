@@ -31,7 +31,7 @@ export class TrackService extends Service<TrackStore> {
     const recommendations = await getRecommendedTracks(accessToken, seedIds);
     const recommendedIds = recommendations?.map((track) => track.id);
 
-    await this.addTracks(pin, recommendedIds, "bot");
+    await this.addTracks(pin, recommendedIds);
   };
 
   getTracks = async (pin: string) => {
