@@ -35,8 +35,12 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
 
           await startPlayingTrack(accessToken, `spotify:track:${nextTrack.id}`);
           await roomService.updateRoom(room, nextIndex);
-          logger.info(`${pin} - playing track ${nextIndex}(${nextTrack.name})`);
-          appCache.set(pin, nextTrack);
+
+          logger.info(
+            `${pin} - playing track ${nextIndex} (${nextTrack.name})`
+          );
+
+          appCache.set(pin, nextTrack.id);
         } catch (error) {
           logger.error(
             `${syncCurrentlyPlaying.name}(${room.pin}): ${JSON.stringify(
