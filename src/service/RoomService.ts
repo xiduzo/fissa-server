@@ -110,7 +110,7 @@ export class RoomService extends Service<RoomStore> {
     const trackIndex = item && tracks.map((track) => track.id).indexOf(item.id);
 
     if (is_playing && trackIndex) {
-      await this.updateRoom(room, trackIndex);
+      await this.updateRoom(room, trackIndex, currentlyPlaying);
       logger.warn(`room ${pin} is already playing`);
       throw new Conflict(`room ${pin} is already playing`);
     }
@@ -121,7 +121,7 @@ export class RoomService extends Service<RoomStore> {
       accessToken,
       `spotify:track:${tracks[nextTrackIndex].id}`
     );
-    await this.updateRoom(room, nextTrackIndex);
+    await this.updateRoom(room, nextTrackIndex, currentlyPlaying);
   };
 
   skipTrack = async (pin: string, createdBy: string) => {
@@ -145,16 +145,24 @@ export class RoomService extends Service<RoomStore> {
     await this.updateRoom(room, nextIndex);
   };
 
-  updateRoom = async (room: Room, trackIndex: number) => {
+  updateRoom = async (
+    room: Room,
+    trackIndex: number,
+    current?: SpotifyApi.CurrentlyPlayingResponse
+  ) => {
     const trackService = new TrackService();
     const voteService = new VoteService();
 
-    const currentlyPlaying = await getMyCurrentPlaybackState(room.accessToken);
+    const currentlyPlaying =
+      current ?? (await getMyCurrentPlaybackState(room.accessToken));
+
+    const { is_playing, progress_ms } = currentlyPlaying;
+
     const { pin, accessToken } = room;
 
     let newState: Partial<Room> = {
       ...room,
-      currentIndex: currentlyPlaying?.is_playing ? trackIndex : -1,
+      currentIndex: is_playing ? trackIndex : -1,
       lastPlayedIndex: trackIndex,
       expectedEndTime: undefined,
     };
@@ -164,7 +172,7 @@ export class RoomService extends Service<RoomStore> {
     const trackAfter = tracks[trackIndex + 1];
     newState.expectedEndTime = DateTime.now()
       .plus({
-        milliseconds: track.duration_ms - (currentlyPlaying?.progress_ms ?? 0),
+        milliseconds: track.duration_ms - (progress_ms ?? 0),
       })
       .toISO();
 

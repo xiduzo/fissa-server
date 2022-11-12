@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 import cache from "node-cache";
 import { Room } from "../lib/interfaces/Room";
 import { logger } from "../utils/logger";
-import { startPlayingTrack } from "../utils/spotify";
+import { getMyCurrentPlaybackState, startPlayingTrack } from "../utils/spotify";
 import { RoomService } from "../service/RoomService";
 import { TrackService } from "../service/TrackService";
 
@@ -25,16 +25,23 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           ).diff(DateTime.now()).milliseconds;
 
           if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
+          const currentlyPlayingPromise =
+            getMyCurrentPlaybackState(accessToken);
 
-          const lastAddedTrack = appCache.get(pin);
+          const lastAddedTrackId = appCache.get(pin);
           const tracks = await trackService.getTracks(pin);
           const nextIndex = currentIndex + 1;
           const nextTrack = tracks[nextIndex];
 
-          if (lastAddedTrack === nextTrack.id) return;
+          const currentlyPlaying = await currentlyPlayingPromise;
+
+          if (lastAddedTrackId === currentlyPlaying.item?.id) {
+            await roomService.updateRoom(room, currentIndex, currentlyPlaying);
+            return;
+          }
 
           await startPlayingTrack(accessToken, `spotify:track:${nextTrack.id}`);
-          await roomService.updateRoom(room, nextIndex);
+          await roomService.updateRoom(room, nextIndex, currentlyPlaying);
 
           logger.info(
             `${pin} - playing track ${nextIndex} (${nextTrack.name})`
