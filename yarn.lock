@@ -1498,15 +1498,20 @@
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.11.tgz#d421b6c527a3037f7c84433fd2c4229e016863d3"
   integrity sha512-wOuvG1SN4Us4rez+tylwwwCV1psiNVOkJeM3AUWUNWg/jDQY2+HE/444y5gc+jBmRqASOm2Oeh5c1axHobwRKQ==
 
-"@types/luxon@3.0.2":
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/@types/luxon/-/luxon-3.0.2.tgz#11361eb3c8a81e9b8d6b35b6ffe155e8eb95480d"
-  integrity sha512-HM2OVWckUMmXbWYZufmWT2XMURGDZ6XbyNyQ+Lx+gCFGFqbZaIjsz7b+AGeGP/AuVYHBiuGY+wXfweP1RremnA==
+"@types/luxon@3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@types/luxon/-/luxon-3.1.0.tgz#b9842d233a06b267fe4117f1c224f20b8a149825"
+  integrity sha512-gCd/HcCgjqSxfMrgtqxCgYk/22NBQfypwFUG7ZAyG/4pqs51WLTcUzVp1hqTbieDYeHS3WoVEh2Yv/2l+7B0Vg==
 
 "@types/node@*":
   version "17.0.42"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.42.tgz#d7e8f22700efc94d125103075c074396b5f41f9b"
   integrity sha512-Q5BPGyGKcvQgAMbsr7qEGN/kIPN6zZecYYABeTDBizOsau+2NMdSVTar9UQw21A2+JyA2KRNDYaYrPB0Rpk2oQ==
+
+"@types/node@14.18.33":
+  version "14.18.33"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.33.tgz#8c29a0036771569662e4635790ffa9e057db379b"
+  integrity sha512-qelS/Ra6sacc4loe/3MSjXNL1dNQ/GjxNHVzuChwMfmk7HuycRLVQN2qNY3XahK+fZc5E2szqQSKUyAF0E+2bg==
 
 "@types/node@18.11.9":
   version "18.11.9"
@@ -1565,26 +1570,26 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@vercel/build-utils@5.5.6":
-  version "5.5.6"
-  resolved "https://registry.yarnpkg.com/@vercel/build-utils/-/build-utils-5.5.6.tgz#ae3bde35634dee7ad61f3946ecbb027bd275fc71"
-  integrity sha512-S6HOFVRfPWVS7pEC0X+KbNy8PyT4iO5Q2G1jZ4aLMwTehQyqzszrK88/oKzYYz/ar3jEYhuBhRBmaehdc4S6IQ==
+"@vercel/build-utils@5.5.7":
+  version "5.5.7"
+  resolved "https://registry.yarnpkg.com/@vercel/build-utils/-/build-utils-5.5.7.tgz#fadd9ecdda384509d000ba2ab588a894b41b02f3"
+  integrity sha512-F8brek8VcR3CLgcuKyXbb8k8y/KRwqO/yEV5dTUW6OZ0fGxxa+0RnaaY1UbHlCVF1Cnu+/IsMDsmsj9o1RCP5A==
 
-"@vercel/node-bridge@3.1.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@vercel/node-bridge/-/node-bridge-3.1.0.tgz#b7ee535da697504c1e693ad360b330be656d6cfa"
-  integrity sha512-Yej14vV33grAI/Z0AumwuThVLtTCa3RU7GOBM2csK/BujuWmI6tmwERzCzE8WOXzNQd3k5QDxIeJ3XC77YjnWw==
+"@vercel/node-bridge@3.1.2":
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/@vercel/node-bridge/-/node-bridge-3.1.2.tgz#8e9c00201dfcfd73db0e18bb8e5db313611328f7"
+  integrity sha512-dgcLXug0IqUeRsywf0G8IrhUFcgw+GYj+EZB4JneglKSofFBh3Xy/t7KfBUxLlKnoq6kyGYJvTmAVB1YBt11qw==
 
-"@vercel/node@2.6.0":
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/@vercel/node/-/node-2.6.0.tgz#0c18e6c002393d20ca94e8e3764c01ad96f2d6a9"
-  integrity sha512-o0v4b88GRLqEGVBi1sYDmRkbyEX4t6ibzH8JgXwvqmVbWtllNmSRqDdnDiq3kzevFy1j4CZ/3r0C57OOokGWkA==
+"@vercel/node@2.6.2":
+  version "2.6.2"
+  resolved "https://registry.yarnpkg.com/@vercel/node/-/node-2.6.2.tgz#f2222d82e0127ca5f6fae798ce7f4f63a1e2b36a"
+  integrity sha512-uhJrrb41ywM8aFGQ1lIX9jZXdHAXgFT/zhtkg7AkMnHtziKJtyWQ4xZkeaOsIR2c6nOkBisr+zWN8tmtLKexnQ==
   dependencies:
     "@edge-runtime/vm" "2.0.0"
-    "@types/node" "*"
-    "@vercel/build-utils" "5.5.6"
-    "@vercel/node-bridge" "3.1.0"
-    "@vercel/static-config" "2.0.4"
+    "@types/node" "14.18.33"
+    "@vercel/build-utils" "5.5.7"
+    "@vercel/node-bridge" "3.1.2"
+    "@vercel/static-config" "2.0.6"
     edge-runtime "2.0.0"
     esbuild "0.14.47"
     exit-hook "2.2.1"
@@ -1592,10 +1597,10 @@
     ts-node "8.9.1"
     typescript "4.3.4"
 
-"@vercel/static-config@2.0.4":
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/@vercel/static-config/-/static-config-2.0.4.tgz#6fb68e9b2110bc84641de18c4a0bb6b2874919d4"
-  integrity sha512-vXgyXhLgXg7TwcFSYX4utm2/nD6t3MfMX6pXXIRE6sg0di/5hYCmkJ+YIuGtra8ORQ3n2F7sMLcMHOoNGERj4w==
+"@vercel/static-config@2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@vercel/static-config/-/static-config-2.0.6.tgz#9e963eaf9eeebb28d729c963039bb9caf617ae4b"
+  integrity sha512-P0kh9ZBA9RrP4u0pDENxsuU/PAOw/ph+CoGgS5ZfDNa7P0qYhi9TfgVAtjFnGxi0dImq/S49uTVW5NPYWwc+ww==
   dependencies:
     ajv "8.6.3"
     json-schema-to-ts "1.6.4"
