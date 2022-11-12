@@ -42,6 +42,10 @@ export class TrackService extends Service<TrackStore> {
     await this.addTracks(pin, recommendedIds);
   };
 
+  setNewIndex = async (pin: string, trackId: string, newIndex: number) => {
+    await this.store.updateTrack(pin, trackId, { index: newIndex });
+  };
+
   getTracks = async (pin: string) => {
     const tracks = await this.store.getTracks(pin);
 

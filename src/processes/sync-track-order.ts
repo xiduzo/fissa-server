@@ -1,7 +1,6 @@
 import { DateTime } from "luxon";
 import cache from "node-cache";
 import { Room } from "../lib/interfaces/Room";
-import { Track } from "../lib/interfaces/Track";
 import {
   getScores,
   highToLow,
@@ -9,7 +8,6 @@ import {
   positiveScore,
   SortedVoteData,
 } from "../lib/interfaces/Vote";
-import { mongoCollection } from "../utils/database";
 import { logger } from "../utils/logger";
 import { publish } from "../utils/mqtt";
 import { VoteService } from "../service/VoteService";
@@ -78,7 +76,6 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
     const tracks = await trackService.getTracks(pin);
     const currentTrackId = tracks[currentIndex].id;
 
-    const roomTracks = await mongoCollection<Track>("track");
     const voteIds = votes.map((vote) => vote.trackId);
 
     // 1 remove voted tracks from new order
@@ -112,7 +109,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       reorders++;
       logger.info(`${pin}: set ${track.name} to index ${index}`);
 
-      await roomTracks.updateOne({ pin, id: track.id }, { $set: { index } });
+      await trackService.setNewIndex(pin, track.id, index);
     });
 
     await Promise.all(promises);

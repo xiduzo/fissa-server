@@ -14,9 +14,19 @@ export class TrackStore extends Store<Track> {
 
     const roomTracks = await this.collection
       .find({ pin: pin.toUpperCase() })
+      .sort({ index: 1 })
       .toArray();
-    const orderedTracks = roomTracks.sort((a, b) => a.index - b.index); // TODO: check .sort method of mongodb
-    return orderedTracks;
+
+    return roomTracks;
+  };
+
+  updateTrack = async (pin: string, trackId: string, track: Partial<Track>) => {
+    await this.waitForCollection();
+
+    await this.collection.updateOne(
+      { pin: pin.toUpperCase(), id: trackId },
+      { $set: track }
+    );
   };
 
   addTracks = async (pin: string, tracks: SpotifyApi.TrackObjectFull[]) => {
