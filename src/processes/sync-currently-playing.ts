@@ -7,6 +7,7 @@ import { RoomService } from "../service/RoomService";
 import { TrackService } from "../service/TrackService";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 500;
+const PRE_MATURE_IS_PLAYING_FETCH = 1000 * 2;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -24,30 +25,29 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
             expectedEndTime ?? DateTime.now().toISO()
           ).diff(DateTime.now()).milliseconds;
 
+          if (
+            tMinus < PRE_MATURE_IS_PLAYING_FETCH &&
+            tMinus > CURRENTLY_PLAYING_SYNC_TIME
+          ) {
+            const { is_playing } = await getMyCurrentPlaybackState(accessToken);
+            appCache.set(pin, is_playing);
+          }
           if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
-          const currentlyPlayingPromise =
-            getMyCurrentPlaybackState(accessToken);
 
-          const lastAddedTrackId = appCache.get(pin);
-          const tracks = await trackService.getTracks(pin);
-          const nextIndex = currentIndex + 1;
-          const nextTrack = tracks[nextIndex];
-
-          const currentlyPlaying = await currentlyPlayingPromise;
-
-          if (lastAddedTrackId === currentlyPlaying.item?.id) {
-            await roomService.updateRoom(room, currentIndex, currentlyPlaying);
+          const isPlaying = appCache.get<boolean>(pin);
+          if (!isPlaying) {
+            await roomService.updateRoom(room, -1);
             return;
           }
 
-          await startPlayingTrack(accessToken, `spotify:track:${nextTrack.id}`);
-          await roomService.updateRoom(room, nextIndex, currentlyPlaying);
+          const tracks = await trackService.getTracks(pin);
+          const nextIndex = currentIndex + 1;
+          const { id, name } = tracks[nextIndex];
 
-          logger.info(
-            `${pin} - playing track ${nextIndex} (${nextTrack.name})`
-          );
+          await startPlayingTrack(accessToken, `spotify:track:${id}`);
+          await roomService.updateRoom(room, nextIndex);
 
-          appCache.set(pin, nextTrack.id);
+          logger.info(`${pin} - playing track ${nextIndex} (${name})`);
         } catch (error) {
           logger.error(
             `${syncCurrentlyPlaying.name}(${room.pin}): ${JSON.stringify(

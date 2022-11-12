@@ -94,6 +94,12 @@ export class RoomService extends Service<RoomStore> {
     return room;
   };
 
+  stopRoom = async (pin: string) => {
+    const room = await this.getRoom(pin);
+
+    await this.updateRoom(room, -1);
+  };
+
   restartRoom = async (pin: string) => {
     const room = await this.getRoom(pin);
 
@@ -110,7 +116,7 @@ export class RoomService extends Service<RoomStore> {
     const trackIndex = item && tracks.map((track) => track.id).indexOf(item.id);
 
     if (is_playing && trackIndex) {
-      await this.updateRoom(room, trackIndex, currentlyPlaying);
+      await this.updateRoom(room, trackIndex);
       logger.warn(`room ${pin} is already playing`);
       throw new Conflict(`room ${pin} is already playing`);
     }
@@ -121,7 +127,8 @@ export class RoomService extends Service<RoomStore> {
       accessToken,
       `spotify:track:${tracks[nextTrackIndex].id}`
     );
-    await this.updateRoom(room, nextTrackIndex, currentlyPlaying);
+
+    await this.updateRoom(room, nextTrackIndex);
   };
 
   skipTrack = async (pin: string, createdBy: string) => {
@@ -145,16 +152,11 @@ export class RoomService extends Service<RoomStore> {
     await this.updateRoom(room, nextIndex);
   };
 
-  updateRoom = async (
-    room: Room,
-    trackIndex: number,
-    current?: SpotifyApi.CurrentlyPlayingResponse
-  ) => {
+  updateRoom = async (room: Room, trackIndex: number) => {
     const trackService = new TrackService();
     const voteService = new VoteService();
 
-    const currentlyPlaying =
-      current ?? (await getMyCurrentPlaybackState(room.accessToken));
+    const currentlyPlaying = await getMyCurrentPlaybackState(room.accessToken);
 
     const { is_playing, progress_ms } = currentlyPlaying;
 

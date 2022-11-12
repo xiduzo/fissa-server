@@ -265,7 +265,7 @@ export const startPlayingTrack = async (
       }
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // give spotify some slack
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // give spotify some slack
 
     return true;
   } catch (error) {
