@@ -26,21 +26,10 @@ export class TrackStore extends Store<Track> {
       .find({ pin: pin.toUpperCase() })
       .toArray();
 
-    const roomTrackIds = currentTracks.map((track) => track.id);
-    const trackIds = tracks.map((track) => track.id);
-
-    const tracksToAdd = trackIds.filter(
-      (trackId) => !roomTrackIds.includes(trackId)
-    );
-
-    const inserts = tracksToAdd.map(async (trackId, index) => {
-      const track = tracks.find((track) => track.id === trackId);
-
-      if (!track) return;
-
+    const inserts = tracks.map(async (track, index) => {
       return this.collection.insertOne({
         pin: pin.toUpperCase(),
-        index: roomTrackIds.length + index,
+        index: currentTracks.length + index,
         artists: track.artists.map((artist) => artist.name).join(", "),
         name: track.name,
         id: track.id,

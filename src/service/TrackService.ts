@@ -14,7 +14,15 @@ export class TrackService extends Service<TrackStore> {
     const roomService = new RoomService();
     const room = await roomService.getRoom(pin);
 
-    const tracks = await getTracks(room.accessToken, trackIds);
+    const currentTracks = await this.store.getTracks(pin);
+
+    const roomTrackIds = currentTracks.map((track) => track.id);
+    const trackIdsToAdd = trackIds.filter(
+      (trackId) => !roomTrackIds.includes(trackId)
+    );
+
+    const tracks = await getTracks(room.accessToken, trackIdsToAdd);
+
     await this.store.addTracks(pin, tracks);
     await publish(`fissa/room/${pin}/tracks/added`, trackIds.length);
 
