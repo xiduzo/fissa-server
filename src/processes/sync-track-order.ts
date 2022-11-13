@@ -107,7 +107,7 @@ const reorderPlaylist = async (room: Room): Promise<number> => {
       if (original?.id === track.id) return;
 
       reorders++;
-      logger.info(`${pin}: set ${track.name} to index ${index}`);
+      logger.info(`${pin}: #${index} -> ${track.name}`);
 
       await trackService.setNewIndex(pin, track.id, index);
     });

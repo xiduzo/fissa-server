@@ -158,13 +158,11 @@ export class RoomService extends Service<RoomStore> {
 
     const currentlyPlaying = await getMyCurrentPlaybackState(room.accessToken);
 
-    const { is_playing, progress_ms } = currentlyPlaying;
-
     const { pin, accessToken } = room;
 
     let newState: Partial<Room> = {
       ...room,
-      currentIndex: is_playing ? trackIndex : -1,
+      currentIndex: currentlyPlaying?.is_playing ? trackIndex : -1,
       lastPlayedIndex: trackIndex,
       expectedEndTime: undefined,
     };
@@ -172,14 +170,17 @@ export class RoomService extends Service<RoomStore> {
     const tracks = await trackService.getTracks(pin);
     const track = tracks[trackIndex];
     const trackAfter = tracks[trackIndex + 1];
-    newState.expectedEndTime = DateTime.now()
-      .plus({
-        milliseconds: track.duration_ms - (progress_ms ?? 0),
-      })
-      .toISO();
+    if (track) {
+      newState.expectedEndTime = DateTime.now()
+        .plus({
+          milliseconds:
+            track.duration_ms - (currentlyPlaying?.progress_ms ?? 0),
+        })
+        .toISO();
 
-    await this.store.updateRoom(newState);
-    await voteService.deleteVotes(pin, track.id);
+      await this.store.updateRoom(newState);
+      await voteService.deleteVotes(pin, track.id);
+    }
 
     delete newState.accessToken;
     delete newState.refreshToken;

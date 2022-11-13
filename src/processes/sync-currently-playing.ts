@@ -30,6 +30,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
             tMinus > CURRENTLY_PLAYING_SYNC_TIME
           ) {
             const { is_playing } = await getMyCurrentPlaybackState(accessToken);
+            logger.info(`${pin} - is still playing: ${is_playing}`);
             appCache.set(pin, is_playing);
           }
           if (tMinus > CURRENTLY_PLAYING_SYNC_TIME) return;
@@ -52,7 +53,7 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           logger.error(
             `${syncCurrentlyPlaying.name}(${room.pin}): ${JSON.stringify(
               error
-            )}`
+            )}, ${error}`
           );
         } finally {
           // Whatever happens we need to return a resolved promise
