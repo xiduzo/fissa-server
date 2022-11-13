@@ -7,7 +7,7 @@ import { RoomService } from "../service/RoomService";
 import { TrackService } from "../service/TrackService";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 500;
-const PRE_MATURE_IS_PLAYING_FETCH = 1000 * 2;
+const PRE_MATURE_IS_PLAYING_FETCH = 1500;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
