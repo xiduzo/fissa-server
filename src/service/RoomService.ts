@@ -178,9 +178,10 @@ export class RoomService extends Service<RoomStore> {
         })
         .toISO();
 
-      await this.store.updateRoom(newState);
       await voteService.deleteVotes(pin, track.id);
     }
+
+    await this.store.updateRoom(newState);
 
     delete newState.accessToken;
     delete newState.refreshToken;
@@ -190,6 +191,6 @@ export class RoomService extends Service<RoomStore> {
       await trackService.addRandomTracks(pin, accessToken);
     }
 
-    return track.id;
+    return track?.id;
   };
 }
