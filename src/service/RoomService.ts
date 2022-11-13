@@ -163,7 +163,7 @@ export class RoomService extends Service<RoomStore> {
     let newState: Partial<Room> = {
       ...room,
       currentIndex: currentlyPlaying?.is_playing ? trackIndex : -1,
-      lastPlayedIndex: trackIndex,
+      lastPlayedIndex: Math.max(room.lastPlayedIndex, trackIndex),
       expectedEndTime: undefined,
     };
 
