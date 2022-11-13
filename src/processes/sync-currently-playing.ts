@@ -7,7 +7,8 @@ import { RoomService } from "../service/RoomService";
 import { TrackService } from "../service/TrackService";
 
 const CURRENTLY_PLAYING_SYNC_TIME = 500;
-const PRE_MATURE_IS_PLAYING_FETCH = 1500;
+const PRE_MATURE_IS_PLAYING_FETCH_MIN = 5000 + CURRENTLY_PLAYING_SYNC_TIME;
+const PRE_MATURE_IS_PLAYING_FETCH_MAX = 2000 + PRE_MATURE_IS_PLAYING_FETCH_MIN;
 
 export const syncCurrentlyPlaying = async (appCache: cache) => {
   const rooms = appCache.get<Room[]>("rooms");
@@ -26,8 +27,8 @@ export const syncCurrentlyPlaying = async (appCache: cache) => {
           ).diff(DateTime.now()).milliseconds;
 
           if (
-            tMinus < PRE_MATURE_IS_PLAYING_FETCH &&
-            tMinus > CURRENTLY_PLAYING_SYNC_TIME
+            tMinus < PRE_MATURE_IS_PLAYING_FETCH_MAX &&
+            tMinus > PRE_MATURE_IS_PLAYING_FETCH_MIN
           ) {
             const { is_playing } = await getMyCurrentPlaybackState(accessToken);
             logger.info(`${pin} - is still playing: ${is_playing}`);
