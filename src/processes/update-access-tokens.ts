@@ -17,6 +17,10 @@ export const updateAccessTokens = async (appCache: cache) => {
         try {
           const { accessToken, refreshToken, pin } = room;
 
+          if (!accessToken) return;
+          if (!refreshToken) return;
+          if (!pin) return;
+
           const tokens = await updateTokens(accessToken, refreshToken);
 
           if (!tokens) throw new NotFound("Tokens not found");
