@@ -4,6 +4,14 @@ import { handleRequestError, responseAsync } from "../../utils/http";
 import { RoomService } from "../../service/RoomService";
 import { z } from "zod";
 
+const POST_SCHEMA = z.object({
+  playlistId: z.string().optional(),
+  trackUris: z.array(z.string()).optional(),
+  createdBy: z.string(),
+  accessToken: z.string(),
+  refreshToken: z.string(),
+});
+
 const handler: VercelApiHandler = async (request, response) => {
   const { method, body } = request;
 
@@ -11,20 +19,15 @@ const handler: VercelApiHandler = async (request, response) => {
     const roomService = new RoomService();
 
     if (method === "POST") {
-      const { accessToken, refreshToken, playlistId, createdBy } = z
-        .object({
-          playlistId: z.string().optional(),
-          createdBy: z.string(),
-          accessToken: z.string(),
-          refreshToken: z.string(),
-        })
-        .parse(body);
+      const { accessToken, refreshToken, playlistId, createdBy, trackUris } =
+        POST_SCHEMA.parse(body);
 
       const pin = await roomService.createRoom(
         accessToken,
         refreshToken,
         createdBy,
-        playlistId
+        playlistId,
+        trackUris
       );
 
       await responseAsync(response, StatusCodes.OK, pin);

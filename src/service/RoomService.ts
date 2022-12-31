@@ -30,7 +30,8 @@ export class RoomService extends Service<RoomStore> {
     accessToken: string,
     refreshToken: string,
     createdBy: string,
-    playlistId?: string
+    playlistId?: string,
+    trackUris?: string[]
   ) => {
     let pin: string | undefined;
     let blockedPins: string[] = [];
@@ -54,20 +55,30 @@ export class RoomService extends Service<RoomStore> {
       accessToken,
       refreshToken
     ).build();
+
     await this.store.createRoom(room);
 
-    const tracks = playlistId
-      ? await getPlaylistTracks(accessToken, playlistId)
-      : await getMyTopTracks(accessToken);
-
     const trackService = new TrackService();
-    await trackService.addTracks(
-      room.pin,
-      tracks.map((track) => track.id)
-    );
 
+    let nextTrackUri: string | undefined;
+    let tracksToAdd: string[] = [];
+
+    if (trackUris) {
+      tracksToAdd = trackUris;
+    } else {
+      const tracks = playlistId
+        ? await getPlaylistTracks(accessToken, playlistId)
+        : await getMyTopTracks(accessToken);
+
+      tracksToAdd = tracks.map((track) => track.id);
+    }
+
+    await trackService.addTracks(room.pin, tracksToAdd);
     await setActiveDevice(accessToken);
-    await startPlayingTrack(accessToken, tracks[0].uri);
+
+    if (nextTrackUri) {
+      await startPlayingTrack(accessToken, nextTrackUri);
+    }
 
     await this.updateRoom(room, 0);
 
